@@ -1,26 +1,61 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.0.2)
 project(nano_mppic)
 
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
+add_compile_options(-std=c++14)
+set(CMAKE_BUILD_TYPE "Release")
+
+add_definitions(-DXTENSOR_ENABLE_XSIMD)
+add_definitions(-DXTENSOR_USE_XSIMD)
+
+set(XTENSOR_USE_TBB 0)
+set(XTENSOR_USE_OPENMP 0)
+
+find_package(xtensor REQUIRED)
+
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  nav_msgs
+  tf2
+)
+
+catkin_package(
+ INCLUDE_DIRS include
+ LIBRARIES ${PROJECT_NAME}
+ CATKIN_DEPENDS roscpp nav_msgs tf2
+ DEPENDS XTENSOR
+)
+
+include_directories(
+  include
+  ${catkin_INCLUDE_DIRS}
+  ${xtensor_INLCUDE_DIRS}
+)
+
+# Not all machines have <cpuid.h> available
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+file(WRITE ${CMAKE_BINARY_DIR}/test_cpuid.cpp "#include <cpuid.h>")
+try_compile(HAS_CPUID ${CMAKE_BINARY_DIR} ${CMAKE_BINARY_DIR}/test_cpuid.cpp)
+file(REMOVE ${CMAKE_BINARY_DIR}/test_cpuid.cpp)
+if(HAS_CPUID)
+  add_compile_definitions(HAS_CPUID)
 endif()
 
-# find dependencies
-find_package(ament_cmake REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
+# Nano MPPIC
+add_library(${PROJECT_NAME} 
+            to-do
+            )
+target_compile_options(${PROJECT_NAME} PUBLIC)
+target_link_libraries(${PROJECT_NAME} xtensor xtensor::optimize xtensor::use_xsimd)
 
-if(BUILD_TESTING)
-  find_package(ament_lint_auto REQUIRED)
-  # the following line skips the linter which checks for copyrights
-  # comment the line when a copyright and license is added to all source files
-  set(ament_cmake_copyright_FOUND TRUE)
-  # the following line skips cpplint (only works in a git repo)
-  # comment the line when this package is in a git repo and when
-  # a copyright and license is added to all source files
-  set(ament_cmake_cpplint_FOUND TRUE)
-  ament_lint_auto_find_test_dependencies()
-endif()
+# ROS execs
+add_executable(${PROJECT_NAME}_exec
+              src/main.cpp
+              )
 
-ament_package()
+add_dependencies(${PROJECT_NAME}_exec ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(${PROJECT_NAME}_exec ${PROJECT_NAME} ${catkin_LIBRARIES})
+
+# Binaries
+install( TARGETS ${PROJECT_NAME}_exec
+         DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION} )
