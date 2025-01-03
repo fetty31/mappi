@@ -5,6 +5,18 @@ namespace nano_mppic {
 
 class Predictor {
 
+    /* Description:
+        - should be responsible for:
+            . Compute noise trajectories (from random controls -> integrate states)
+            . Evaluate costs for each trajectory --> choose optimal
+            . Return "optimal" control sequence
+        - should own:
+            . critics manager
+            . physical model obj
+        - should have acces to:
+            . costmap (to pass to obstacle critic, at least)
+    */
+
     // VARIABLES
 
     public:
@@ -34,6 +46,6 @@ class Predictor {
 
 };
 
-}
+} // namespace nano_mppic
 
 #endif
