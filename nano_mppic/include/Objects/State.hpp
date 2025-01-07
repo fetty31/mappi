@@ -1,6 +1,8 @@
 #ifndef __NANO_MPPIC_STATE_HPP__
 #define __NANO_MPPIC_STATE_HPP__
 
+#include <xtensor/xtensor.hpp>
+
 namespace nano_mppic::objects{
 
 struct Odometry2d

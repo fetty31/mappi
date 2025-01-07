@@ -1,6 +1,19 @@
 #ifndef __NANO_MPPIC_PREDICTOR_HPP__
 #define __NANO_MPPIC_PREDICTOR_HPP__
 
+#include "Models/Ackermann.hpp"
+#include "Models/Holonomic.hpp"
+
+#include "Critics/Obstacles.hpp"
+
+#include "Objects/State.hpp"
+#include "Objects/Trajectory.hpp"
+#include "Objects/ControlSequence.hpp"
+#include "Objects/Config.hpp"
+
+#include "Utils/NoiseGenerator.hpp"
+#include "Utils/Auxiliar.hpp"
+
 namespace nano_mppic {
 
 class Predictor {
@@ -19,30 +32,51 @@ class Predictor {
 
     // VARIABLES
 
-    public:
-
     private:
+        nano_mppic::config::Predictor cfg_;
+
+        nano_mppic::objects::ControlSequence ctrl_seq_;
+        nano_mppic::objects::State state_;
+        nano_mppic::objects::Trajectory trajectory_;
+
+        std::unique_ptr<nano_mppic::models::MotionModel> motion_mdl_ptr_;
+
+        nano_mppic::utils::NoiseGenerator noise_gen_;
+
+        xt::xtensor<float, 1> costs_;
+
+        bool is_configured_;
 
     // FUNCTIONS
 
     public:
         Predictor();
         
-        void configure(/*Config cfg*/);
+        void configure(nano_mppic::config::Predictor&);
 
         void shutdown();
 
         void reset();
 
-        void getControl();
+        void getControl(const Odometry2d& odom, 
+                        const Trajectory& plan);
+        
+        bool isHolonomic();
 
     private:
 
         void predict();
 
         void generateNoisedTrajectories();
+
         void evalTrajectories();
-        void updateControl();
+
+        void updateControlSeq();
+
+        void updateState(nano_mppic::objects::State&,
+                        nano_mppic::objects::Trajectory&);
+
+        void applyControlConstraints(nano_mppic::objects::ControlSequence&);
 
 };
 

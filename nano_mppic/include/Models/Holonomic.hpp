@@ -7,17 +7,13 @@ namespace nano_mppic::models {
 
 class Holonomic : public MotionModel {
 
-    // VARIABLES
-
-    public:
-
-    private:
-
     // FUNCTIONS
 
     public:
 
-    private:
+        Holonomic(float dt) : MotionModel(dt) {};
+
+        bool isHolonomic() override { return true; }
 
 };
 

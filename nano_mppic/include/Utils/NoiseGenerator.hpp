@@ -60,7 +60,7 @@ void NoiseGenerator::configure(nano_mppic::config::Noise cfg, bool is_holonomic)
 {
     cfg_ = cfg;
     is_holonomic_ = is_holonomic;
-    active_ = true;
+    active_ = ready_ = true;
     noise_thread_ = std::thread(std::bind(&NoiseGenerator::noiseThread, this));
 }
 

@@ -5,17 +5,14 @@ namespace nano_mppic::critics {
 
 class Critic {
 
-    // VARIABLES
-
-    public:
-
-    private:
-
     // FUNCTIONS
 
     public:
+        Critic() = default;
 
-    private:
+        virtual ~Critic() = default;
+
+        virtual void score();
 
 };
 
