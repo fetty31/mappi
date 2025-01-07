@@ -14,6 +14,8 @@
 #include "Utils/NoiseGenerator.hpp"
 #include "Utils/Auxiliar.hpp"
 
+#include <memory>
+
 namespace nano_mppic {
 
 class Predictor {

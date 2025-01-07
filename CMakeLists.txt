@@ -15,13 +15,14 @@ find_package(xtensor REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   nav_msgs
+  costmap_2d
   tf2
 )
 
 catkin_package(
  INCLUDE_DIRS include
  LIBRARIES ${PROJECT_NAME}
- CATKIN_DEPENDS roscpp nav_msgs tf2
+ CATKIN_DEPENDS roscpp nav_msgs tf2 costmap_2d
  DEPENDS XTENSOR
 )
 

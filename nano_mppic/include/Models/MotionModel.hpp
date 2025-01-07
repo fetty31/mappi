@@ -14,7 +14,7 @@ class MotionModel {
 
     // VARIABLES
 
-    private:
+    protected:
         float model_dt;
 
     // FUNCTIONS
