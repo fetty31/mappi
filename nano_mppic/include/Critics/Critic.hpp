@@ -6,6 +6,7 @@
 
 #include <costmap_2d/costmap_2d_ros.h>
 #include <costmap_2d/costmap_2d.h>
+#include <costmap_2d/inflation_layer.h>
 
 namespace nano_mppic::critics {
 
@@ -25,9 +26,16 @@ class Critic {
 
         virtual ~Critic() = default;
 
-        virtual void configure(std::string name, costmap_2d::Costmap2DROS costmap_ros);
+        virtual void configure(std::string name, std::shared_ptr<costmap_2d::Costmap2DROS>& costmap_ros){
+            name_ = name;
+            costmap_ros_ptr_ = costmap_ros;
+            costmap_ptr_ = costmap_ros->getCostmap();
+        }
 
-        virtual void score();
+        virtual void score(nano_mppic::objects::State&,
+                            nano_mppic::objects::Trajectory&,
+                            xt::xtensor<float,1>&,
+                            bool& ) = 0;
 
         std::string getName(){ return name_; }
 

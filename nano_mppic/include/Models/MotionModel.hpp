@@ -4,8 +4,12 @@
 #include <xtensor/xtensor.hpp>
 #include <xtensor/xnoalias.hpp>
 #include <xtensor/xview.hpp>
+#include <xtensor/xmasked_view.hpp>
 
 #include "Objects/ControlSequence.hpp"
+#include "Objects/State.hpp"
+#include "Objects/Trajectory.hpp"
+
 #include "Utils/Auxiliar.hpp"
 
 namespace nano_mppic::models {
@@ -38,8 +42,8 @@ class MotionModel {
             auto && yaw_sin = xt::xtensor<float, 2>::from_shape(traj.yaw.shape());
             xt::noalias(xt::view(yaw_cos, xt::all(), 0)) = std::cos(initial_yaw);
             xt::noalias(xt::view(yaw_sin, xt::all(), 0)) = std::sin(initial_yaw);
-            xt::noalias(xt::view(yaw_cos, xt::all(), xt::range(1, _))) = xt::cos(yaw_accum);
-            xt::noalias(xt::view(yaw_sin, xt::all(), xt::range(1, _))) = xt::sin(yaw_accum);
+            xt::noalias(xt::view(yaw_cos, xt::all(), xt::range(1, xt::placeholders::_))) = xt::cos(yaw_accum);
+            xt::noalias(xt::view(yaw_sin, xt::all(), xt::range(1, xt::placeholders::_))) = xt::sin(yaw_accum);
 
             auto && dx = xt::eval(st.vx * yaw_cos);
             auto && dy = xt::eval(st.vx * yaw_sin);

@@ -10,7 +10,8 @@ void Predictor::Predictor() : is_configured_(false)
 
 }
         
-void Predictor::configure(nano_mppic::config::Predictor& cfg)
+void Predictor::configure(nano_mppic::config::Predictor& cfg, 
+                            std::shared_ptr<costmap_2d::Costmap2DROS>& costmap)
 {
     cfg_ = cfg;
     
@@ -21,6 +22,10 @@ void Predictor::configure(nano_mppic::config::Predictor& cfg)
     //     motion_mdl_ptr_ = std::make_unique<nano_mppic::models::MotionModel>(cfg_.model_dt);
 
     noise_gen_.configure(cfg.noise, isHolonomic());
+
+    obs_critic_.configure("obstacles_critic", costmap);
+
+    this->reset(); // quick set up of obj dimensions
 
     is_configured_ = true;
 }
@@ -88,12 +93,14 @@ void Predictor::generateNoisedTrajectories()
 
 void Predictor::evalTrajectories()
 {
-/* To-Do:
-    - define Critic class
-    - Obstacles critic
-        . check collision with costmap2D
-        . templated class (probably)
-*/
+    /* To-Do:
+        - define Critic class
+        - Obstacles critic
+            . check collision with costmap2D
+            . templated class (probably)
+    */
+
+
     
 }
 

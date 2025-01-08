@@ -41,6 +41,8 @@ class Predictor {
         nano_mppic::objects::State state_;
         nano_mppic::objects::Trajectory trajectory_;
 
+        nano_mppic::critics::Obstacles obs_critic_; // To-Do: define critics manager 
+
         std::unique_ptr<nano_mppic::models::MotionModel> motion_mdl_ptr_;
 
         nano_mppic::utils::NoiseGenerator noise_gen_;
@@ -54,7 +56,8 @@ class Predictor {
     public:
         Predictor();
         
-        void configure(nano_mppic::config::Predictor&);
+        void configure(nano_mppic::config::Predictor&,
+                        std::shared_ptr<costmap_2d::Costmap2DROS>&);
 
         void shutdown();
 

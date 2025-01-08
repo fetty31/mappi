@@ -35,7 +35,7 @@ class NoiseGenerator {
     public:
         NoiseGenerator();
 
-        void configure(nano_mppic::config::Noise cfg);
+        void configure(nano_mppic::config::Noise cfg, bool is_holonomic);
 
         void shutdown();
 

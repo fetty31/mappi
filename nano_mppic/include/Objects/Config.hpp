@@ -20,19 +20,19 @@ struct Noise
     unsigned int time_steps;
 
     float std_vx, std_vy, std_wz;
-}
+};
 
 struct AckermannModel 
 {
     float min_r;
-}
+};
 
 struct Constraints 
 {
     float max_vx, min_vx;
     float max_vy, min_vy;
     float max_wz, min_wz;
-}
+};
 
 struct Predictor 
 {
@@ -53,7 +53,7 @@ struct Predictor
     float temperature;
     float gamma;
 
-}
+};
 
 } // namespace nano_mppic::config
 
