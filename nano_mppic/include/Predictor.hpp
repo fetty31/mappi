@@ -63,20 +63,24 @@ class Predictor {
 
         void reset();
 
-        void getControl(const objects::Odometry2d& odom, 
-                        const objects::Trajectory& plan);
+        objects::Control getControl(const objects::Odometry2d& odom, 
+                                    const objects::Trajectory& plan);
         
         bool isHolonomic();
 
     private:
 
-        void predict();
+        void predict(bool &failed);
+
+        bool fallback(bool &failed);
 
         void generateNoisedTrajectories();
 
-        void evalTrajectories();
+        void evalTrajectories(bool &failed);
 
         void optimizeControlSeq();
+
+        void shiftControlSeq();
 
         void updateState(objects::State&,
                         objects::Trajectory&);

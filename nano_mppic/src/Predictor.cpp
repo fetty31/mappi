@@ -44,22 +44,41 @@ void Predictor::reset()
 
 }
 
-void Predictor::getControl(const objects::Odometry2d& odom, 
-                            const objects::Trajectory& plan){
+objects::Control Predictor::getControl(const objects::Odometry2d& odom, 
+                                        const objects::Trajectory& plan){
+
+    static objects::Control output;
     
     if(not is_configured_){
         std::cout << "NANO_MPPIC::Predictor ERROR: calling getControl() without Predictor being configured\n";
-        return;
+        return output;
     }
 
     state_.odom = odom; // update current robot state
 
-    // Predict trajectories
-    predict();
-    // filter control sequence (smooth out)
-    // get control from sequence
-    // shift control ?
+    static bool has_failed = false;
 
+    // Predict trajectories
+    do {
+        predict(has_failed);
+    } while (fallback(has_failed));
+
+    // filter control sequence (smooth out)
+
+    // get control from sequence
+    float vx = ctrl_seq_.vx(cfg_.settings.offset);
+    float wz = ctrl_seq_.vx(cfg_.settings.offset);
+    float vy = 0.0;
+    if(isHolonomic()) vy = ctrl_seq_.vx(cfg_.settings.offset);
+
+    output.vx = vx;
+    output.vy = vy;
+    output.wz = wz;
+
+    // shift control 
+    shiftControlSeq();
+
+    return output;
 }
 
 bool Predictor::isHolonomic()
@@ -72,14 +91,33 @@ bool Predictor::isHolonomic()
 
 // private
 
-void Predictor::predict()
+void Predictor::predict(bool &failed)
 {
     for(unsigned int i=0; i < cfg_.settings.num_iters; ++i){
-        generateNoisedTrajectories();
-        evalTrajectories();
-        optimizeControlSeq();
+        generateNoisedTrajectories();   // integrate new trajectories with new control inputs
+        evalTrajectories(failed);             // evaluate trajectories score
+        optimizeControlSeq();           // compute optimal control sequence
     }
 
+}
+
+bool Predictor::fallback(bool &failed)
+{
+    static size_t count = 0;
+
+    if(not failed){
+        count = 0;
+        return false;
+    }
+
+    reset();
+
+    if(++count > cfg_.settings.num_retry){
+        count = 0;
+        throw std::runtime_error("NANO_MPPIC::PREDICTOR Error: failed to compute any path");
+    }
+
+    return true;
 }
 
 void Predictor::generateNoisedTrajectories()
@@ -88,16 +126,14 @@ void Predictor::generateNoisedTrajectories()
     updateState(state_, trajectory_);           // predict trajectories with new controls 
 }
 
-void Predictor::evalTrajectories()
+void Predictor::evalTrajectories(bool &failed)
 {
     /* To-Do:
-        - define Critic class
-        - Obstacles critic
-            . check collision with costmap2D
-            . templated class (probably)
+        - Define Critics Manager 
+        - score() each critic
     */
 
-
+    obs_critic_.score(state_, trajectory_, costs_, failed);
     
 }
 
@@ -172,6 +208,21 @@ void Predictor::applyControlConstraints(objects::ControlSequence& sequence)
     ctrl_seq_.wz = xt::clip(ctrl_seq_.wz, cfg_.bounds.min_wz, cfg_.bounds.max_wz);
 
     motion_mdl_ptr_->constrainMotion(ctrl_seq_);
+}
+
+void Predictor::shiftControlSeq()
+{
+    ctrl_seq_.vx = xt::roll(ctrl_seq_.vx, -1);
+    ctrl_seq_.wz = xt::roll(ctrl_seq_.wz, -1);
+
+    xt::view(ctrl_seq_.vx, -1) = xt::view(ctrl_seq_.vx, -2);
+
+    xt::view(ctrl_seq_.wz, -1) = xt::view(ctrl_seq_.wz, -2);
+
+    if (isHolonomic()) {
+        ctrl_seq_.vy = xt::roll(ctrl_seq_.vy, -1);
+        xt::view(ctrl_seq_.vy, -1) = xt::view(ctrl_seq_.vy, -2);
+    }
 }
 
 } // namespace nano_mppic

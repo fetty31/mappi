@@ -7,7 +7,7 @@ namespace nano_mppic::objects {
 
 struct Control
 {
-  float vx, vy, wz;
+  float vx{0.0f}, vy{0.0f}, wz{0.0f};
 };
 
 struct ControlSequence

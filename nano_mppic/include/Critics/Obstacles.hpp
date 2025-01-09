@@ -52,6 +52,9 @@ void Obstacles::configure(std::string name, std::shared_ptr<costmap_2d::Costmap2
     Critic::configure(name, costmap_ros); // call parent function
 
     // findCircumscribedCost();
+    /* To-Do:
+        - get InflationRadius and InflationScaleFactor params
+    */
 
     collision_cost_ = 10000.0f;
     collision_margin_dist_ = 0.1f;

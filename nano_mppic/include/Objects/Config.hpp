@@ -42,6 +42,7 @@ struct Predictor
         unsigned int batch_size;
         unsigned int time_steps;
         unsigned int num_retry;
+        unsigned int offset;
         std::string motion_model;
     } settings;
 
@@ -52,7 +53,6 @@ struct Predictor
     float model_dt;
     float temperature;
     float gamma;
-
 };
 
 } // namespace nano_mppic::config
