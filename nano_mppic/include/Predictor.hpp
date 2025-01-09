@@ -35,17 +35,17 @@ class Predictor {
     // VARIABLES
 
     private:
-        nano_mppic::config::Predictor cfg_;
+        config::Predictor cfg_;
 
-        nano_mppic::objects::ControlSequence ctrl_seq_;
-        nano_mppic::objects::State state_;
-        nano_mppic::objects::Trajectory trajectory_;
+        objects::ControlSequence ctrl_seq_;
+        objects::State state_;
+        objects::Trajectory trajectory_;
 
-        nano_mppic::critics::Obstacles obs_critic_; // To-Do: define critics manager 
+        critics::Obstacles obs_critic_; // To-Do: define critics manager 
 
-        std::unique_ptr<nano_mppic::models::MotionModel> motion_mdl_ptr_;
+        std::unique_ptr<models::MotionModel> motion_mdl_ptr_;
 
-        nano_mppic::utils::NoiseGenerator noise_gen_;
+        utils::NoiseGenerator noise_gen_;
 
         xt::xtensor<float, 1> costs_;
 
@@ -56,15 +56,15 @@ class Predictor {
     public:
         Predictor();
         
-        void configure(nano_mppic::config::Predictor&,
+        void configure(config::Predictor&,
                         std::shared_ptr<costmap_2d::Costmap2DROS>&);
 
         void shutdown();
 
         void reset();
 
-        void getControl(const Odometry2d& odom, 
-                        const Trajectory& plan);
+        void getControl(const objects::Odometry2d& odom, 
+                        const objects::Trajectory& plan);
         
         bool isHolonomic();
 
@@ -76,12 +76,12 @@ class Predictor {
 
         void evalTrajectories();
 
-        void updateControlSeq();
+        void optimizeControlSeq();
 
-        void updateState(nano_mppic::objects::State&,
-                        nano_mppic::objects::Trajectory&);
+        void updateState(objects::State&,
+                        objects::Trajectory&);
 
-        void applyControlConstraints(nano_mppic::objects::ControlSequence&);
+        void applyControlConstraints(objects::ControlSequence&);
 
 };
 

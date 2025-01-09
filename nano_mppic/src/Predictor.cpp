@@ -5,21 +5,18 @@ namespace nano_mppic {
 using namespace xt::placeholders;
 using xt::evaluation_strategy::immediate;
 
-void Predictor::Predictor() : is_configured_(false)
-{
-
-}
+Predictor::Predictor() : is_configured_(false) { }
         
-void Predictor::configure(nano_mppic::config::Predictor& cfg, 
+void Predictor::configure(config::Predictor& cfg, 
                             std::shared_ptr<costmap_2d::Costmap2DROS>& costmap)
 {
     cfg_ = cfg;
     
     // depending on cfg.settings.motion_model -> declare model
     // if(cfg.settings.motion_model == "Ackermann")
-    motion_mdl_ptr_ = std::make_unique<nano_mppic::models::Ackermann>(cfg_.ackermann, cfg_.model_dt);
+    motion_mdl_ptr_ = std::make_unique<models::Ackermann>(cfg_.ackermann, cfg_.model_dt);
     // else
-    //     motion_mdl_ptr_ = std::make_unique<nano_mppic::models::MotionModel>(cfg_.model_dt);
+    //     motion_mdl_ptr_ = std::make_unique<models::MotionModel>(cfg_.model_dt);
 
     noise_gen_.configure(cfg.noise, isHolonomic());
 
@@ -41,14 +38,14 @@ void Predictor::reset()
     trajectory_.reset(cfg_.settings.batch_size, cfg_.settings.time_steps);
     ctrl_seq_.reset(cfg_.settings.time_steps);
 
-    noise_gen.reset(cfg_.noise, isHolonomic());
+    noise_gen_.reset(cfg_.noise, isHolonomic());
 
-    costs_ = xt::zeros<float>({settings_.batch_size});
+    costs_ = xt::zeros<float>({cfg_.settings.batch_size});
 
 }
 
-void Predictor::getControl(const Odometry2d& odom, 
-                            const Trajectory& plan){
+void Predictor::getControl(const objects::Odometry2d& odom, 
+                            const objects::Trajectory& plan){
     
     if(not is_configured_){
         std::cout << "NANO_MPPIC::Predictor ERROR: calling getControl() without Predictor being configured\n";
@@ -80,7 +77,7 @@ void Predictor::predict()
     for(unsigned int i=0; i < cfg_.settings.num_iters; ++i){
         generateNoisedTrajectories();
         evalTrajectories();
-        updateControlSeq();
+        optimizeControlSeq();
     }
 
 }
@@ -104,7 +101,7 @@ void Predictor::evalTrajectories()
     
 }
 
-void Predictor::updateControlSeq()
+void Predictor::optimizeControlSeq()
 {
     auto bounded_noises_vx = state_.cvx - ctrl_seq_.vx;
     auto bounded_noises_wz = state_.cwz - ctrl_seq_.wz;
@@ -137,11 +134,11 @@ void Predictor::updateControlSeq()
     xt::noalias(ctrl_seq_.vy) = xt::sum(state_.cvy * softmaxes_extened, 0, immediate);
     xt::noalias(ctrl_seq_.wz) = xt::sum(state_.cwz * softmaxes_extened, 0, immediate);
 
-    applyControlConstraints();
+    applyControlConstraints(ctrl_seq_);
 }
 
-void Predictor::updateState(nano_mppic::objects::State& st,
-                        nano_mppic::objects::Trajectory& traj)
+void Predictor::updateState(objects::State& st,
+                            objects::Trajectory& traj)
 {
     // Set initial velocities
     xt::noalias(xt::view(st.vx, xt::all(), 0)) = st.odom.vx;
@@ -165,7 +162,7 @@ void Predictor::updateState(nano_mppic::objects::State& st,
     motion_mdl_ptr_->predict(st, traj);
 }
 
-void Predictor::applyControlConstraints(nano_mppic::objects::ControlSequence& sequence)
+void Predictor::applyControlConstraints(objects::ControlSequence& sequence)
 {
     if (isHolonomic()) {
         ctrl_seq_.vy = xt::clip(ctrl_seq_.vy, cfg_.bounds.min_vy, cfg_.bounds.max_vy);

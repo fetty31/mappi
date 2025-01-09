@@ -64,8 +64,10 @@ void Obstacles::score(nano_mppic::objects::State& states,
                     xt::xtensor<float,1>& costs,
                     bool &fail_flag) 
 {
-    if(not costmap_ros_ptr_)
+    if(not costmap_ros_ptr_){
+        std::cout << "NANO_MPPIC::OBSTACLES Error: no costmap object passed to critic function!\n";
         return;
+    }
 
     auto && raw_cost = xt::xtensor<float,1>::from_shape({costs.shape(0)});
     raw_cost.fill(0.0);
