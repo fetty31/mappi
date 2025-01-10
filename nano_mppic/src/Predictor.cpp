@@ -8,7 +8,7 @@ using xt::evaluation_strategy::immediate;
 Predictor::Predictor() : is_configured_(false) { }
         
 void Predictor::configure(config::Predictor& cfg, 
-                            std::shared_ptr<costmap_2d::Costmap2DROS>& costmap)
+                            nano_mppic::shared_ptr<costmap_2d::Costmap2DROS>& costmap)
 {
     cfg_ = cfg;
     
@@ -29,23 +29,23 @@ void Predictor::configure(config::Predictor& cfg,
 
 void Predictor::shutdown()
 {
-
+    noise_gen_.shutdown(); // join noise threads
 }
 
 void Predictor::reset()
 {
-    state_.reset(cfg_.settings.batch_size, cfg_.settings.time_steps);
-    trajectory_.reset(cfg_.settings.batch_size, cfg_.settings.time_steps);
-    ctrl_seq_.reset(cfg_.settings.time_steps);
+    state_.reset(cfg_.noise.batch_size, cfg_.noise.time_steps);
+    trajectory_.reset(cfg_.noise.batch_size, cfg_.noise.time_steps);
+    ctrl_seq_.reset(cfg_.noise.time_steps);
 
     noise_gen_.reset(cfg_.noise, isHolonomic());
 
-    costs_ = xt::zeros<float>({cfg_.settings.batch_size});
+    costs_ = xt::zeros<float>({cfg_.noise.batch_size});
 
 }
 
 objects::Control Predictor::getControl(const objects::Odometry2d& odom, 
-                                        const objects::Trajectory& plan){
+                                        const objects::Path& plan){
 
     static objects::Control output;
     
@@ -55,6 +55,7 @@ objects::Control Predictor::getControl(const objects::Odometry2d& odom,
     }
 
     state_.odom = odom; // update current robot state
+    plan_ = plan;
 
     static bool has_failed = false;
 
@@ -94,8 +95,8 @@ bool Predictor::isHolonomic()
 void Predictor::predict(bool &failed)
 {
     for(unsigned int i=0; i < cfg_.settings.num_iters; ++i){
-        generateNoisedTrajectories();   // integrate new trajectories with new control inputs
-        evalTrajectories(failed);             // evaluate trajectories score
+        generateNoisedTrajectories();   // integrate new trajectories with newly computed control inputs
+        evalTrajectories(failed);       // evaluate trajectories score
         optimizeControlSeq();           // compute optimal control sequence
     }
 
@@ -133,7 +134,7 @@ void Predictor::evalTrajectories(bool &failed)
         - score() each critic
     */
 
-    obs_critic_.score(state_, trajectory_, costs_, failed);
+    obs_critic_.score(state_, trajectory_, plan_, costs_, failed);
     
 }
 
@@ -216,7 +217,6 @@ void Predictor::shiftControlSeq()
     ctrl_seq_.wz = xt::roll(ctrl_seq_.wz, -1);
 
     xt::view(ctrl_seq_.vx, -1) = xt::view(ctrl_seq_.vx, -2);
-
     xt::view(ctrl_seq_.wz, -1) = xt::view(ctrl_seq_.wz, -2);
 
     if (isHolonomic()) {

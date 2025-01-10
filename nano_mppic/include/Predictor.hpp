@@ -40,6 +40,7 @@ class Predictor {
         objects::ControlSequence ctrl_seq_;
         objects::State state_;
         objects::Trajectory trajectory_;
+        objects::Path plan_;
 
         critics::Obstacles obs_critic_; // To-Do: define critics manager 
 
@@ -57,14 +58,14 @@ class Predictor {
         Predictor();
         
         void configure(config::Predictor&,
-                        std::shared_ptr<costmap_2d::Costmap2DROS>&);
+                        nano_mppic::shared_ptr<costmap_2d::Costmap2DROS>&);
 
         void shutdown();
 
         void reset();
 
         objects::Control getControl(const objects::Odometry2d& odom, 
-                                    const objects::Trajectory& plan);
+                                    const objects::Path& plan);
         
         bool isHolonomic();
 

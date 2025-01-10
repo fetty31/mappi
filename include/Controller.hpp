@@ -1,7 +1,9 @@
 #pragma once
 
 #include "nano_mppic/include/Predictor.hpp"
+#include "ROSutils.hpp"
 
+#include <ros/ros.h>
 #include <nav_core/base_local_planner.h>
 
 /* To-Do:
@@ -20,8 +22,13 @@ class NanoMPPIcROS : public nav_core::BaseLocalPlanner {
         costmap_2d::Costmap2DROS* costmap_ros_;
 
         nano_mppic::Predictor nano_mppic_;
+        
+        nano_mppic::objects::Path global_plan_;
+        nano_mppic::objects::Odometry2d current_odom_;
 
         bool initialized_;
+
+        ros::Subscriber odom_sub_;
 
     // FUNCTIONS
 
@@ -32,14 +39,16 @@ class NanoMPPIcROS : public nav_core::BaseLocalPlanner {
 
         void initialize(std::string name, 
                         tf2_ros::Buffer* tf,
-                        costmap_2d::Costmap2DROS* costmap_ros);
+                        costmap_2d::Costmap2DROS* costmap_ros) override;
 
-        void computeVelocityCommands(geometry_msgs::Twist& cmd_vel);
+        bool computeVelocityCommands(geometry_msgs::Twist& cmd_vel) override;
 
-        bool setPlan(const std::vector<geometry_msgs::PoseStamped>& global_plan);
+        bool setPlan(const std::vector<geometry_msgs::PoseStamped>& global_plan) override;
 
-        bool isGoalReached();
+        bool isGoalReached() override;
 
         bool is_initialized();
+
+        void odom_callback(const nav_msgs::Odometry::ConstPtr& msg);
 
 };

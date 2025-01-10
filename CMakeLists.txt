@@ -50,14 +50,19 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${xtensor_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} xtensor ${catkin_LIBRARIES})
 
 # # ROS execs
-# add_executable(${PROJECT_NAME}_exec
-#               src/Controller.cpp
-#               )
+add_executable(${PROJECT_NAME}_local_planner
+              src/Controller.cpp
+              )
 
-# add_dependencies(${PROJECT_NAME}_exec ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME}_local_planner ${catkin_EXPORTED_TARGETS})
 
-# target_link_libraries(${PROJECT_NAME}_exec ${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_local_planner ${PROJECT_NAME} ${catkin_LIBRARIES})
 
 # # Binaries
-# install( TARGETS ${PROJECT_NAME}_exec
-#          DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION} )
+install( TARGETS ${PROJECT_NAME}_local_planner
+         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION} )
+
+install(FILES
+  nano_mppic_plugin.xml
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
