@@ -34,7 +34,7 @@ struct Constraints
     float max_wz, min_wz;
 };
 
-struct Predictor 
+struct MPPIc 
 {
     struct Settings
     {

@@ -1,15 +1,11 @@
-#pragma once
+#ifndef __NANO_MPPIC_ROS_HPP__
+#define __NANO_MPPIC_ROS_HPP__
 
-#include "nano_mppic/include/Predictor.hpp"
+#include "mppic.hpp"
 #include "ROSutils.hpp"
 
 #include <ros/ros.h>
 #include <nav_core/base_local_planner.h>
-
-/* To-Do:
-    - define ROS wrapper of nano_mppic
-    - plugin for ros_nav (BaseLocalPlanner in Noetic)
-*/
 
 class NanoMPPIcROS : public nav_core::BaseLocalPlanner {
 
@@ -19,10 +15,10 @@ class NanoMPPIcROS : public nav_core::BaseLocalPlanner {
 
         tf2_ros::Buffer* tf_;
 
-        costmap_2d::Costmap2DROS* costmap_ros_;
+        nano_mppic::shared_ptr<costmap_2d::Costmap2DROS> costmap_ros_ptr_;
 
-        nano_mppic::Predictor nano_mppic_;
-        
+        nano_mppic::MPPIc nano_mppic_;
+
         nano_mppic::objects::Path global_plan_;
         nano_mppic::objects::Odometry2d current_odom_;
 
@@ -52,3 +48,5 @@ class NanoMPPIcROS : public nav_core::BaseLocalPlanner {
         void odom_callback(const nav_msgs::Odometry::ConstPtr& msg);
 
 };
+
+#endif

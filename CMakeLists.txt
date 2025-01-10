@@ -15,6 +15,7 @@ find_package(xtensor REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   nav_msgs
+  geometry_msgs
   costmap_2d
   tf2
 )
@@ -22,11 +23,12 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
  INCLUDE_DIRS include nano_mppic/include
  LIBRARIES ${PROJECT_NAME}
- CATKIN_DEPENDS roscpp nav_msgs tf2 costmap_2d
+ CATKIN_DEPENDS roscpp nav_msgs tf2 costmap_2d geometry_msgs
 #  DEPENDS XTENSOR
 )
 
 include_directories(
+  include
   nano_mppic/include
   ${catkin_INCLUDE_DIRS}
   ${xtensor_INLCUDE_DIRS}
@@ -41,24 +43,23 @@ if(HAS_CPUID)
   add_compile_definitions(HAS_CPUID)
 endif()
 
-# Nano MPPIC
+# Nano MPPIC (standalone lib)
 add_library(${PROJECT_NAME} 
-            nano_mppic/src/Predictor.cpp
+            nano_mppic/src/mppic.cpp
             )
 target_compile_options(${PROJECT_NAME} PUBLIC)
 target_include_directories(${PROJECT_NAME} PUBLIC ${xtensor_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} xtensor ${catkin_LIBRARIES})
 
-# # ROS execs
-add_executable(${PROJECT_NAME}_local_planner
+# ROS nano MPPIC library
+add_library(${PROJECT_NAME}_local_planner
               src/Controller.cpp
               )
 
-add_dependencies(${PROJECT_NAME}_local_planner ${catkin_EXPORTED_TARGETS})
-
+add_dependencies(${PROJECT_NAME}_local_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${PROJECT_NAME}_local_planner ${PROJECT_NAME} ${catkin_LIBRARIES})
 
-# # Binaries
+# Binaries
 install( TARGETS ${PROJECT_NAME}_local_planner
          LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION} )
 

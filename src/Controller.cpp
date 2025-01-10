@@ -14,7 +14,7 @@ NanoMPPIcROS::NanoMPPIcROS() : initialized_(false)
 
 }
 
-~NanoMPPIcROS::NanoMPPIcROS()
+NanoMPPIcROS::~NanoMPPIcROS()
 {
     nano_mppic_.shutdown();
 }
@@ -26,7 +26,7 @@ void NanoMPPIcROS::initialize(std::string name,
 
     // Set up private ROS handlers (tf, costmap, node)
     tf_ = tf;
-    costmap_ros_ = costmap_ros;
+    costmap_ros_ptr_ = nano_mppic::shared_ptr<costmap_2d::Costmap2DROS>(costmap_ros);
 
     ros::NodeHandle nh("~/" + name);
     odom_sub_ = nh.subscribe<nav_msgs::Odometry>( "/fast_limo/state", 1,
@@ -35,7 +35,7 @@ void NanoMPPIcROS::initialize(std::string name,
     /*To-Do:
         - fill nano_mppic::config obj with ROS params
     */
-    nano_mppic::config::Predictor config;
+    nano_mppic::config::MPPIc config;
     config.settings.num_iters = 4;
     config.settings.num_retry = 2;
     config.settings.offset = 1;
@@ -60,7 +60,7 @@ void NanoMPPIcROS::initialize(std::string name,
     config.temperature = 1.0;
     config.gamma = 1.0;
 
-    nano_mppic_.configure(config, costmap_ros);
+    nano_mppic_.configure(config, costmap_ros_ptr_);
 
     initialized_ = true;
 }
@@ -69,15 +69,16 @@ bool NanoMPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 {
     if(not is_initialized()) return false;
 
-    static geometric_msgs::PoseStamped current_pose;
-    if(not costmap_ros_->getRobotPose(current_pose)){
+    static geometry_msgs::PoseStamped current_pose;
+    if(not costmap_ros_ptr_->getRobotPose(current_pose)){
         ROS_ERROR("NANO_MPPIC could not get robot pose!");
         cmd_vel.linear.x = 0.0;
         cmd_vel.linear.y = 0.0;
         cmd_vel.angular.z = 0.0;
         return false;
     }
-    // nano_mppic::objects::Odometry2d odom = ros_utils::ros2mppic(current_pose);
+    // nano_mppic::objects::Odometry2d odom;
+    // ros_utils::ros2mppic(current_pose, odom);
 
     nano_mppic::objects::Control cmd = nano_mppic_.getControl(current_odom_, global_plan_);
     cmd_vel.linear.x  = cmd.vx;
@@ -88,7 +89,8 @@ bool NanoMPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 
 bool NanoMPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_plan)
 {
-    global_plan_ = ros_utils::ros2mppic(global_plan)
+    ros_utils::ros2mppic(global_plan, global_plan_);
+    return true;
 }
 
 bool NanoMPPIcROS::isGoalReached()
@@ -109,7 +111,7 @@ bool NanoMPPIcROS::isGoalReached()
 
 void NanoMPPIcROS::odom_callback(const nav_msgs::Odometry::ConstPtr& msg)
 {
-    current_odom_ = ros_utils::ros2mppic(*msg);
+    ros_utils::ros2mppic(*msg, current_odom_);
 }
 
 bool NanoMPPIcROS::is_initialized()
