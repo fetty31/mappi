@@ -15,7 +15,6 @@ auto normalize_angles(const T & angles)
   return xt::eval(xt::where(theta <= 0.0, theta + M_PI, theta - M_PI));
 }
 
-
 }
 
 

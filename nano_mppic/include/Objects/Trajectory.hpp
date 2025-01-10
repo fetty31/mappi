@@ -20,6 +20,21 @@ struct Trajectory
 
 };
 
+struct Path
+{
+    xt::xtensor<float, 1> x;
+    xt::xtensor<float, 1> y;
+    xt::xtensor<float, 1> yaw;
+
+    void reset(unsigned int size)
+    {
+        x = xt::zeros<float>({size});
+        y = xt::zeros<float>({size});
+        yaw = xt::zeros<float>({size});
+    }
+
+};
+
 } // namespace nano_mppic::objects
 
 #endif

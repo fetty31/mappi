@@ -1,5 +1,5 @@
-#ifndef __NANO_MPPIC_PREDICTOR_HPP__
-#define __NANO_MPPIC_PREDICTOR_HPP__
+#ifndef __NANO_MPPIC_HPP__
+#define __NANO_MPPIC_HPP__
 
 #include "Models/Ackermann.hpp"
 #include "Models/Holonomic.hpp"
@@ -18,7 +18,7 @@
 
 namespace nano_mppic {
 
-class Predictor {
+class MPPIc {
 
     /* Description:
         - should be responsible for:
@@ -35,11 +35,12 @@ class Predictor {
     // VARIABLES
 
     private:
-        config::Predictor cfg_;
+        config::MPPIc cfg_;
 
         objects::ControlSequence ctrl_seq_;
         objects::State state_;
         objects::Trajectory trajectory_;
+        objects::Path plan_;
 
         critics::Obstacles obs_critic_; // To-Do: define critics manager 
 
@@ -54,17 +55,17 @@ class Predictor {
     // FUNCTIONS
 
     public:
-        Predictor();
+        MPPIc();
         
-        void configure(config::Predictor&,
-                        std::shared_ptr<costmap_2d::Costmap2DROS>&);
+        void configure(config::MPPIc&,
+                        nano_mppic::shared_ptr<nav2_costmap_2d::Costmap2DROS>&);
 
         void shutdown();
 
         void reset();
 
         objects::Control getControl(const objects::Odometry2d& odom, 
-                                    const objects::Trajectory& plan);
+                                    const objects::Path& plan);
         
         bool isHolonomic();
 

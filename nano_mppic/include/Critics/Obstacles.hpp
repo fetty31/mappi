@@ -23,12 +23,15 @@ class Obstacles : public Critic {
     public:
         Obstacles();
         
-        void configure(std::string name, std::shared_ptr<nav2_costmap_2d::Costmap2DROS>& costmap_ros);
+        void configure(std::string name, 
+                        nano_mppic::shared_ptr
+                            <nav2_costmap_2d::Costmap2DROS>& costmap_ros);
 
         void score(nano_mppic::objects::State& states,
-                            nano_mppic::objects::Trajectory& trajectories,
-                            xt::xtensor<float,1>& costs,
-                            bool &all_traj_collide) override;
+                    nano_mppic::objects::Trajectory& trajectories,
+                    nano_mppic::objects::Path& plan,
+                    xt::xtensor<float,1>& costs,
+                    bool &all_traj_collide) override;
 
     private:
         unsigned char costAtPose(float x, float y, float yaw);
@@ -47,7 +50,9 @@ Obstacles::Obstacles() : inflation_radius_(0.0f),
                 critical_weight_(10.0f),
                 power_(1.0f) { }
 
-void Obstacles::configure(std::string name, std::shared_ptr<nav2_costmap_2d::Costmap2DROS>& costmap_ros){
+void Obstacles::configure(std::string name, 
+                            nano_mppic::shared_ptr
+                                <nav2_costmap_2d::Costmap2DROS>& costmap_ros){
 
     Critic::configure(name, costmap_ros); // call parent function
 
@@ -64,6 +69,7 @@ void Obstacles::configure(std::string name, std::shared_ptr<nav2_costmap_2d::Cos
 
 void Obstacles::score(nano_mppic::objects::State& states,
                     nano_mppic::objects::Trajectory& trajectories,
+                    nano_mppic::objects::Path& plan,
                     xt::xtensor<float,1>& costs,
                     bool &fail_flag) 
 {
@@ -120,13 +126,13 @@ bool Obstacles::isInCollision(unsigned char cost){
         costmap_ros_ptr_->getLayeredCostmap()->isTrackingUnknown();
 
     switch(cost) {
-        case(costmap_2d::LETHAL_OBSTACLE):
+        case(nav2_costmap_2d::LETHAL_OBSTACLE):
             return true;
-        case(costmap_2d::INSCRIBED_INFLATED_OBSTACLE):
+        case(nav2_costmap_2d::INSCRIBED_INFLATED_OBSTACLE):
             return true;
-        case(costmap_2d::NO_INFORMATION):
+        case(nav2_costmap_2d::NO_INFORMATION):
             return is_tracking_unkown ? false : true;
-        case(costmap_2d::FREE_SPACE):
+        case(nav2_costmap_2d::FREE_SPACE):
             return false;
         default:
             return false;
