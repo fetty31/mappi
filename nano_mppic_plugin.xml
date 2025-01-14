@@ -1,5 +1,5 @@
 <library path="lib/libnano_mppic_local_planner">
-  <class name="NanoMPPIPlannerROS" type="NanoMPPIcROS" base_class_type="nav_core::BaseLocalPlanner">
+  <class name="nano_mppic/MPPIPlannerROS" type="NanoMPPIcROS" base_class_type="nav_core::BaseLocalPlanner">
     <description>
       Nano implementation of the Model Predictive Path Integral Controller (MPPIC)
     </description>

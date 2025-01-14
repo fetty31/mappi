@@ -9,6 +9,9 @@
 
 #include <tf2/utils.h>
 
+//register this planner as a BaseLocalPlanner plugin
+PLUGINLIB_EXPORT_CLASS(NanoMPPIcROS, nav_core::BaseLocalPlanner)
+
 NanoMPPIcROS::NanoMPPIcROS() : initialized_(false)
 {
 
@@ -118,5 +121,3 @@ bool NanoMPPIcROS::is_initialized()
 {
     return initialized_;
 }
-
-PLUGINLIB_EXPORT_CLASS(NanoMPPIcROS, nav_core::BaseLocalPlanner)

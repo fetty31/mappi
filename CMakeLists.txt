@@ -22,7 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 catkin_package(
  INCLUDE_DIRS include nano_mppic/include
- LIBRARIES ${PROJECT_NAME}
+ LIBRARIES ${PROJECT_NAME}_local_planner
  CATKIN_DEPENDS roscpp nav_msgs tf2 costmap_2d geometry_msgs
 #  DEPENDS XTENSOR
 )
@@ -60,8 +60,10 @@ add_dependencies(${PROJECT_NAME}_local_planner ${${PROJECT_NAME}_EXPORTED_TARGET
 target_link_libraries(${PROJECT_NAME}_local_planner ${PROJECT_NAME} ${catkin_LIBRARIES})
 
 # Binaries
-install( TARGETS ${PROJECT_NAME}_local_planner
-         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION} )
+install(TARGETS ${PROJECT_NAME}_local_planner
+         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+         RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION})
 
 install(FILES
   nano_mppic_plugin.xml
