@@ -76,14 +76,13 @@ void NoiseGenerator::shutdown()
 void NoiseGenerator::reset(nano_mppic::config::Noise cfg, bool is_holonomic)
 {
     // Recompute the noises on reset
-    {
-        std::unique_lock<std::mutex> guard(noise_lock_);
-        xt::noalias(noises_vx_) = xt::zeros<float>({cfg_.batch_size, cfg_.time_steps});
-        xt::noalias(noises_vy_) = xt::zeros<float>({cfg_.batch_size, cfg_.time_steps});
-        xt::noalias(noises_wz_) = xt::zeros<float>({cfg_.batch_size, cfg_.time_steps});
-        is_holonomic_ = is_holonomic;
-        ready_ = true;
-    }
+    std::unique_lock<std::mutex> guard(noise_lock_);
+    xt::noalias(noises_vx_) = xt::zeros<float>({cfg_.batch_size, cfg_.time_steps});
+    xt::noalias(noises_vy_) = xt::zeros<float>({cfg_.batch_size, cfg_.time_steps});
+    xt::noalias(noises_wz_) = xt::zeros<float>({cfg_.batch_size, cfg_.time_steps});
+    is_holonomic_ = is_holonomic;
+
+    ready_ = true;
     noise_cond_.notify_all();
 }
 
@@ -96,10 +95,7 @@ void NoiseGenerator::getControls(nano_mppic::objects::State& state,
     xt::noalias(state.cvy) = ctrl_seq.vy + noises_vy_;
     xt::noalias(state.cwz) = ctrl_seq.wz + noises_wz_;
 
-    {
-    std::unique_lock<std::mutex> guard(noise_lock_);
     ready_ = true;
-    }
     noise_cond_.notify_all();
 }
 
@@ -108,8 +104,8 @@ void NoiseGenerator::noiseThread()
     do {
         std::unique_lock<std::mutex> guard(noise_lock_);
         noise_cond_.wait(guard, [this]() {return ready_;});
-        ready_ = false;
         generateNoise();
+        ready_ = false;
     } while (active_);
 }
 

@@ -21,6 +21,8 @@ void MPPIc::configure(config::MPPIc& cfg,
     noise_gen_.configure(cfg.noise, isHolonomic());
 
     obs_critic_.configure("obstacles_critic", costmap);
+    goal_critic_.configure("goal_critic", costmap);
+    pathfollow_critic_.configure("pathfollow_critic", costmap);
 
     this->reset(); // quick set up of obj dimensions
 
@@ -47,6 +49,8 @@ void MPPIc::reset()
 objects::Control MPPIc::getControl(const objects::Odometry2d& odom, 
                                         const objects::Path& plan){
 
+    std::cout << "NANO_MPPIC::MPPIc::getControl()\n";
+
     static objects::Control output;
     
     if(not is_configured_){
@@ -61,7 +65,12 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
 
     // Predict trajectories
     do {
+        std::cout << "NANO_MPPIC::MPPIc predict\n";
         predict(has_failed);
+        if(has_failed)
+            std::cout << "NANO_MPPIC::MPPIc prediction failed\n";
+        else
+            std::cout << "NANO_MPPIC::MPPIc prediction done\n";
     } while (fallback(has_failed));
 
     // filter control sequence (smooth out)
@@ -116,6 +125,7 @@ bool MPPIc::fallback(bool &failed)
     if(++count > cfg_.settings.num_retry){
         count = 0;
         throw std::runtime_error("NANO_MPPIC::MPPIc Error: failed to compute any path");
+        return false;
     }
 
     return true;
@@ -123,6 +133,8 @@ bool MPPIc::fallback(bool &failed)
 
 void MPPIc::generateNoisedTrajectories()
 {
+    std::cout << "NANO_MPPIC::MPPIc::generateNoisedTrajectories()\n";
+
     noise_gen_.getControls(state_, ctrl_seq_);  // generate control noise
     updateState(state_, trajectory_);           // predict trajectories with new controls 
 }
@@ -134,7 +146,11 @@ void MPPIc::evalTrajectories(bool &failed)
         - score() each critic
     */
 
+    std::cout << "NANO_MPPIC::MPPIc::evalTrajectories()\n";
+
     obs_critic_.score(state_, trajectory_, plan_, costs_, failed);
+    goal_critic_.score(state_, trajectory_, plan_, costs_, failed);
+    pathfollow_critic_.score(state_, trajectory_, plan_, costs_, failed);
     
 }
 
@@ -177,6 +193,9 @@ void MPPIc::optimizeControlSeq()
 void MPPIc::updateState(objects::State& st,
                             objects::Trajectory& traj)
 {
+
+    std::cout << "NANO_MPPIC::MPPIc::updateState()\n";
+
     // Set initial velocities
     xt::noalias(xt::view(st.vx, xt::all(), 0)) = st.odom.vx;
     xt::noalias(xt::view(st.wz, xt::all(), 0)) = st.odom.wz;

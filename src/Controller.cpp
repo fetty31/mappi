@@ -1,20 +1,21 @@
 #include "Controller.hpp"
 
-#include <ros/console.h>
-
 #include <pluginlib/class_list_macros.h>
-#include <base_local_planner/goal_functions.h>
+// #include <base_local_planner/goal_functions.h>
 
 #include <nav_msgs/Path.h>
 
-#include <tf2/utils.h>
-
-//register this planner as a BaseLocalPlanner plugin
-PLUGINLIB_EXPORT_CLASS(NanoMPPIcROS, nav_core::BaseLocalPlanner)
-
-NanoMPPIcROS::NanoMPPIcROS() : initialized_(false)
+NanoMPPIcROS::NanoMPPIcROS() : tf_(NULL), initialized_(false)
 {
 
+}
+
+NanoMPPIcROS::NanoMPPIcROS(std::string name, 
+                            tf2_ros::Buffer* tf,
+                            costmap_2d::Costmap2DROS* costmap_ros)
+    : tf_(NULL), initialized_(false)
+{
+    initialize(name, tf, costmap_ros);
 }
 
 NanoMPPIcROS::~NanoMPPIcROS()
@@ -27,12 +28,14 @@ void NanoMPPIcROS::initialize(std::string name,
                                 costmap_2d::Costmap2DROS* costmap_ros)
 {
 
+    ROS_INFO("NANO_MPPIC:: Initializing...");
+
     // Set up private ROS handlers (tf, costmap, node)
     tf_ = tf;
     costmap_ros_ptr_ = nano_mppic::shared_ptr<costmap_2d::Costmap2DROS>(costmap_ros);
 
     ros::NodeHandle nh("~/" + name);
-    odom_sub_ = nh.subscribe<nav_msgs::Odometry>( "/fast_limo/state", 1,
+    odom_sub_ = nh.subscribe<nav_msgs::Odometry>( "/ona2/fast_limo/state", 1,
                     boost::bind( &NanoMPPIcROS::odom_callback, this, _1 ));
 
     /*To-Do:
@@ -66,10 +69,15 @@ void NanoMPPIcROS::initialize(std::string name,
     nano_mppic_.configure(config, costmap_ros_ptr_);
 
     initialized_ = true;
+
+    ROS_INFO("NANO_MPPIC:: Finished initializing");
 }
 
 bool NanoMPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 {
+
+    ROS_INFO("NANO_MPPIC:: Start computing new Velocity commands");
+
     if(not is_initialized()) return false;
 
     static geometry_msgs::PoseStamped current_pose;
@@ -82,16 +90,22 @@ bool NanoMPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
     }
     // nano_mppic::objects::Odometry2d odom;
     // ros_utils::ros2mppic(current_pose, odom);
+    
+    ROS_INFO("NANO_MPPIC:: accessing nano_mppic controller for optimal cmd_vel");
 
     nano_mppic::objects::Control cmd = nano_mppic_.getControl(current_odom_, global_plan_);
     cmd_vel.linear.x  = cmd.vx;
     cmd_vel.linear.y  = cmd.vy;
     cmd_vel.angular.z = cmd.wz;
+
+    ROS_INFO("NANO_MPPIC:: Velocity commands computed!");
+
     return true;
 }
 
 bool NanoMPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_plan)
 {
+    ROS_INFO("NANO_MPPIC:: setting new global plan");
     ros_utils::ros2mppic(global_plan, global_plan_);
     return true;
 }
@@ -102,6 +116,8 @@ bool NanoMPPIcROS::isGoalReached()
         ROS_ERROR("NANO_MPPIC: this planner/controller has not been initialized, please call initialize() before using this planner");
         return false;
     }
+
+    ROS_INFO("NANO_MPPIC:: checking if Goal is reached");
 
     // if()
     // {
@@ -115,9 +131,13 @@ bool NanoMPPIcROS::isGoalReached()
 void NanoMPPIcROS::odom_callback(const nav_msgs::Odometry::ConstPtr& msg)
 {
     ros_utils::ros2mppic(*msg, current_odom_);
+    ROS_INFO_ONCE("NANO_MPPIC::odom_callback started");
 }
 
 bool NanoMPPIcROS::is_initialized()
 {
     return initialized_;
 }
+
+//register this planner as a BaseLocalPlanner plugin
+PLUGINLIB_EXPORT_CLASS(NanoMPPIcROS, nav_core::BaseLocalPlanner)

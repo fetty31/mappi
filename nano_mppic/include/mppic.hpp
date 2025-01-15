@@ -5,6 +5,8 @@
 #include "Models/Holonomic.hpp"
 
 #include "Critics/Obstacles.hpp"
+#include "Critics/Goal.hpp"
+#include "Critics/PathFollow.hpp"
 
 #include "Objects/State.hpp"
 #include "Objects/Trajectory.hpp"
@@ -42,7 +44,10 @@ class MPPIc {
         objects::Trajectory trajectory_;
         objects::Path plan_;
 
-        critics::Obstacles obs_critic_; // To-Do: define critics manager 
+        // To-Do: define critics manager 
+        critics::Obstacles obs_critic_; 
+        critics::Goal goal_critic_; 
+        critics::PathFollow pathfollow_critic_; 
 
         std::unique_ptr<models::MotionModel> motion_mdl_ptr_;
 

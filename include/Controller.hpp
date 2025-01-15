@@ -4,8 +4,13 @@
 #include "mppic.hpp"
 #include "ROSutils.hpp"
 
-#include <ros/ros.h>
 #include <nav_core/base_local_planner.h>
+
+#include <ros/ros.h>
+#include <tf2_ros/buffer.h>
+#include <costmap_2d/costmap_2d_ros.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Twist.h>
 
 class NanoMPPIcROS : public nav_core::BaseLocalPlanner {
 
@@ -31,6 +36,10 @@ class NanoMPPIcROS : public nav_core::BaseLocalPlanner {
     public:
 
         NanoMPPIcROS();
+        NanoMPPIcROS(std::string name, 
+                        tf2_ros::Buffer* tf,
+                        costmap_2d::Costmap2DROS* costmap_ros);
+        
         ~NanoMPPIcROS();
 
         void initialize(std::string name, 

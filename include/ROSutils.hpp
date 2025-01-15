@@ -2,8 +2,6 @@
 
 #include "mppic.hpp"
 
-#include <xtensor/xadapt.hpp>
-
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Odometry.h>
 #include <tf2/utils.h>
@@ -13,7 +11,6 @@ namespace ros_utils {
 void ros2mppic(const std::vector<geometry_msgs::PoseStamped>& in_path, 
                 nano_mppic::objects::Path& out_path)
 {
-
     out_path.reset(in_path.size());
 
     for (size_t i=0; i < in_path.size(); ++i) {
@@ -21,31 +18,6 @@ void ros2mppic(const std::vector<geometry_msgs::PoseStamped>& in_path,
         out_path.y(i) = in_path[i].pose.position.y;
         out_path.yaw(i) = tf2::getYaw(in_path[i].pose.orientation);
     }
-
-    // std::vector<float> x_values, y_values, yaw_values;
-    // x_values.reserve(in_path.size()); 
-    // y_values.reserve(in_path.size()); 
-    // yaw_values.reserve(in_path.size());
-
-    // for(auto pose : in_path){
-    //     x_values.push_back(pose.pose.position.x);
-    //     y_values.push_back(pose.pose.position.y);
-
-    //     tf2::Quaternion q(
-    //         pose.pose.orientation.x,
-    //         pose.pose.orientation.y,
-    //         pose.pose.orientation.z,
-    //         pose.pose.orientation.w);
-    //     tf2::Matrix3x3 m(q);
-    //     static double roll, pitch, yaw;
-    //     m.getRPY(roll, pitch, yaw);
-
-    //     yaw_values.push_back(yaw);
-    // }
-    
-    // out_path.x   = xt::adapt(x_values);
-    // out_path.y   = xt::adapt(y_values);
-    // out_path.yaw = xt::adapt(yaw_values);
 }
 
 void ros2mppic(const geometry_msgs::PoseStamped& in_pose, 

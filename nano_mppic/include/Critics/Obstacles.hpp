@@ -3,8 +3,6 @@
 
 #include "Critics/Critic.hpp"
 
-#include <boost/shared_ptr.hpp>
-
 namespace nano_mppic::critics {
 
 class Obstacles : public Critic {
@@ -34,9 +32,6 @@ class Obstacles : public Critic {
                     bool &all_traj_collide) override;
 
     private:
-        unsigned char costAtPose(float x, float y, float yaw);
-
-        bool isInCollision(unsigned char cost);
 
         float dist2obstacle(unsigned char cost);
 
@@ -58,12 +53,15 @@ void Obstacles::configure(std::string name,
 
     // findCircumscribedCost();
     /* To-Do:
-        - get InflationRadius and InflationScaleFactor params
+        - update params
+        - get InflationRadius and InflationScaleFactor params from costmapROS ???
     */
 
     collision_cost_ = 10000.0f;
     collision_margin_dist_ = 0.1f;
     critical_weight_ = 10.0f;
+    inflation_scale_factor_ = 10.0f;
+    inflation_radius_ = 0.55f;
     power_ = 2.0f;
 }
 
@@ -73,6 +71,8 @@ void Obstacles::score(nano_mppic::objects::State& states,
                     xt::xtensor<float,1>& costs,
                     bool &fail_flag) 
 {
+    std::cout << "NANO_MPPIC::MPPIc::Obstacles::score()\n";
+
     if(not costmap_ros_ptr_){
         std::cout << "NANO_MPPIC::OBSTACLES Error: no costmap object passed to critic function!\n";
         return;
@@ -88,11 +88,11 @@ void Obstacles::score(nano_mppic::objects::State& states,
         float cost = 0.0;
         
         for(size_t j=0; j < n_traj; j++){
-            unsigned char cost_c = costAtPose(trajectories.x(i,j), trajectories.y(i,j), trajectories.yaw(i,j));
+            unsigned char cost_c = this->costAtPose(trajectories.x(i,j), trajectories.y(i,j), trajectories.yaw(i,j));
             if(cost_c < 1) // free space
                 continue; 
             
-            if(isInCollision(cost_c)){
+            if(this->isInCollision(cost_c)){
                 collision = true;
                 break;
             }
@@ -106,37 +106,16 @@ void Obstacles::score(nano_mppic::objects::State& states,
                 cost += (collision_margin_dist_ - dist2obs);
         }
 
+        if(collision){
+            std::cout << "NANO_MPPIC::MPPIc::Obstacles collision detected!\n";
+        }
+
         if(not collision) all_collide = false;
         raw_cost[i] = collision ? collision_cost_ : cost;
     }
 
     costs += xt::pow( (critical_weight_ * raw_cost), power_);
     fail_flag = all_collide;
-}
-
-unsigned char Obstacles::costAtPose(float x, float y, float yaw){
-    unsigned int x_i, y_i;
-    costmap_ptr_->worldToMap(x, y, x_i, y_i);
-    
-    return costmap_ptr_->getCost(x_i, y_i);
-}
-
-bool Obstacles::isInCollision(unsigned char cost){
-    bool is_tracking_unkown = 
-        costmap_ros_ptr_->getLayeredCostmap()->isTrackingUnknown();
-
-    switch(cost) {
-        case(costmap_2d::LETHAL_OBSTACLE):
-            return true;
-        case(costmap_2d::INSCRIBED_INFLATED_OBSTACLE):
-            return true;
-        case(costmap_2d::NO_INFORMATION):
-            return is_tracking_unkown ? false : true;
-        case(costmap_2d::FREE_SPACE):
-            return false;
-        default:
-            return false;
-    }
 }
 
 float Obstacles::dist2obstacle(unsigned char cost){

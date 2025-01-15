@@ -33,6 +33,8 @@ class MotionModel {
         {
             const double initial_yaw = st.odom.yaw;
 
+            std::cout << "NANO_MPPIC::MotionModel integrating states\n";
+
             xt::noalias(traj.yaw) =
                 aux::normalize_angles(xt::cumsum(st.wz * model_dt, 1) + initial_yaw);
 
