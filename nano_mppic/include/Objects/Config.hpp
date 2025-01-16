@@ -39,8 +39,6 @@ struct MPPIc
     struct Settings
     {
         unsigned int num_iters;
-        unsigned int batch_size;
-        unsigned int time_steps;
         unsigned int num_retry;
         unsigned int offset;
         std::string motion_model;
@@ -53,7 +51,16 @@ struct MPPIc
     float model_dt;
     float temperature;
     float gamma;
+
+    void print_out();
 };
+
+void MPPIc::print_out(){
+    std::cout << "//////////////// MPPIc::Configuration ////////////////\n";
+    std::cout << "model_dt: " << model_dt 
+    << "//////////////////////////////////////////////////////\n" <<
+    std::endl;
+}
 
 } // namespace nano_mppic::config
 

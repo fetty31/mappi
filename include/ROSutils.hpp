@@ -3,10 +3,15 @@
 #include "mppic.hpp"
 
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Pose.h>
+#include <std_msgs/ColorRGBA.h>
 #include <nav_msgs/Odometry.h>
-#include <tf2/utils.h>
+#include <visualization_msgs/Marker.h>
 
-namespace ros_utils {
+#include <tf2/utils.h>
+#include <tf2/LinearMath/Quaternion.h>
+
+namespace nano_mppic::ros_utils {
 
 void ros2mppic(const std::vector<geometry_msgs::PoseStamped>& in_path, 
                 nano_mppic::objects::Path& out_path)
@@ -43,4 +48,73 @@ void ros2mppic(const nav_msgs::Odometry& in_odom,
     out_odom.stamp = static_cast<float>(in_odom.header.stamp.toSec());
 }
 
-} // namespace ros_utils
+void mppic2ros(const nano_mppic::objects::Path& in_path, 
+                std::vector<geometry_msgs::PoseStamped>& out_path)
+{
+    out_path.reserve(in_path.x.size());
+
+    for (size_t i=0; i < in_path.x.size(); ++i) {
+        static geometry_msgs::PoseStamped pose_msg;
+        pose_msg.pose.position.x = in_path.x(i);
+        pose_msg.pose.position.y = in_path.y(i);
+
+        tf2::Quaternion q;
+        q.setRPY( 0, 0, in_path.yaw(i) ); 
+        pose_msg.pose.orientation = tf2::toMsg(q);
+
+        out_path.push_back(pose_msg);
+    }
+}
+
+inline geometry_msgs::Pose createPose(double x, double y, double z)
+{
+    geometry_msgs::Pose pose;
+    pose.position.x = x;
+    pose.position.y = y;
+    pose.position.z = z;
+    pose.orientation.w = 1;
+    pose.orientation.x = 0;
+    pose.orientation.y = 0;
+    pose.orientation.z = 0;
+    return pose;
+}
+
+inline geometry_msgs::Vector3 createScale(double x, double y, double z)
+{
+    geometry_msgs::Vector3 scale;
+    scale.x = x;
+    scale.y = y;
+    scale.z = z;
+    return scale;
+}
+
+inline std_msgs::ColorRGBA createColor(float r, float g, float b, float a)
+{
+    std_msgs::ColorRGBA color;
+    color.r = r;
+    color.g = g;
+    color.b = b;
+    color.a = a;
+    return color;
+}
+
+inline visualization_msgs::Marker createMarker( 
+    int id, const geometry_msgs::Pose & pose, const geometry_msgs::Vector3 & scale,
+    const std_msgs::ColorRGBA & color, const std::string & frame_id)
+{
+    using visualization_msgs::Marker;
+    Marker marker;
+    marker.header.frame_id = frame_id;
+    marker.header.stamp = ros::Time::now();
+    marker.ns = "mppic_traj";
+    marker.id = id;
+    marker.type = Marker::SPHERE;
+    marker.action = Marker::ADD;
+
+    marker.pose = pose;
+    marker.scale = scale;
+    marker.color = color;
+    return marker;
+}
+
+} // namespace nano_mppic::ros_utils

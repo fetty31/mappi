@@ -16,6 +16,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   nav_msgs
   geometry_msgs
+  std_msgs
+  visualization_msgs
   costmap_2d
   nav_core
   tf2
@@ -24,7 +26,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
  INCLUDE_DIRS include nano_mppic/include
  LIBRARIES ${PROJECT_NAME}_local_planner
- CATKIN_DEPENDS roscpp nav_msgs tf2 costmap_2d geometry_msgs nav_core
+ CATKIN_DEPENDS roscpp nav_msgs tf2 costmap_2d geometry_msgs nav_core visualization_msgs std_msgs
 #  DEPENDS XTENSOR
 )
 

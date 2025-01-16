@@ -74,6 +74,9 @@ class MPPIc {
         
         bool isHolonomic();
 
+        objects::Trajectory getCandidateTrajectories();
+        objects::Path       getCurrentPlan();
+
     private:
 
         void predict(bool &failed);

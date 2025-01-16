@@ -3,6 +3,7 @@
 
 #include "mppic.hpp"
 #include "ROSutils.hpp"
+#include "Visualizer.hpp"
 
 #include <nav_core/base_local_planner.h>
 
@@ -12,7 +13,9 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
 
-class NanoMPPIcROS : public nav_core::BaseLocalPlanner {
+namespace nano_mppic {
+
+class MPPIcROS : public nav_core::BaseLocalPlanner {
 
      // VARIABLES
 
@@ -20,12 +23,13 @@ class NanoMPPIcROS : public nav_core::BaseLocalPlanner {
 
         tf2_ros::Buffer* tf_;
 
-        nano_mppic::shared_ptr<costmap_2d::Costmap2DROS> costmap_ros_ptr_;
+        shared_ptr<costmap_2d::Costmap2DROS> costmap_ros_ptr_;
 
-        nano_mppic::MPPIc nano_mppic_;
+        MPPIc nano_mppic_;
+        std::unique_ptr<Visualizer> vis_ptr_;
 
-        nano_mppic::objects::Path global_plan_;
-        nano_mppic::objects::Odometry2d current_odom_;
+        objects::Path global_plan_;
+        objects::Odometry2d current_odom_;
 
         bool initialized_;
 
@@ -35,12 +39,12 @@ class NanoMPPIcROS : public nav_core::BaseLocalPlanner {
 
     public:
 
-        NanoMPPIcROS();
-        NanoMPPIcROS(std::string name, 
+        MPPIcROS();
+        MPPIcROS(std::string name, 
                         tf2_ros::Buffer* tf,
                         costmap_2d::Costmap2DROS* costmap_ros);
         
-        ~NanoMPPIcROS();
+        ~MPPIcROS();
 
         void initialize(std::string name, 
                         tf2_ros::Buffer* tf,
@@ -57,5 +61,7 @@ class NanoMPPIcROS : public nav_core::BaseLocalPlanner {
         void odom_callback(const nav_msgs::Odometry::ConstPtr& msg);
 
 };
+
+} // namespace nano_mppic
 
 #endif

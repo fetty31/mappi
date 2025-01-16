@@ -13,10 +13,10 @@ void MPPIc::configure(config::MPPIc& cfg,
     cfg_ = cfg;
     
     // depending on cfg.settings.motion_model -> declare model
-    // if(cfg.settings.motion_model == "Ackermann")
-    motion_mdl_ptr_ = std::make_unique<models::Ackermann>(cfg_.ackermann, cfg_.model_dt);
-    // else
-    //     motion_mdl_ptr_ = std::make_unique<models::MotionModel>(cfg_.model_dt);
+    if(cfg.settings.motion_model == "Ackermann")
+        motion_mdl_ptr_ = std::make_unique<models::Ackermann>(cfg_.ackermann, cfg_.model_dt);
+    else
+        motion_mdl_ptr_ = std::make_unique<models::Holonomic>(cfg_.model_dt);
 
     noise_gen_.configure(cfg.noise, isHolonomic());
 
@@ -44,6 +44,16 @@ void MPPIc::reset()
 
     costs_ = xt::zeros<float>({cfg_.noise.batch_size});
 
+}
+
+objects::Trajectory MPPIc::getCandidateTrajectories()
+{
+    return objects::Trajectory(trajectory_);
+}
+
+objects::Path MPPIc::getCurrentPlan()
+{
+    return objects::Path(plan_);
 }
 
 objects::Control MPPIc::getControl(const objects::Odometry2d& odom, 
