@@ -1,6 +1,8 @@
 #ifndef __NANO_MPPI_CRITIC_HPP__
 #define __NANO_MPPI_CRITIC_HPP__
 
+#include "Objects/Config.hpp"
+
 #include <string>
 
 #include <costmap_2d/costmap_2d_ros.h>

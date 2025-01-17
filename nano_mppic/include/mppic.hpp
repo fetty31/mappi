@@ -7,6 +7,7 @@
 #include "Critics/Obstacles.hpp"
 #include "Critics/Goal.hpp"
 #include "Critics/PathFollow.hpp"
+#include "Critics/PathDist.hpp"
 
 #include "Objects/State.hpp"
 #include "Objects/Trajectory.hpp"
@@ -48,6 +49,7 @@ class MPPIc {
         critics::Obstacles obs_critic_; 
         critics::Goal goal_critic_; 
         critics::PathFollow pathfollow_critic_; 
+        critics::PathDist pathdist_critic_; 
 
         std::unique_ptr<models::MotionModel> motion_mdl_ptr_;
 
@@ -66,6 +68,8 @@ class MPPIc {
                         nano_mppic::shared_ptr<costmap_2d::Costmap2DROS>&);
 
         void shutdown();
+
+        void setConfig(config::MPPIc&);
 
         void reset();
 

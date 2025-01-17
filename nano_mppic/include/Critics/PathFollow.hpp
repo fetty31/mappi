@@ -10,11 +10,7 @@ class PathFollow : public Critic {
     // VARIABLES
 
     protected:
-        unsigned int power_;
-        float weight_;
-
-        float threshold_; 
-        size_t offset_from_furthest_;
+        nano_mppic::config::PathFollowCritic cfg_;
 
     // FUNCTIONS
 
@@ -22,6 +18,8 @@ class PathFollow : public Critic {
         PathFollow();
         
         void configure(std::string name, 
+                        nano_mppic::config::
+                            PathFollowCritic& config,
                         nano_mppic::shared_ptr
                             <costmap_2d::Costmap2DROS>& costmap_ros);
 
@@ -29,31 +27,28 @@ class PathFollow : public Critic {
                     nano_mppic::objects::Trajectory& trajectories,
                     nano_mppic::objects::Path& plan,
                     xt::xtensor<float,1>& costs,
-                    bool &all_traj_collide) override;
+                    bool &fail_flag) override;
 
+        void setConfig(nano_mppic::config::PathFollowCritic&);
 };
 
-PathFollow::PathFollow() : power_(1),
-                        weight_(5.0f),
-                        threshold_(1.0f),
-                        offset_from_furthest_(20) { }
+PathFollow::PathFollow() { }
 
 void PathFollow::configure(std::string name, 
+                        nano_mppic::config::
+                            PathFollowCritic& config,
                         nano_mppic::shared_ptr
                             <costmap_2d::Costmap2DROS>& costmap_ros){
 
     Critic::configure(name, costmap_ros); // call parent function
-
-    /* To-Do:
-        - update parameters
-    */
+    cfg_ = config;
 }
 
 void PathFollow::score(nano_mppic::objects::State& states,
                         nano_mppic::objects::Trajectory& trajectories,
                         nano_mppic::objects::Path& plan,
                         xt::xtensor<float,1>& costs,
-                        bool &all_traj_collide)
+                        bool &fail_flag)
 {
 
     std::cout << "NANO_MPPIC::MPPIc::PathFollow::score()\n";
@@ -64,7 +59,7 @@ void PathFollow::score(nano_mppic::objects::State& states,
     }
 
     /*To-Do:
-        - check if we are closer than this->threshold_ to the trajectory
+        - check if we are closer than cfg_.common.threshold to the trajectory
             . if closer -> do not compute any cost (return)
             . else -> pass
     */
@@ -73,7 +68,7 @@ void PathFollow::score(nano_mppic::objects::State& states,
 
     size_t min_dist_path_point = nano_mppic::aux::findPathMinDistPoint(trajectories, plan);
 
-    auto offseted_idx = std::min(min_dist_path_point + offset_from_furthest_, path_size);
+    auto offseted_idx = std::min(min_dist_path_point + cfg_.offset_from_furthest, path_size);
 
     /*To-Do:
         - check if offseted_idx is a valid point 
@@ -97,8 +92,13 @@ void PathFollow::score(nano_mppic::objects::State& states,
         xt::pow(last_x - path_x, 2) +
         xt::pow(last_y - path_y, 2));
 
-    costs += xt::pow(weight_ * std::move(dists), power_);
+    costs += xt::pow(cfg_.common.weight * std::move(dists), cfg_.common.power);
     
+}
+
+void PathFollow::setConfig(nano_mppic::config::PathFollowCritic& config)
+{
+    cfg_ = config;
 }
 
 } // namespace nano_mppic::critics

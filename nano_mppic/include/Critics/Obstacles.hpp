@@ -10,11 +10,7 @@ class Obstacles : public Critic {
     // VARIABLES
 
     protected:
-        float inflation_radius_;
-        float inflation_scale_factor_;
-        float collision_cost_, collision_margin_dist_;
-        float power_;
-        float critical_weight_;
+        nano_mppic::config::ObstaclesCritic cfg_;
 
     // FUNCTIONS
 
@@ -22,6 +18,8 @@ class Obstacles : public Critic {
         Obstacles();
         
         void configure(std::string name, 
+                        nano_mppic::config::
+                            ObstaclesCritic& config,
                         nano_mppic::shared_ptr
                             <costmap_2d::Costmap2DROS>& costmap_ros);
 
@@ -31,6 +29,8 @@ class Obstacles : public Critic {
                     xt::xtensor<float,1>& costs,
                     bool &all_traj_collide) override;
 
+        void setConfig(nano_mppic::config::ObstaclesCritic&);
+
     private:
 
         float dist2obstacle(unsigned char cost);
@@ -38,31 +38,21 @@ class Obstacles : public Critic {
         // void findCircumscribedCost();
 };
 
-Obstacles::Obstacles() : inflation_radius_(0.0f),
-                inflation_scale_factor_(0.0f),
-                collision_cost_(100000.0f),
-                collision_margin_dist_(0.1f),
-                critical_weight_(10.0f),
-                power_(1.0f) { }
+Obstacles::Obstacles() { }
 
 void Obstacles::configure(std::string name, 
-                            nano_mppic::shared_ptr
-                                <costmap_2d::Costmap2DROS>& costmap_ros){
+                        nano_mppic::config::
+                            ObstaclesCritic& config,
+                        nano_mppic::shared_ptr
+                            <costmap_2d::Costmap2DROS>& costmap_ros){
 
     Critic::configure(name, costmap_ros); // call parent function
+    cfg_ = config;
 
     // findCircumscribedCost();
     /* To-Do:
-        - update params
         - get InflationRadius and InflationScaleFactor params from costmapROS ???
     */
-
-    collision_cost_ = 10000.0f;
-    collision_margin_dist_ = 0.1f;
-    critical_weight_ = 10.0f;
-    inflation_scale_factor_ = 10.0f;
-    inflation_radius_ = 0.55f;
-    power_ = 2.0f;
 }
 
 void Obstacles::score(nano_mppic::objects::State& states,
@@ -97,13 +87,13 @@ void Obstacles::score(nano_mppic::objects::State& states,
                 break;
             }
 
-            if(this->inflation_radius_ == 0.0f ||
-                this->inflation_scale_factor_ == 0.0f ) continue; // cannot process repulsion cost (inflation layer doesn't exist)
+            if(cfg_.inflation_radius == 0.0f ||
+                cfg_.inflation_scale_factor == 0.0f ) continue; // cannot process repulsion cost (inflation layer doesn't exist)
 
             const float dist2obs = dist2obstacle(cost_c);
 
-            if( dist2obs < collision_margin_dist_ )
-                cost += (collision_margin_dist_ - dist2obs);
+            if( dist2obs < cfg_.collision_margin_dist )
+                cost += (cfg_.collision_margin_dist - dist2obs);
         }
 
         if(collision){
@@ -111,19 +101,24 @@ void Obstacles::score(nano_mppic::objects::State& states,
         }
 
         if(not collision) all_collide = false;
-        raw_cost[i] = collision ? collision_cost_ : cost;
+        raw_cost[i] = collision ? cfg_.collision_cost : cost;
     }
 
-    costs += xt::pow( (critical_weight_ * raw_cost), power_);
+    costs += xt::pow( (cfg_.common.weight * raw_cost), cfg_.common.power);
     fail_flag = all_collide;
 }
 
 float Obstacles::dist2obstacle(unsigned char cost){
-    const float scale_factor = inflation_scale_factor_;
+    const float scale_factor = cfg_.inflation_scale_factor;
     const float min_radius = costmap_ros_ptr_->getLayeredCostmap()->getInscribedRadius();
     float dist_to_obs = (scale_factor * min_radius - log(static_cast<float>(cost)) + log(253.0f)) / scale_factor;
 
     return dist_to_obs;
+}
+
+void Obstacles::setConfig(nano_mppic::config::ObstaclesCritic& config)
+{
+    cfg_ = config;
 }
 
 // void Obstacles::findCircumscribedCost(){
@@ -136,8 +131,8 @@ float Obstacles::dist2obstacle(unsigned char cost){
 //                 continue;
 
 //             inflation_layer_found = true;
-//             inflation_scale_factor_ = static_cast<float>(inflation_layer->getCostScalingFactor());
-//             inflation_radius_ = static_cast<float>(inflation_layer->getInflationRadius());
+//             cfg_.inflation_scale_factor = static_cast<float>(inflation_layer->getCostScalingFactor());
+//             cfg_.inflation_radius = static_cast<float>(inflation_layer->getInflationRadius());
 //     }
 
 //     if(not inflation_layer_found)

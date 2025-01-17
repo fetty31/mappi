@@ -33,8 +33,6 @@ class MotionModel {
         {
             const double initial_yaw = st.odom.yaw;
 
-            std::cout << "NANO_MPPIC::MotionModel integrating states\n";
-
             xt::noalias(traj.yaw) =
                 aux::normalize_angles(xt::cumsum(st.wz * model_dt, 1) + initial_yaw);
 
@@ -58,6 +56,8 @@ class MotionModel {
             xt::noalias(traj.x) = st.odom.x + xt::cumsum(dx * model_dt, 1);
             xt::noalias(traj.y) = st.odom.y + xt::cumsum(dy * model_dt, 1);
         }
+
+        virtual void setConfig(float dt) { model_dt = dt; }
 
         virtual bool isHolonomic() = 0;
 

@@ -10,9 +10,7 @@ class Goal : public Critic {
     // VARIABLES
 
     protected:
-        unsigned int power_;
-        float weight_;
-        float threshold_; 
+        nano_mppic::config::GenericCritic cfg_;
 
     // FUNCTIONS
 
@@ -20,6 +18,8 @@ class Goal : public Critic {
         Goal();
         
         void configure(std::string name, 
+                        nano_mppic::config::
+                            GenericCritic& config,
                         nano_mppic::shared_ptr
                             <costmap_2d::Costmap2DROS>& costmap_ros);
 
@@ -27,30 +27,28 @@ class Goal : public Critic {
                     nano_mppic::objects::Trajectory& trajectories,
                     nano_mppic::objects::Path& plan,
                     xt::xtensor<float,1>& costs,
-                    bool &all_traj_collide) override;
+                    bool &fail_flag) override;
 
+        void setConfig(nano_mppic::config::GenericCritic&);
 };
 
-Goal::Goal() : power_(1),
-                weight_(5.0f),
-                threshold_(1.0f) { }
+Goal::Goal() { }
 
 void Goal::configure(std::string name, 
+                    nano_mppic::config::
+                        GenericCritic& config,
                     nano_mppic::shared_ptr
                         <costmap_2d::Costmap2DROS>& costmap_ros){
 
     Critic::configure(name, costmap_ros); // call parent function
-
-    /* To-Do:
-        - update parameters
-    */
+    cfg_ = config;
 }
 
 void Goal::score(nano_mppic::objects::State& states,
                     nano_mppic::objects::Trajectory& trajectories,
                     nano_mppic::objects::Path& plan,
                     xt::xtensor<float,1>& costs,
-                    bool &all_traj_collide)
+                    bool &fail_flag)
 {
 
     std::cout << "NANO_MPPIC::MPPIc::Goal::score()\n";
@@ -61,7 +59,7 @@ void Goal::score(nano_mppic::objects::State& states,
     }
 
     /*To-Do:
-        - check if we are closer than this->threshold_ to the trajectory
+        - check if we are closer than cfg_.common.threshold_ to the trajectory
             . if closer -> do not compute any cost (return)
             . else -> pass
     */
@@ -78,8 +76,13 @@ void Goal::score(nano_mppic::objects::State& states,
         xt::pow(last_x - goal_x, 2) +
         xt::pow(last_y - goal_y, 2));
 
-    costs += xt::pow(std::move(dists) * weight_, power_);
+    costs += xt::pow(std::move(dists) * cfg_.common.weight, cfg_.common.power);
 
+}
+
+void Goal::setConfig(nano_mppic::config::GenericCritic& config)
+{
+    cfg_ = config;
 }
 
 } // namespace nano_mppic::critics

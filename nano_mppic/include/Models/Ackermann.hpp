@@ -11,15 +11,21 @@ class Ackermann : public MotionModel {
     // VARIABLES
 
     private:    
-        float min_radius_;
+        nano_mppic::config::AckermannModel cfg_;
 
     // FUNCTIONS
 
     public:
-        explicit Ackermann(nano_mppic::config::AckermannModel& cfg, 
+        explicit Ackermann(nano_mppic::config::AckermannModel& config, 
                             float dt) : MotionModel(dt) 
         {
-            min_radius_ = cfg.min_r;
+            cfg_ = config;
+        }
+
+        void setConfig(nano_mppic::config::AckermannModel& config, float dt)
+        {
+            MotionModel::setConfig(dt);
+            cfg_ = config;
         }
 
         bool isHolonomic() override { return false; }
@@ -27,16 +33,13 @@ class Ackermann : public MotionModel {
         void constrainMotion(nano_mppic::objects::ControlSequence& ctrl_seq) override {
             auto & vx = ctrl_seq.vx;
             auto & wz = ctrl_seq.wz;
-            auto wz_max = xt::sign(wz) * vx / min_radius_;
+            auto wz_max = xt::sign(wz) * vx / cfg_.min_r;
 
-            auto mask = xt::fabs(vx) / xt::fabs(wz) > min_radius_;
+            auto mask = xt::fabs(vx) / xt::fabs(wz) > cfg_.min_r;
 
             // Apply the result only where the mask is true
             wz = xt::where(mask, wz_max, wz);
         }
-
-        float getMinTurningRadius() { return min_radius_; }
-
 };
 
 } // namespace nano_mppic::models

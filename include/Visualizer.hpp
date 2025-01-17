@@ -30,6 +30,9 @@ class Visualizer {
         int batch_stride_;
         int time_stride_;
 
+        float default_z_;
+        float scale_;
+
         int marker_id_;
         std::string frame_id_;
 
@@ -52,14 +55,18 @@ class Visualizer {
 
 Visualizer::Visualizer(MPPIc* mppic, 
                         ros::NodeHandle* nh_ptr) : mppic_(mppic),
-                                                    nh_ptr_(nh_ptr),
-                                                    batch_stride_(50),
-                                                    time_stride_(3)
+                                                    nh_ptr_(nh_ptr)
 {
-    /* To-Do:
-        - get ROS params
-    */
-    frame_id_ = "ona2/odom";
+    nh_ptr->param<int>("Visualization/batch_stride", batch_stride_, 50); 
+    nh_ptr->param<int>("Visualization/time_stride",  time_stride_,  3); 
+    nh_ptr->param<float>("Visualization/default_z",  default_z_,    0.03f); 
+    nh_ptr->param<float>("Visualization/scale",      scale_,        0.03f); 
+
+    nh_ptr->param<std::string>("Visualization/global_frame_id", frame_id_, ""); 
+    if(frame_id_ == ""){
+        ros::NodeHandle nh_upper("~");
+        nh_upper.param<std::string>("local_costmap/global_frame", frame_id_, "odom");
+    }
 
     reset();
 
@@ -109,8 +116,8 @@ bool Visualizer::fillROSmsg()
             float blue_component = 1.0f - j_flt / shape_1;
             float green_component = j_flt / shape_1;
 
-            auto pose = ros_utils::createPose(trajectories.x(i, j), trajectories.y(i, j), 0.03);
-            auto scale = ros_utils::createScale(0.03, 0.03, 0.03);
+            auto pose = ros_utils::createPose(trajectories.x(i, j), trajectories.y(i, j), default_z_);
+            auto scale = ros_utils::createScale(scale_, scale_, scale_);
             auto color = ros_utils::createColor(0, green_component, blue_component, 1);
             auto marker = ros_utils::createMarker(marker_id_++, pose, scale, color, frame_id_);
 

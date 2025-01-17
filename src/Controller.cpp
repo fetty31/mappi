@@ -41,7 +41,7 @@ void MPPIcROS::initialize(std::string name,
                     boost::bind( &MPPIcROS::odom_callback, this, _1 ));
 
     /*To-Do:
-        - fill nano_mppic::config obj with ROS params
+        - create dynamic reconfigure instance --> then call MPPIc::setConfig()
     */
 
     config::MPPIc config;
@@ -78,9 +78,45 @@ void MPPIcROS::initialize(std::string name,
     nh.param<float>("Constraints/min_vy", config.bounds.min_vy, -1.0f);
     nh.param<float>("Constraints/max_wz", config.bounds.max_wz, 0.7f);
     nh.param<float>("Constraints/min_wz", config.bounds.min_wz, -0.7f);
+    
+    // Goal critic config
+    int power;
+    nh.param<int>("Critics/Goal/power", power, 1);
+    config.goal_crtc.common.power = static_cast<unsigned int>(power);
+    nh.param<float>("Critics/Goal/weight",      config.goal_crtc.common.weight,     5.0f);
+    nh.param<float>("Critics/Goal/threshold",   config.goal_crtc.common.threshold,  1.0f);
+
+    // PathDist critic config
+    nh.param<int>("Critics/PathDist/power", power, 1);
+    config.pathdist_crtc.common.power = static_cast<unsigned int>(power);
+    nh.param<float>("Critics/PathDist/weight",  config.pathdist_crtc.common.weight, 5.0f);
+
+    // PathFollow critic config
+    nh.param<int>("Critics/PathFollow/power", power, 1);
+    config.pathfollow_crtc.common.power = static_cast<unsigned int>(power);
+    nh.param<float>("Critics/PathFollow/weight",    config.pathfollow_crtc.common.weight,    5.0f);
+    nh.param<float>("Critics/PathFollow/threshold", config.pathfollow_crtc.common.threshold, 0.4f);
+    nh.param<int>("Critics/PathFollow/offset_from_furthest", offset, 6);
+    config.pathfollow_crtc.offset_from_furthest = static_cast<size_t>(offset);
+
+    // Obstacles critic config
+    nh.param<int>("Critics/Obstacles/power", power, 1);
+    config.obs_crtc.common.power = static_cast<unsigned int>(power);
+    nh.param<float>("Critics/Obstacles/weight",  config.obs_crtc.common.weight, 5.0f);
+    nh.param<float>("Critics/Obstacles/collision_cost",         config.obs_crtc.collision_cost,        100000.0f);
+    nh.param<float>("Critics/Obstacles/collision_margin_dist",  config.obs_crtc.collision_margin_dist, 0.1f);
+
+    ros::NodeHandle nh_upper("~/");
+    nh_upper.param<float>("local_costmap/inflation_layer/inflation_radius",    
+                            config.obs_crtc.inflation_radius, 
+                            0.55f);
+    nh_upper.param<float>("local_costmap/inflation_layer/cost_scaling_factor", 
+                            config.obs_crtc.inflation_scale_factor, 
+                            10.0f);
 
     config.print_out(); // print out config (debug)
 
+    // Initialize MPPI controller
     nano_mppic_.configure(config, costmap_ros_ptr_);
 
     // Set up Visualizer instance
