@@ -11,6 +11,9 @@
 #include <ros/ros.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <visualization_msgs/Marker.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/PointField.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
 
 namespace nano_mppic {
 
@@ -22,9 +25,11 @@ class Visualizer {
         MPPIc* mppic_;
 
     	ros::NodeHandle* nh_ptr_;
-        ros::Publisher traj_pub_;
+        ros::Publisher marker_pub_;
+        ros::Publisher pcl_pub_;
 
         std::unique_ptr<visualization_msgs::MarkerArray> points_;
+        std::unique_ptr<sensor_msgs::PointCloud2> points_pcl_;
         std::thread pub_thread_;
 
         int batch_stride_;
@@ -47,7 +52,8 @@ class Visualizer {
 
     private:
 
-        bool fillROSmsg();
+        bool fillMarkermsg();
+        bool fillPointCloudmsg();
 
         void reset();
 
@@ -70,7 +76,8 @@ Visualizer::Visualizer(MPPIc* mppic,
 
     reset();
 
-    traj_pub_ = nh_ptr_->advertise<visualization_msgs::MarkerArray>("/nano_mppic/trajectories", 1);
+    marker_pub_ = nh_ptr_->advertise<visualization_msgs::MarkerArray>("/nano_mppic/trajectories", 1);
+    pcl_pub_    = nh_ptr_->advertise<sensor_msgs::PointCloud2>("/nano_mppic/pcl_trajectories", 1);
 
     pub_thread_ = std::thread(std::bind(&Visualizer::publishThread, this));
 }
@@ -81,11 +88,13 @@ void Visualizer::publishThread()
 
     while(ros::ok()){
 
-        if(not fillROSmsg()) // no trajectory computed yet
-            return;
 
-        if (traj_pub_.getNumSubscribers() > 0) {
-            traj_pub_.publish(*points_);
+        if( (marker_pub_.getNumSubscribers() > 0) && fillMarkermsg() ) {
+            marker_pub_.publish(*points_);
+        }
+
+        if( (pcl_pub_.getNumSubscribers() > 0) && fillPointCloudmsg() ) {
+            pcl_pub_.publish(*points_pcl_);
         }
 
         reset();
@@ -95,10 +104,11 @@ void Visualizer::publishThread()
 void Visualizer::reset()
 {
     marker_id_ = 0;
-    points_ = std::make_unique<visualization_msgs::MarkerArray>();
+    points_     = std::make_unique<visualization_msgs::MarkerArray>();
+    points_pcl_ = std::make_unique<sensor_msgs::PointCloud2>();
 }
 
-bool Visualizer::fillROSmsg()
+bool Visualizer::fillMarkermsg()
 {
 
     const objects::Trajectory trajectories = mppic_->getCandidateTrajectories();
@@ -108,7 +118,7 @@ bool Visualizer::fillROSmsg()
         return false;
 
     const float shape_1 = static_cast<float>(shape[1]);
-    points_->markers.reserve(floor(shape[0] / batch_stride_) * floor(shape[1] * time_stride_));
+    points_->markers.reserve(floor(shape[0] / batch_stride_) * floor(shape[1] / time_stride_));
 
     for (size_t i = 0; i < shape[0]; i += batch_stride_) {
         for (size_t j = 0; j < shape[1]; j += time_stride_) {
@@ -128,6 +138,68 @@ bool Visualizer::fillROSmsg()
     return true;
 }
 
+bool Visualizer::fillPointCloudmsg(){
+
+    const objects::Trajectory trajectories = mppic_->getCandidateTrajectories();
+
+    auto & shape = trajectories.x.shape();
+    if(shape[0] < 1)
+        return false;
+    
+    const float shape_0 = static_cast<float>(shape[0]);
+    const float shape_1 = static_cast<float>(shape[1]);
+
+    //Modifier to describe what the fields are.
+    sensor_msgs::PointCloud2Modifier modifier(*points_pcl_);
+
+    modifier.setPointCloud2Fields(4,
+        "x", 1, sensor_msgs::PointField::FLOAT32,
+        "y", 1, sensor_msgs::PointField::FLOAT32,
+        "z", 1, sensor_msgs::PointField::FLOAT32,
+        "intensity", 1, sensor_msgs::PointField::FLOAT32);
+
+    //Msg header
+    points_pcl_->header = std_msgs::Header();
+    points_pcl_->header.stamp = ros::Time::now();
+    points_pcl_->header.frame_id = frame_id_;
+
+    points_pcl_->height = 1;
+    points_pcl_->width = ceil(shape_0 / batch_stride_) * ceil(shape_1 / time_stride_);
+    points_pcl_->is_dense = true;
+
+    //Total number of bytes per point
+    points_pcl_->point_step = 16;
+    points_pcl_->row_step = points_pcl_->point_step * points_pcl_->width;
+    points_pcl_->data.resize(points_pcl_->row_step);
+
+    //Iterators for PointCloud msg
+    sensor_msgs::PointCloud2Iterator<float> iter_x(*points_pcl_, "x");
+    sensor_msgs::PointCloud2Iterator<float> iter_y(*points_pcl_, "y");
+    sensor_msgs::PointCloud2Iterator<float> iter_z(*points_pcl_, "z");
+    sensor_msgs::PointCloud2Iterator<float> iter_i(*points_pcl_, "intensity");
+
+    //iterate over the message and populate the fields.  
+    int c=0;
+    for (size_t i = 0; i < shape[0]; i += batch_stride_) {
+        for (size_t j = 0; j < shape[1]; j += time_stride_) {
+            *iter_x = trajectories.x(i, j);
+            *iter_y = trajectories.y(i, j);
+            *iter_z = default_z_;
+
+            const float j_flt = static_cast<float>(j);
+            float intensity = 1.0f - j_flt / shape_1;
+
+            *iter_i = intensity;
+
+            ++iter_x;
+            ++iter_y;
+            ++iter_z;
+            ++iter_i;
+        }
+    }
+
+    return true;
+}
 
 } // namespace nano_mppic
 

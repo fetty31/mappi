@@ -35,7 +35,6 @@ class Obstacles : public Critic {
 
         float dist2obstacle(unsigned char cost);
 
-        // void findCircumscribedCost();
 };
 
 Obstacles::Obstacles() { }
@@ -48,11 +47,6 @@ void Obstacles::configure(std::string name,
 
     Critic::configure(name, costmap_ros); // call parent function
     cfg_ = config;
-
-    // findCircumscribedCost();
-    /* To-Do:
-        - get InflationRadius and InflationScaleFactor params from costmapROS ???
-    */
 }
 
 void Obstacles::score(nano_mppic::objects::State& states,
@@ -120,24 +114,6 @@ void Obstacles::setConfig(nano_mppic::config::ObstaclesCritic& config)
 {
     cfg_ = config;
 }
-
-// void Obstacles::findCircumscribedCost(){
-//     bool inflation_layer_found = false;
-//     for(auto layer = costmap_ros_ptr_->getLayeredCostmap()->getPlugins()->begin();
-//         layer != costmap_ros_ptr_->getLayeredCostmap()->getPlugins()->end();
-//         layer++) {
-//             auto inflation_layer = boost::dynamic_pointer_cast<costmap_2d::InflationLayer>(*layer);
-//             if(not inflation_layer)
-//                 continue;
-
-//             inflation_layer_found = true;
-//             cfg_.inflation_scale_factor = static_cast<float>(inflation_layer->getCostScalingFactor());
-//             cfg_.inflation_radius = static_cast<float>(inflation_layer->getInflationRadius());
-//     }
-
-//     if(not inflation_layer_found)
-//         std::cout << "NANO_MPPIC::OBSTACLES Error: No Inflation Layer found in Costmap2D!!\n";
-// } 
 
 } // namespace nano_mppic::critics
 

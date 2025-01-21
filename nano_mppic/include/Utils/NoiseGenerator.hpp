@@ -77,6 +77,7 @@ void NoiseGenerator::reset(nano_mppic::config::Noise cfg, bool is_holonomic)
 {
     // Recompute the noises on reset
     std::unique_lock<std::mutex> guard(noise_lock_);
+    cfg_ = cfg;
     xt::noalias(noises_vx_) = xt::zeros<float>({cfg_.batch_size, cfg_.time_steps});
     xt::noalias(noises_vy_) = xt::zeros<float>({cfg_.batch_size, cfg_.time_steps});
     xt::noalias(noises_wz_) = xt::zeros<float>({cfg_.batch_size, cfg_.time_steps});

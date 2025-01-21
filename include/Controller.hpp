@@ -5,6 +5,9 @@
 #include "ROSutils.hpp"
 #include "Visualizer.hpp"
 
+#include <nano_mppic/MPPIPlannerROSConfig.h>
+#include <dynamic_reconfigure/server.h>
+
 #include <nav_core/base_local_planner.h>
 
 #include <ros/ros.h>
@@ -35,6 +38,8 @@ class MPPIcROS : public nav_core::BaseLocalPlanner {
 
         ros::Subscriber odom_sub_;
 
+        dynamic_reconfigure::Server<nano_mppic::MPPIPlannerROSConfig> *dyn_srv_;
+
     // FUNCTIONS
 
     public:
@@ -59,6 +64,8 @@ class MPPIcROS : public nav_core::BaseLocalPlanner {
         bool is_initialized();
 
         void odom_callback(const nav_msgs::Odometry::ConstPtr& msg);
+
+        void reconfigure_callback(nano_mppic::MPPIPlannerROSConfig &dyn_cfg, uint32_t level);
 
 };
 

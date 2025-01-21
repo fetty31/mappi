@@ -16,17 +16,23 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   nav_msgs
   geometry_msgs
+  sensor_msgs
   std_msgs
   visualization_msgs
+  dynamic_reconfigure
   costmap_2d
   nav_core
   tf2
 )
 
+generate_dynamic_reconfigure_options(
+  cfg/NanoMPPIc.cfg
+)
+
 catkin_package(
  INCLUDE_DIRS include nano_mppic/include
- LIBRARIES ${PROJECT_NAME}_local_planner
- CATKIN_DEPENDS roscpp nav_msgs tf2 costmap_2d geometry_msgs nav_core visualization_msgs std_msgs
+ LIBRARIES ${PROJECT_NAME}_local_planner 
+ CATKIN_DEPENDS roscpp nav_msgs tf2 costmap_2d geometry_msgs nav_core visualization_msgs std_msgs sensor_msgs
 #  DEPENDS XTENSOR
 )
 
@@ -59,7 +65,7 @@ add_library(${PROJECT_NAME}_local_planner
               src/Controller.cpp
               )
 
-add_dependencies(${PROJECT_NAME}_local_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME}_local_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_gencfg)
 target_link_libraries(${PROJECT_NAME}_local_planner ${PROJECT_NAME} ${catkin_LIBRARIES})
 
 # Binaries

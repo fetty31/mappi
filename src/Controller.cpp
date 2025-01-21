@@ -3,8 +3,6 @@
 #include <pluginlib/class_list_macros.h>
 // #include <base_local_planner/goal_functions.h>
 
-#include <nav_msgs/Path.h>
-
 namespace nano_mppic {
 
 MPPIcROS::MPPIcROS() : tf_(NULL), initialized_(false)
@@ -39,10 +37,6 @@ void MPPIcROS::initialize(std::string name,
     ros::NodeHandle nh("~/" + name);
     odom_sub_ = nh.subscribe<nav_msgs::Odometry>( "/ona2/fast_limo/state", 1,
                     boost::bind( &MPPIcROS::odom_callback, this, _1 ));
-
-    /*To-Do:
-        - create dynamic reconfigure instance --> then call MPPIc::setConfig()
-    */
 
     config::MPPIc config;
 
@@ -114,6 +108,10 @@ void MPPIcROS::initialize(std::string name,
                             config.obs_crtc.inflation_scale_factor, 
                             10.0f);
 
+    // Not repulsion cost for now (debugging)
+    config.obs_crtc.inflation_scale_factor  = 0.0f;
+    config.obs_crtc.inflation_radius        = 0.0f;
+
     config.print_out(); // print out config (debug)
 
     // Initialize MPPI controller
@@ -121,6 +119,13 @@ void MPPIcROS::initialize(std::string name,
 
     // Set up Visualizer instance
     vis_ptr_ = std::make_unique<Visualizer>(&nano_mppic_, &nh);
+
+    // Set up dynamic reconfigure server
+    dyn_srv_ = new dynamic_reconfigure::Server<nano_mppic::MPPIPlannerROSConfig>(nh);
+    dynamic_reconfigure::Server
+        <nano_mppic::MPPIPlannerROSConfig>
+            ::CallbackType callback = boost::bind(&MPPIcROS::reconfigure_callback, this, _1, _2);
+    dyn_srv_->setCallback(callback);
 
     initialized_ = true;
 
@@ -191,6 +196,81 @@ void MPPIcROS::odom_callback(const nav_msgs::Odometry::ConstPtr& msg)
 bool MPPIcROS::is_initialized()
 {
     return initialized_;
+}
+
+void MPPIcROS::reconfigure_callback(nano_mppic::MPPIPlannerROSConfig &dyn_cfg, uint32_t level)
+{
+
+    ROS_WARN("NANO_MPPIC: Dynamic reconfigure called");
+
+    if(not is_initialized())
+        return;
+
+    config::MPPIc config;
+    config.settings.num_iters  = static_cast<unsigned int>(dyn_cfg.num_iterations);
+    config.settings.num_retry   = static_cast<unsigned int>(dyn_cfg.num_retry);
+    config.settings.offset      = static_cast<unsigned int>(dyn_cfg.control_offset);
+    
+    config.noise.batch_size = static_cast<unsigned int>(dyn_cfg.batch_size);
+    config.noise.time_steps = static_cast<unsigned int>(dyn_cfg.time_steps);
+
+    config.model_dt = static_cast<float>(dyn_cfg.model_dt);
+    config.temperature = static_cast<float>(dyn_cfg.temperature);
+    config.gamma = static_cast<float>(dyn_cfg.gamma);
+
+    config.ackermann.min_r = static_cast<float>(dyn_cfg.min_radius);
+
+    config.settings.motion_model = dyn_cfg.MotionModel;
+
+    config.noise.std_vx = static_cast<float>(dyn_cfg.std_vx);
+    config.noise.std_vy = static_cast<float>(dyn_cfg.std_vy);
+    config.noise.std_wz = static_cast<float>(dyn_cfg.std_wz);
+
+    config.bounds.max_vx = static_cast<float>(dyn_cfg.max_vx);
+    config.bounds.min_vx = static_cast<float>(dyn_cfg.min_vx);
+    config.bounds.max_vy = static_cast<float>(dyn_cfg.max_vy);
+    config.bounds.min_vy = static_cast<float>(dyn_cfg.min_vy);
+    config.bounds.max_wz = static_cast<float>(dyn_cfg.max_wz);
+    config.bounds.min_wz = static_cast<float>(dyn_cfg.min_wz);
+
+    // Goal critic config
+    config.goal_crtc.common.power     = static_cast<unsigned int>(dyn_cfg.goal_power);
+    config.goal_crtc.common.weight    = static_cast<float>(dyn_cfg.goal_weight);
+    config.goal_crtc.common.threshold = static_cast<float>(dyn_cfg.goal_threshold);
+
+
+    // PathDist critic config
+    config.pathdist_crtc.common.power = static_cast<unsigned int>(dyn_cfg.pathdist_power);
+    config.pathdist_crtc.common.weight = static_cast<float>(dyn_cfg.pathdist_weight);
+
+    // PathFollow critic config
+    config.pathfollow_crtc.common.power     = static_cast<unsigned int>(dyn_cfg.pathfollow_power);
+    config.pathfollow_crtc.common.weight    = static_cast<float>(dyn_cfg.pathfollow_weight);
+    config.pathfollow_crtc.common.threshold = static_cast<float>(dyn_cfg.pathfollow_threshold);
+    config.pathfollow_crtc.offset_from_furthest = static_cast<size_t>(dyn_cfg.offset_from_furthest);
+
+    // Obstacles critic config
+    config.obs_crtc.common.power     = static_cast<unsigned int>(dyn_cfg.obs_power);
+    config.obs_crtc.common.weight    = static_cast<float>(dyn_cfg.obs_weight);
+    config.obs_crtc.collision_cost   = static_cast<float>(dyn_cfg.obs_collision_cost);
+    config.obs_crtc.collision_margin_dist = static_cast<float>(dyn_cfg.obs_collision_margin_dist);
+
+    ros::NodeHandle nh_upper("~/");
+    nh_upper.param<float>("local_costmap/inflation_layer/inflation_radius",    
+                            config.obs_crtc.inflation_radius, 
+                            0.55f);
+    nh_upper.param<float>("local_costmap/inflation_layer/cost_scaling_factor", 
+                            config.obs_crtc.inflation_scale_factor, 
+                            10.0f);
+
+    // Not repulsion cost for now (debugging)
+    config.obs_crtc.inflation_scale_factor  = 0.0f;
+    config.obs_crtc.inflation_radius        = 0.0f;
+
+    config.print_out(); // print out config (debug)
+
+    // Reconfigure MPPI controller
+    nano_mppic_.setConfig(config);
 }
 
 } // namespace nano_mppic
