@@ -27,6 +27,7 @@ struct Constraints
 
 struct CommonCost
 {
+    bool active;
     unsigned int power;
     float weight;
     float threshold;
@@ -34,6 +35,11 @@ struct CommonCost
 
 struct GenericCritic{
     CommonCost common;
+};
+
+struct PathDistCritic{
+    CommonCost common;
+    int path_stride;
 };
 
 struct PathFollowCritic 
@@ -67,7 +73,9 @@ struct MPPIc
 
     PathFollowCritic pathfollow_crtc;
     GenericCritic goal_crtc;
-    GenericCritic pathdist_crtc;
+    PathDistCritic pathdist_crtc;
+    GenericCritic twir_crtc;
+    GenericCritic goalangle_crtc;
     ObstaclesCritic obs_crtc;
 
     float model_dt;
@@ -104,21 +112,31 @@ void MPPIc::print_out(){
     std::cout << "  - bounds.max_wz: " << bounds.max_wz << "   bounds.min_wz: " << bounds.min_wz << std::endl;
 
     std::cout << "Goal Critic Settings: " << std::endl;
+    std::cout << "  - active: "     << goal_crtc.common.active       << std::endl;
     std::cout << "  - power: "      << goal_crtc.common.power       << std::endl;
     std::cout << "  - weight: "     << goal_crtc.common.weight      << std::endl;
     std::cout << "  - threshold: "  << goal_crtc.common.threshold   << std::endl;
 
     std::cout << "Path Distance Settings: " << std::endl;
+    std::cout << "  - active: "     << pathdist_crtc.common.active       << std::endl;
     std::cout << "  - power: "      << pathdist_crtc.common.power       << std::endl;
     std::cout << "  - weight: "     << pathdist_crtc.common.weight      << std::endl;
+    std::cout << "  - stride: "     << pathdist_crtc.path_stride      << std::endl;
+
+    std::cout << "Twirling Settings: " << std::endl;
+    std::cout << "  - active: "     << twir_crtc.common.active       << std::endl;
+    std::cout << "  - power: "      << twir_crtc.common.power       << std::endl;
+    std::cout << "  - weight: "     << twir_crtc.common.weight      << std::endl;
 
     std::cout << "PathFollow Critic Settings: " << std::endl;
+    std::cout << "  - active: "     << pathfollow_crtc.common.active       << std::endl;
     std::cout << "  - power: "      << pathfollow_crtc.common.power       << std::endl;
     std::cout << "  - weight: "     << pathfollow_crtc.common.weight      << std::endl;
     std::cout << "  - threshold: "  << pathfollow_crtc.common.threshold   << std::endl;
     std::cout << "  - offset_from_furthest: "  << pathfollow_crtc.offset_from_furthest  << std::endl;
 
     std::cout << "Obstacles Critic Settings: " << std::endl;
+    std::cout << "  - active: "     << obs_crtc.common.active       << std::endl;
     std::cout << "  - power: "      << obs_crtc.common.power       << std::endl;
     std::cout << "  - weight: "     << obs_crtc.common.weight      << std::endl;
     std::cout << "  - inflation_radius: "       << obs_crtc.inflation_radius        << std::endl;

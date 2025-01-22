@@ -24,6 +24,8 @@ void MPPIc::configure(config::MPPIc& cfg,
     goal_critic_.configure("goal_critic", cfg.goal_crtc, costmap);
     pathfollow_critic_.configure("pathfollow_critic", cfg.pathfollow_crtc, costmap);
     pathdist_critic_.configure("pathdist_critic", cfg.pathdist_crtc, costmap);
+    goalangle_critic_.configure("goalangle_critic", cfg.goalangle_crtc, costmap);
+    twir_critic_.configure("twir_critic", cfg.twir_crtc, costmap);
 
     this->reset(); // quick set up of obj dimensions
 
@@ -48,6 +50,9 @@ void MPPIc::reset()
 
 void MPPIc::setConfig(config::MPPIc& config)
 {
+
+    std::unique_lock<std::mutex> guard(p_lock_); // lock for param update
+
     if(config.settings.motion_model == "Ackermann")
         motion_mdl_ptr_ = std::make_unique<models::Ackermann>(config.ackermann, config.model_dt);
     else
@@ -60,15 +65,18 @@ void MPPIc::setConfig(config::MPPIc& config)
         reset(); // reset full MPPIc
     }
     else
+    {
         cfg_ = config;
         noise_gen_.reset(config.noise, isHolonomic()); // reset noise generator
+    }
 
     // Re-configure Critics
     obs_critic_.setConfig(config.obs_crtc);
     goal_critic_.setConfig(config.goal_crtc);
     pathfollow_critic_.setConfig(config.pathfollow_crtc);
     pathdist_critic_.setConfig(config.pathdist_crtc);
-    
+    goalangle_critic_.setConfig(config.goalangle_crtc);
+    twir_critic_.setConfig(config.twir_crtc);
 }
 
 objects::Trajectory MPPIc::getCandidateTrajectories()
@@ -82,9 +90,9 @@ objects::Path MPPIc::getCurrentPlan()
 }
 
 objects::Control MPPIc::getControl(const objects::Odometry2d& odom, 
-                                        const objects::Path& plan){
-
-    std::cout << "NANO_MPPIC::MPPIc::getControl()\n";
+                                        const objects::Path& plan)
+{
+    std::unique_lock<std::mutex> guard(p_lock_); // lock until param update finished
 
     static objects::Control output;
     
@@ -100,7 +108,6 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
 
     // Predict trajectories
     do {
-        std::cout << "NANO_MPPIC::MPPIc predict\n";
         predict(has_failed);
         if(has_failed)
             std::cout << "NANO_MPPIC::MPPIc prediction failed\n";
@@ -112,9 +119,9 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
 
     // get control from sequence
     float vx = ctrl_seq_.vx(cfg_.settings.offset);
-    float wz = ctrl_seq_.vx(cfg_.settings.offset);
+    float wz = ctrl_seq_.wz(cfg_.settings.offset);
     float vy = 0.0;
-    if(isHolonomic()) vy = ctrl_seq_.vx(cfg_.settings.offset);
+    if(isHolonomic()) vy = ctrl_seq_.vy(cfg_.settings.offset);
 
     output.vx = vx;
     output.vy = vy;
@@ -168,8 +175,6 @@ bool MPPIc::fallback(bool &failed)
 
 void MPPIc::generateNoisedTrajectories()
 {
-    std::cout << "NANO_MPPIC::MPPIc::generateNoisedTrajectories()\n";
-
     noise_gen_.getControls(state_, ctrl_seq_);  // generate control noise
     updateState(state_, trajectory_);           // predict trajectories with new controls 
 }
@@ -181,12 +186,12 @@ void MPPIc::evalTrajectories(bool &failed)
         - score() each critic
     */
 
-    std::cout << "NANO_MPPIC::MPPIc::evalTrajectories()\n";
-
     obs_critic_.score(state_, trajectory_, plan_, costs_, failed);
     goal_critic_.score(state_, trajectory_, plan_, costs_, failed);
     pathfollow_critic_.score(state_, trajectory_, plan_, costs_, failed);
-    pathdist_critic_.score(state_, trajectory_, plan_, costs_, failed);
+    goalangle_critic_.score(state_, trajectory_, plan_, costs_, failed);
+    // pathdist_critic_.score(state_, trajectory_, plan_, costs_, failed); // too much overhead
+    twir_critic_.score(state_, trajectory_, plan_, costs_, failed);
 }
 
 void MPPIc::optimizeControlSeq()
@@ -228,8 +233,6 @@ void MPPIc::optimizeControlSeq()
 void MPPIc::updateState(objects::State& st,
                             objects::Trajectory& traj)
 {
-
-    std::cout << "NANO_MPPIC::MPPIc::updateState()\n";
 
     // Set initial velocities
     xt::noalias(xt::view(st.vx, xt::all(), 0)) = st.odom.vx;

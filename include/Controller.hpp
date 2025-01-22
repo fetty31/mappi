@@ -8,6 +8,8 @@
 #include <nano_mppic/MPPIPlannerROSConfig.h>
 #include <dynamic_reconfigure/server.h>
 
+#include <chrono>
+
 #include <nav_core/base_local_planner.h>
 
 #include <ros/ros.h>

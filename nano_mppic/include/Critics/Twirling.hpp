@@ -1,11 +1,11 @@
-#ifndef __NANO_MPPI_GOAL_CRITIC_HPP__
-#define __NANO_MPPI_GOAL_CRITIC_HPP__
+#ifndef __NANO_MPPI_TWIRLING_CRITIC_HPP__
+#define __NANO_MPPI_TWIRLING_CRITIC_HPP__
 
 #include "Critics/Critic.hpp"
 
 namespace nano_mppic::critics {
 
-class Goal : public Critic {
+class Twirling : public Critic {
 
     // VARIABLES
 
@@ -15,7 +15,7 @@ class Goal : public Critic {
     // FUNCTIONS
 
     public:
-        Goal();
+        Twirling();
         
         void configure(std::string name, 
                         nano_mppic::config::
@@ -32,9 +32,9 @@ class Goal : public Critic {
         void setConfig(nano_mppic::config::GenericCritic&);
 };
 
-Goal::Goal() { }
+Twirling::Twirling() { }
 
-void Goal::configure(std::string name, 
+void Twirling::configure(std::string name, 
                     nano_mppic::config::
                         GenericCritic& config,
                     nano_mppic::shared_ptr
@@ -44,7 +44,7 @@ void Goal::configure(std::string name,
     cfg_ = config;
 }
 
-void Goal::score(nano_mppic::objects::State& states,
+void Twirling::score(nano_mppic::objects::State& states,
                     nano_mppic::objects::Trajectory& trajectories,
                     nano_mppic::objects::Path& plan,
                     xt::xtensor<float,1>& costs,
@@ -52,30 +52,18 @@ void Goal::score(nano_mppic::objects::State& states,
 {
 
     if(not costmap_ros_ptr_ || not cfg_.common.active){
-        std::cout << "NANO_MPPIC::GOAL critic not active\n";
+        std::cout << "NANO_MPPIC::Twirling critic not active\n";
         return;
     }
 
-    if(not nano_mppic::aux::robotNearGoal(cfg_.common.threshold, states.odom, plan))
-        return;
-
-    const auto goal_idx = plan.x.shape(0) - 1;
-
-    const auto goal_x = plan.x(goal_idx);
-    const auto goal_y = plan.y(goal_idx);
-
-    const auto last_x = xt::view(trajectories.x, xt::all(), -1);
-    const auto last_y = xt::view(trajectories.y, xt::all(), -1);
-
-    auto dists = xt::sqrt(
-        xt::pow(last_x - goal_x, 2) +
-        xt::pow(last_y - goal_y, 2));
-
-    costs += xt::pow(std::move(dists) * cfg_.common.weight, cfg_.common.power);
+    using xt::evaluation_strategy::immediate;
+    
+    const auto wz = xt::abs(states.wz);
+    costs += xt::pow(xt::mean(wz, {1}, immediate) * cfg_.common.weight, cfg_.common.power);
 
 }
 
-void Goal::setConfig(nano_mppic::config::GenericCritic& config)
+void Twirling::setConfig(nano_mppic::config::GenericCritic& config)
 {
     cfg_ = config;
 }

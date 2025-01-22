@@ -6,8 +6,10 @@
 
 #include "Critics/Obstacles.hpp"
 #include "Critics/Goal.hpp"
+#include "Critics/Twirling.hpp"
 #include "Critics/PathFollow.hpp"
 #include "Critics/PathDist.hpp"
+#include "Critics/GoalAngle.hpp"
 
 #include "Objects/State.hpp"
 #include "Objects/Trajectory.hpp"
@@ -49,7 +51,9 @@ class MPPIc {
         critics::Obstacles obs_critic_; 
         critics::Goal goal_critic_; 
         critics::PathFollow pathfollow_critic_; 
+        critics::GoalAngle goalangle_critic_; 
         critics::PathDist pathdist_critic_; 
+        critics::Twirling twir_critic_; 
 
         std::unique_ptr<models::MotionModel> motion_mdl_ptr_;
 
@@ -58,6 +62,8 @@ class MPPIc {
         xt::xtensor<float, 1> costs_;
 
         bool is_configured_;
+
+        std::mutex p_lock_;
 
     // FUNCTIONS
 

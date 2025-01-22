@@ -77,28 +77,47 @@ void MPPIcROS::initialize(std::string name,
     int power;
     nh.param<int>("Critics/Goal/power", power, 1);
     config.goal_crtc.common.power = static_cast<unsigned int>(power);
+    nh.param<bool>("Critics/Goal/active",       config.goal_crtc.common.active,     true);
     nh.param<float>("Critics/Goal/weight",      config.goal_crtc.common.weight,     5.0f);
-    nh.param<float>("Critics/Goal/threshold",   config.goal_crtc.common.threshold,  1.0f);
+    nh.param<float>("Critics/Goal/threshold",   config.goal_crtc.common.threshold,  0.5f);
 
     // PathDist critic config
     nh.param<int>("Critics/PathDist/power", power, 1);
     config.pathdist_crtc.common.power = static_cast<unsigned int>(power);
-    nh.param<float>("Critics/PathDist/weight",  config.pathdist_crtc.common.weight, 5.0f);
+    nh.param<bool>("Critics/PathDist/active",       config.pathdist_crtc.common.active,     true);
+    nh.param<float>("Critics/PathDist/weight",      config.pathdist_crtc.common.weight,     5.0f);
+    nh.param<float>("Critics/PathDist/threshold",   config.pathdist_crtc.common.threshold,  1.0f);
+    nh.param<int>("Critics/PathDist/stride",        config.pathdist_crtc.path_stride,       10);
+
+    // GoalAngle critic config
+    nh.param<int>("Critics/GoalAngle/power", power, 1);
+    config.goalangle_crtc.common.power = static_cast<unsigned int>(power);
+    nh.param<bool>("Critics/GoalAngle/active",      config.goalangle_crtc.common.active,    true);
+    nh.param<float>("Critics/GoalAngle/weight",     config.goalangle_crtc.common.weight,    5.0f);
+    nh.param<float>("Critics/GoalAngle/threshold",  config.goalangle_crtc.common.threshold, 1.0f);
+
+    // Twirling critic config
+    nh.param<int>("Critics/Twirling/power", power, 1);
+    config.twir_crtc.common.power = static_cast<unsigned int>(power);
+    nh.param<bool>("Critics/Twirling/active",   config.twir_crtc.common.active, true);
+    nh.param<float>("Critics/Twirling/weight",  config.twir_crtc.common.weight, 10.0f);
 
     // PathFollow critic config
     nh.param<int>("Critics/PathFollow/power", power, 1);
     config.pathfollow_crtc.common.power = static_cast<unsigned int>(power);
+    nh.param<bool>("Critics/PathFollow/active",     config.pathfollow_crtc.common.active,   true);
     nh.param<float>("Critics/PathFollow/weight",    config.pathfollow_crtc.common.weight,    5.0f);
-    nh.param<float>("Critics/PathFollow/threshold", config.pathfollow_crtc.common.threshold, 0.4f);
+    nh.param<float>("Critics/PathFollow/threshold", config.pathfollow_crtc.common.threshold, 0.5f);
     nh.param<int>("Critics/PathFollow/offset_from_furthest", offset, 6);
     config.pathfollow_crtc.offset_from_furthest = static_cast<size_t>(offset);
 
     // Obstacles critic config
     nh.param<int>("Critics/Obstacles/power", power, 1);
     config.obs_crtc.common.power = static_cast<unsigned int>(power);
-    nh.param<float>("Critics/Obstacles/weight",  config.obs_crtc.common.weight, 5.0f);
-    nh.param<float>("Critics/Obstacles/collision_cost",         config.obs_crtc.collision_cost,        100000.0f);
-    nh.param<float>("Critics/Obstacles/collision_margin_dist",  config.obs_crtc.collision_margin_dist, 0.1f);
+    nh.param<bool>("Critics/Obstacles/active",                  config.obs_crtc.common.active,          true);
+    nh.param<float>("Critics/Obstacles/weight",                 config.obs_crtc.common.weight,          5.0f);
+    nh.param<float>("Critics/Obstacles/collision_cost",         config.obs_crtc.collision_cost,         100000.0f);
+    nh.param<float>("Critics/Obstacles/collision_margin_dist",  config.obs_crtc.collision_margin_dist,  0.1f);
 
     ros::NodeHandle nh_upper("~/");
     nh_upper.param<float>("local_costmap/inflation_layer/inflation_radius",    
@@ -135,8 +154,6 @@ void MPPIcROS::initialize(std::string name,
 bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 {
 
-    ROS_INFO("NANO_MPPIC:: Start computing new Velocity commands");
-
     if(not is_initialized()) return false;
 
     static geometry_msgs::PoseStamped current_pose;
@@ -150,21 +167,25 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
     // nano_mppic::objects::Odometry2d odom;
     // ros_utils::ros2mppic(current_pose, odom);
     
-    ROS_INFO("NANO_MPPIC:: accessing nano_mppic controller for optimal cmd_vel");
+    auto start_time = std::chrono::system_clock::now();
 
     objects::Control cmd = nano_mppic_.getControl(current_odom_, global_plan_);
     cmd_vel.linear.x  = cmd.vx;
     cmd_vel.linear.y  = cmd.vy;
     cmd_vel.angular.z = cmd.wz;
 
-    ROS_INFO("NANO_MPPIC:: Velocity commands computed!");
+    auto end_time = std::chrono::system_clock::now();
+    static std::chrono::duration<double> elapsed_time;
+    elapsed_time = end_time - start_time;
+
+    ROS_INFO("NANO_MPPIC::elapsed time: %f ms", elapsed_time.count()*1000.0);
 
     return true;
 }
 
 bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_plan)
 {
-    ROS_INFO("NANO_MPPIC:: setting new global plan");
+    ROS_INFO_ONCE("NANO_MPPIC:: setting new global plan");
     ros_utils::ros2mppic(global_plan, global_plan_);
     return true;
 }
@@ -176,7 +197,7 @@ bool MPPIcROS::isGoalReached()
         return false;
     }
 
-    ROS_INFO("NANO_MPPIC:: checking if Goal is reached");
+    ROS_INFO_ONCE("NANO_MPPIC:: checking if Goal is reached");
 
     // if()
     // {
@@ -235,22 +256,38 @@ void MPPIcROS::reconfigure_callback(nano_mppic::MPPIPlannerROSConfig &dyn_cfg, u
 
     // Goal critic config
     config.goal_crtc.common.power     = static_cast<unsigned int>(dyn_cfg.goal_power);
+    config.goal_crtc.common.active    = static_cast<unsigned int>(dyn_cfg.goal_active);
     config.goal_crtc.common.weight    = static_cast<float>(dyn_cfg.goal_weight);
     config.goal_crtc.common.threshold = static_cast<float>(dyn_cfg.goal_threshold);
 
+     // GoalAngle critic config
+    config.goalangle_crtc.common.power = static_cast<unsigned int>(dyn_cfg.goalangle_power);
+    config.goalangle_crtc.common.active = static_cast<unsigned int>(dyn_cfg.goalangle_active);
+    config.goalangle_crtc.common.weight = static_cast<float>(dyn_cfg.goalangle_weight);
+    config.goalangle_crtc.common.threshold = static_cast<float>(dyn_cfg.goalangle_threshold);
+
+    // Twirling critic config
+    config.twir_crtc.common.power = static_cast<unsigned int>(dyn_cfg.twir_power);
+    config.twir_crtc.common.active = static_cast<unsigned int>(dyn_cfg.twir_active);
+    config.twir_crtc.common.weight = static_cast<float>(dyn_cfg.twir_weight);
 
     // PathDist critic config
     config.pathdist_crtc.common.power = static_cast<unsigned int>(dyn_cfg.pathdist_power);
+    config.pathdist_crtc.common.active = static_cast<unsigned int>(dyn_cfg.pathdist_active);
     config.pathdist_crtc.common.weight = static_cast<float>(dyn_cfg.pathdist_weight);
+    config.pathdist_crtc.common.threshold = static_cast<float>(dyn_cfg.pathdist_threshold);
+    config.pathdist_crtc.path_stride = dyn_cfg.pathdist_stride;
 
     // PathFollow critic config
     config.pathfollow_crtc.common.power     = static_cast<unsigned int>(dyn_cfg.pathfollow_power);
+    config.pathfollow_crtc.common.active     = static_cast<unsigned int>(dyn_cfg.pathfollow_active);
     config.pathfollow_crtc.common.weight    = static_cast<float>(dyn_cfg.pathfollow_weight);
     config.pathfollow_crtc.common.threshold = static_cast<float>(dyn_cfg.pathfollow_threshold);
     config.pathfollow_crtc.offset_from_furthest = static_cast<size_t>(dyn_cfg.offset_from_furthest);
 
     // Obstacles critic config
     config.obs_crtc.common.power     = static_cast<unsigned int>(dyn_cfg.obs_power);
+    config.obs_crtc.common.active     = static_cast<unsigned int>(dyn_cfg.obs_active);
     config.obs_crtc.common.weight    = static_cast<float>(dyn_cfg.obs_weight);
     config.obs_crtc.collision_cost   = static_cast<float>(dyn_cfg.obs_collision_cost);
     config.obs_crtc.collision_margin_dist = static_cast<float>(dyn_cfg.obs_collision_margin_dist);

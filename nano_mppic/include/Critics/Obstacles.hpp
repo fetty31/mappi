@@ -55,12 +55,14 @@ void Obstacles::score(nano_mppic::objects::State& states,
                     xt::xtensor<float,1>& costs,
                     bool &fail_flag) 
 {
-    std::cout << "NANO_MPPIC::MPPIc::Obstacles::score()\n";
-
-    if(not costmap_ros_ptr_){
-        std::cout << "NANO_MPPIC::OBSTACLES Error: no costmap object passed to critic function!\n";
+    if(not costmap_ros_ptr_ || not cfg_.common.active){
+        std::cout << "NANO_MPPIC::OBSTACLES critic not active\n";
         return;
     }
+
+    // bool near_goal = false;
+    // if(nano_mppic::aux::robotNearGoal(0.1, states.odom, plan))
+    //     near_goal = true;
 
     auto && raw_cost = xt::xtensor<float,1>::from_shape({costs.shape(0)});
     raw_cost.fill(0.0);
@@ -88,6 +90,8 @@ void Obstacles::score(nano_mppic::objects::State& states,
 
             if( dist2obs < cfg_.collision_margin_dist )
                 cost += (cfg_.collision_margin_dist - dist2obs);
+            // else if(not near_goal)
+                // compute repulsive cost
         }
 
         if(collision){

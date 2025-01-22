@@ -6,6 +6,8 @@
 #include <xtensor/xmath.hpp>
 #include <xtensor/xview.hpp>
 
+#include <cmath>
+
 namespace nano_mppic::aux {
 
 template<typename T>
@@ -27,15 +29,6 @@ size_t findPathMinDistPoint(const nano_mppic::objects::Trajectory& trajectories,
 
   const auto dists = dx * dx + dy * dy;
 
-  std::cout << "\n\n\n";
-  std::cout << "traj_x.shape(): " << traj_x.shape(0) << " " << traj_x.shape(1) << std::endl;
-  std::cout << "traj_y.shape(): " << traj_y.shape(0) << " " << traj_x.shape(1) << std::endl;
-  std::cout << "plan.shape(): " << plan.x.shape(0) << " " << plan.x.shape(1) << std::endl;
-  std::cout << "dx.shape(): " << dx.shape(0) << " " << dx.shape(1) << std::endl;
-  std::cout << "dy.shape(): " << dy.shape(0) << " " << dy.shape(1) << std::endl;
-  std::cout << "dists.shape(): " << dists.shape(0) << " " << dists.shape(1) << std::endl;
-  std::cout << "\n\n\n";
-
   size_t max_id_by_trajectories = 0;
   float min_distance_by_path = std::numeric_limits<float>::max();
 
@@ -51,6 +44,34 @@ size_t findPathMinDistPoint(const nano_mppic::objects::Trajectory& trajectories,
   }
 
   return max_id_by_trajectories;
+}
+
+bool robotNearGoal(float pose_tolerance, 
+                    const nano_mppic::objects::Odometry2d& robot_pose,
+                    const nano_mppic::objects::Path& plan)
+{
+  const auto goal_idx = plan.x.shape(0)-1;
+  const auto goal_x = plan.x(goal_idx);
+  const auto goal_y = plan.y(goal_idx);
+
+  const auto tolerance_sq = pose_tolerance*pose_tolerance;
+
+  auto dx = robot_pose.x - goal_x;
+  auto dy = robot_pose.y - goal_y;
+
+  auto dist_sq = dx*dx + dy*dy;
+
+  if(dist_sq < pose_tolerance)
+    return true;
+  else
+    return false;
+
+}
+
+template<typename F, typename T>
+auto angularDist(const F& from, const T& to)
+{
+  return normalize_angles(to - from);
 }
 
 } // namespace nano_mppic::aux

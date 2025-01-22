@@ -51,18 +51,13 @@ void PathFollow::score(nano_mppic::objects::State& states,
                         bool &fail_flag)
 {
 
-    std::cout << "NANO_MPPIC::MPPIc::PathFollow::score()\n";
-
-    if(not costmap_ros_ptr_){
-        std::cout << "NANO_MPPIC::PathFollow Error: no costmap object passed to critic function!\n";
+    if(not costmap_ros_ptr_ || not cfg_.common.active){
+        std::cout << "NANO_MPPIC::PathFollow critic not active\n";
         return;
     }
 
-    /*To-Do:
-        - check if we are closer than cfg_.common.threshold to the trajectory
-            . if closer -> do not compute any cost (return)
-            . else -> pass
-    */
+    if(nano_mppic::aux::robotNearGoal(cfg_.common.threshold, states.odom, plan))
+        return;
 
     const size_t path_size = plan.x.shape(0) - 1;
 

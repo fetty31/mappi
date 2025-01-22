@@ -10,7 +10,7 @@ class PathDist : public Critic {
     // VARIABLES
 
     protected:
-        nano_mppic::config::GenericCritic cfg_;
+        nano_mppic::config::PathDistCritic cfg_;
 
     // FUNCTIONS
 
@@ -19,7 +19,7 @@ class PathDist : public Critic {
         
         void configure(std::string name, 
                         nano_mppic::config::
-                            GenericCritic& config,
+                            PathDistCritic& config,
                         nano_mppic::shared_ptr
                             <costmap_2d::Costmap2DROS>& costmap_ros);
 
@@ -29,14 +29,14 @@ class PathDist : public Critic {
                     xt::xtensor<float,1>& costs,
                     bool &fail_flag) override;
 
-        void setConfig(nano_mppic::config::GenericCritic&);
+        void setConfig(nano_mppic::config::PathDistCritic&);
 };
 
 PathDist::PathDist() { }
 
 void PathDist::configure(std::string name, 
                         nano_mppic::config::
-                            GenericCritic& config,
+                            PathDistCritic& config,
                         nano_mppic::shared_ptr
                             <costmap_2d::Costmap2DROS>& costmap_ros){
 
@@ -51,16 +51,17 @@ void PathDist::score(nano_mppic::objects::State& states,
                         bool &fail_flag)
 {
 
-    std::cout << "NANO_MPPIC::MPPIc::PathDist::score()\n";
-
-    if(not costmap_ros_ptr_){
-        std::cout << "NANO_MPPIC::PathDist Error: no costmap object passed to critic function!\n";
+    if(not costmap_ros_ptr_ || not cfg_.common.active){
+        std::cout << "NANO_MPPIC::PathDist critic not active\n";
         return;
     }
 
+    if(nano_mppic::aux::robotNearGoal(cfg_.common.threshold, states.odom, plan))
+        return;
+
     const size_t path_size = plan.x.shape(0) - 1;
 
-    for(size_t i=0; i < trajectories.x.shape(2) /*time_steps*/; i++){
+    for(size_t i=0; i < trajectories.x.shape(2) /*time_steps*/; i+=cfg_.path_stride){
 
         size_t min_dist_path_point = nano_mppic::aux::findPathMinDistPoint(trajectories, plan, i);
 
@@ -81,7 +82,7 @@ void PathDist::score(nano_mppic::objects::State& states,
     
 }
 
-void PathDist::setConfig(nano_mppic::config::GenericCritic& config)
+void PathDist::setConfig(nano_mppic::config::PathDistCritic& config)
 {
     cfg_ = config;
 }
