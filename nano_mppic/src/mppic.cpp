@@ -53,6 +53,8 @@ void MPPIc::setConfig(config::MPPIc& config)
 
     std::unique_lock<std::mutex> guard(p_lock_); // lock for param update
 
+    std::cout << "NANO_MPPIC::MPPIc updating parameters...\n";
+
     if(config.settings.motion_model == "Ackermann")
         motion_mdl_ptr_ = std::make_unique<models::Ackermann>(config.ackermann, config.model_dt);
     else
@@ -77,6 +79,8 @@ void MPPIc::setConfig(config::MPPIc& config)
     pathdist_critic_.setConfig(config.pathdist_crtc);
     goalangle_critic_.setConfig(config.goalangle_crtc);
     twir_critic_.setConfig(config.twir_crtc);
+
+    std::cout << "NANO_MPPIC::MPPIc finished param update\n";
 }
 
 objects::Trajectory MPPIc::getCandidateTrajectories()
@@ -104,7 +108,11 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
     state_.odom = odom; // update current robot state
     plan_ = plan;
 
-    static bool has_failed = false;
+    // Reset costs
+    costs_.fill(0.0);
+
+    static bool has_failed;
+    has_failed = false;
 
     // Predict trajectories
     do {

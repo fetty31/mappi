@@ -9,6 +9,7 @@
 #include <dynamic_reconfigure/server.h>
 
 #include <chrono>
+#include <cmath>
 
 #include <nav_core/base_local_planner.h>
 

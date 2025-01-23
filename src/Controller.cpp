@@ -172,7 +172,17 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
     objects::Control cmd = nano_mppic_.getControl(current_odom_, global_plan_);
     cmd_vel.linear.x  = cmd.vx;
     cmd_vel.linear.y  = cmd.vy;
-    cmd_vel.angular.z = cmd.wz;
+    cmd_vel.angular.z  = cmd.wz;
+
+    // Custom tranform for ONA control
+    double K = 1.0;
+    double vx = cmd.vx;
+    double vy = K*cmd.wz;
+    double steer = atan2(vy, vx);
+    cmd_vel.angular.z = steer;
+
+    double v = sqrt(pow(vx,2) + pow(vy,2));
+    cmd_vel.linear.x = std::signbit(vx) ? -v : v;
 
     auto end_time = std::chrono::system_clock::now();
     static std::chrono::duration<double> elapsed_time;
