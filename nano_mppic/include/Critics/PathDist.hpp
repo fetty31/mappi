@@ -61,7 +61,15 @@ void PathDist::score(nano_mppic::objects::State& states,
 
     const size_t path_size = plan.x.shape(0) - 1;
 
-    for(size_t i=0; i < trajectories.x.shape(2) /*time_steps*/; i+=cfg_.path_stride){
+    const size_t time_steps = trajectories.x.shape(2);
+    const size_t start = time_steps - cfg_.start_from_end;
+
+    if(start > time_steps){
+        std::cout << "NANO_MPPIC::PathDist ERROR: start_from_end > time_steps\n";
+        return;
+    }
+
+    for(size_t i=start; i < time_steps; i+=cfg_.path_stride){
 
         size_t min_dist_path_point = nano_mppic::aux::findPathMinDistPoint(trajectories, plan, i);
 

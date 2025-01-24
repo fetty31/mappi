@@ -59,6 +59,7 @@ void MPPIcROS::initialize(std::string name,
     nh.param<float>("GeneralSettings/gamma",        config.gamma,       1.0f);
 
     nh.param<float>("Ackermann/min_radius",  config.ackermann.min_r,  3.0f);
+    nh.param<float>("SteeringModel/length",  config.steering.length,  1.0f);
 
     nh.param<std::string>("MotionModel", config.settings.motion_model, "Ackermann");
 
@@ -87,7 +88,8 @@ void MPPIcROS::initialize(std::string name,
     nh.param<bool>("Critics/PathDist/active",       config.pathdist_crtc.common.active,     true);
     nh.param<float>("Critics/PathDist/weight",      config.pathdist_crtc.common.weight,     5.0f);
     nh.param<float>("Critics/PathDist/threshold",   config.pathdist_crtc.common.threshold,  1.0f);
-    nh.param<int>("Critics/PathDist/stride",        config.pathdist_crtc.path_stride,       10);
+    nh.param<int>("Critics/PathDist/stride",        config.pathdist_crtc.path_stride,       2);
+    nh.param<int>("Critics/PathDist/start_from_end",  config.pathdist_crtc.start_from_end,  10);
 
     // GoalAngle critic config
     nh.param<int>("Critics/GoalAngle/power", power, 1);
@@ -174,15 +176,15 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
     cmd_vel.linear.y  = cmd.vy;
     cmd_vel.angular.z  = cmd.wz;
 
-    // Custom tranform for ONA control
-    double K = 1.0;
-    double vx = cmd.vx;
-    double vy = K*cmd.wz;
-    double steer = atan2(vy, vx);
-    cmd_vel.angular.z = steer;
+    // // Custom tranform for ONA control
+    // double K = 1.0;
+    // double vx = cmd.vx;
+    // double vy = K*cmd.wz;
+    // double steer = atan2(vy, vx);
+    // cmd_vel.angular.z = steer;
 
-    double v = sqrt(pow(vx,2) + pow(vy,2));
-    cmd_vel.linear.x = std::signbit(vx) ? -v : v;
+    // double v = sqrt(pow(vx,2) + pow(vy,2));
+    // cmd_vel.linear.x = std::signbit(vx) ? -v : v;
 
     auto end_time = std::chrono::system_clock::now();
     static std::chrono::duration<double> elapsed_time;
@@ -250,6 +252,7 @@ void MPPIcROS::reconfigure_callback(nano_mppic::MPPIPlannerROSConfig &dyn_cfg, u
     config.gamma = static_cast<float>(dyn_cfg.gamma);
 
     config.ackermann.min_r = static_cast<float>(dyn_cfg.min_radius);
+    config.steering.length = static_cast<float>(dyn_cfg.length);
 
     config.settings.motion_model = dyn_cfg.MotionModel;
 
@@ -287,6 +290,7 @@ void MPPIcROS::reconfigure_callback(nano_mppic::MPPIPlannerROSConfig &dyn_cfg, u
     config.pathdist_crtc.common.weight = static_cast<float>(dyn_cfg.pathdist_weight);
     config.pathdist_crtc.common.threshold = static_cast<float>(dyn_cfg.pathdist_threshold);
     config.pathdist_crtc.path_stride = dyn_cfg.pathdist_stride;
+    config.pathdist_crtc.start_from_end = dyn_cfg.pathdist_start_from_end;
 
     // PathFollow critic config
     config.pathfollow_crtc.common.power     = static_cast<unsigned int>(dyn_cfg.pathfollow_power);

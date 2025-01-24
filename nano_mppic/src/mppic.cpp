@@ -12,11 +12,12 @@ void MPPIc::configure(config::MPPIc& cfg,
 {
     cfg_ = cfg;
     
-    // depending on cfg.settings.motion_model -> declare model
     if(cfg.settings.motion_model == "Ackermann")
-        motion_mdl_ptr_ = std::make_unique<models::Ackermann>(cfg_.ackermann, cfg_.model_dt);
+        motion_mdl_ptr_ = std::make_unique<models::Ackermann>(cfg.ackermann, cfg.model_dt);
+    else if(cfg.settings.motion_model == "SteeringBased")
+        motion_mdl_ptr_ = std::make_unique<models::SteeringBased>(cfg.steering, cfg.model_dt);
     else
-        motion_mdl_ptr_ = std::make_unique<models::Holonomic>(cfg_.model_dt);
+        motion_mdl_ptr_ = std::make_unique<models::Holonomic>(cfg.model_dt);
 
     noise_gen_.configure(cfg.noise, isHolonomic());
 
@@ -48,37 +49,47 @@ void MPPIc::reset()
     costs_ = xt::zeros<float>({cfg_.noise.batch_size});
 }
 
-void MPPIc::setConfig(config::MPPIc& config)
+void MPPIc::setConfig(config::MPPIc& cfg)
 {
 
     std::unique_lock<std::mutex> guard(p_lock_); // lock for param update
 
     std::cout << "NANO_MPPIC::MPPIc updating parameters...\n";
 
-    if(config.settings.motion_model == "Ackermann")
-        motion_mdl_ptr_ = std::make_unique<models::Ackermann>(config.ackermann, config.model_dt);
+    if(cfg.settings.motion_model == "Ackermann")
+        motion_mdl_ptr_ = std::make_unique<models::Ackermann>(cfg.ackermann, cfg.model_dt);
+    else if(cfg.settings.motion_model == "SteeringBased")
+        motion_mdl_ptr_ = std::make_unique<models::SteeringBased>(cfg.steering, cfg.model_dt);
     else
-        motion_mdl_ptr_ = std::make_unique<models::Holonomic>(config.model_dt);
+        motion_mdl_ptr_ = std::make_unique<models::Holonomic>(cfg.model_dt);
 
-    if( (config.noise.batch_size != cfg_.noise.batch_size) || 
-        (config.noise.time_steps != cfg_.noise.time_steps) )
+    std::cout << "NANO_MPPIC::MPPIc finished with MotionModel update\n";
+
+    if( (cfg.noise.batch_size != cfg_.noise.batch_size) || 
+        (cfg.noise.time_steps != cfg_.noise.time_steps) )
     {
-        cfg_ = config;
+
+        std::cout << "NANO_MPPIC::MPPIc resetting all mppi controller\n";
+
+        cfg_ = cfg;
         reset(); // reset full MPPIc
     }
     else
     {
-        cfg_ = config;
-        noise_gen_.reset(config.noise, isHolonomic()); // reset noise generator
+
+        std::cout << "NANO_MPPIC::MPPIc resetting only noise generator\n";
+
+        cfg_ = cfg;
+        noise_gen_.reset(cfg.noise, isHolonomic()); // reset noise generator
     }
 
     // Re-configure Critics
-    obs_critic_.setConfig(config.obs_crtc);
-    goal_critic_.setConfig(config.goal_crtc);
-    pathfollow_critic_.setConfig(config.pathfollow_crtc);
-    pathdist_critic_.setConfig(config.pathdist_crtc);
-    goalangle_critic_.setConfig(config.goalangle_crtc);
-    twir_critic_.setConfig(config.twir_crtc);
+    obs_critic_.setConfig(cfg.obs_crtc);
+    goal_critic_.setConfig(cfg.goal_crtc);
+    pathfollow_critic_.setConfig(cfg.pathfollow_crtc);
+    pathdist_critic_.setConfig(cfg.pathdist_crtc);
+    goalangle_critic_.setConfig(cfg.goalangle_crtc);
+    twir_critic_.setConfig(cfg.twir_crtc);
 
     std::cout << "NANO_MPPIC::MPPIc finished param update\n";
 }
@@ -198,7 +209,7 @@ void MPPIc::evalTrajectories(bool &failed)
     goal_critic_.score(state_, trajectory_, plan_, costs_, failed);
     pathfollow_critic_.score(state_, trajectory_, plan_, costs_, failed);
     goalangle_critic_.score(state_, trajectory_, plan_, costs_, failed);
-    // pathdist_critic_.score(state_, trajectory_, plan_, costs_, failed); // too much overhead
+    pathdist_critic_.score(state_, trajectory_, plan_, costs_, failed); // too much overhead
     twir_critic_.score(state_, trajectory_, plan_, costs_, failed);
 }
 

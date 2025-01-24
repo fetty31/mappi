@@ -3,6 +3,7 @@
 
 #include "Models/Ackermann.hpp"
 #include "Models/Holonomic.hpp"
+#include "Models/SteeringBased.hpp"
 
 #include "Critics/Obstacles.hpp"
 #include "Critics/Goal.hpp"

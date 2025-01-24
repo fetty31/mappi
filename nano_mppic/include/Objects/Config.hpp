@@ -18,6 +18,11 @@ struct AckermannModel
     float min_r;
 };
 
+struct SteeringBasedModel 
+{
+    float length;
+};
+
 struct Constraints 
 {
     float max_vx, min_vx;
@@ -40,6 +45,7 @@ struct GenericCritic{
 struct PathDistCritic{
     CommonCost common;
     int path_stride;
+    int start_from_end;
 };
 
 struct PathFollowCritic 
@@ -68,6 +74,7 @@ struct MPPIc
     } settings;
 
     AckermannModel ackermann;
+    SteeringBasedModel steering;
     Noise noise;
     Constraints bounds;
 
@@ -100,6 +107,8 @@ void MPPIc::print_out(){
     std::cout << "MotionModel: " << settings.motion_model << std::endl;
     if (settings.motion_model=="Ackermann")
         std::cout << "  - min_radius: " << ackermann.min_r << std::endl;
+    else if (settings.motion_model=="SteeringBased")
+        std::cout << "  - length: " << steering.length << std::endl;
 
     std::cout << "Noise Settings: " << std::endl;
     std::cout << "  - noise.std_vx: " << noise.std_vx << std::endl;
