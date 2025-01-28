@@ -9,6 +9,7 @@
 #include "Critics/Goal.hpp"
 #include "Critics/Twirling.hpp"
 #include "Critics/PathFollow.hpp"
+#include "Critics/PathAngle.hpp"
 #include "Critics/PathDist.hpp"
 #include "Critics/GoalAngle.hpp"
 
@@ -52,6 +53,7 @@ class MPPIc {
         critics::Obstacles obs_critic_; 
         critics::Goal goal_critic_; 
         critics::PathFollow pathfollow_critic_; 
+        critics::PathAngle pathangle_critic_; 
         critics::GoalAngle goalangle_critic_; 
         critics::PathDist pathdist_critic_; 
         critics::Twirling twir_critic_; 
@@ -64,7 +66,7 @@ class MPPIc {
 
         bool is_configured_;
 
-        std::mutex p_lock_;
+        std::mutex loop_mtx;
 
     // FUNCTIONS
 
@@ -86,6 +88,7 @@ class MPPIc {
         bool isHolonomic();
 
         objects::Trajectory getCandidateTrajectories();
+        objects::Trajectory getOptimalTrajectory();
         objects::Path       getCurrentPlan();
 
     private:

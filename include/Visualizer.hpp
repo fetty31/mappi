@@ -25,8 +25,8 @@ class Visualizer {
         MPPIc* mppic_;
 
     	ros::NodeHandle* nh_ptr_;
-        ros::Publisher marker_pub_;
-        ros::Publisher pcl_pub_;
+        ros::Publisher marker_pub_, marker_opt_pub_;
+        ros::Publisher pcl_pub_, pcl_opt_pub_;
 
         std::unique_ptr<visualization_msgs::MarkerArray> points_;
         std::unique_ptr<sensor_msgs::PointCloud2> points_pcl_;
@@ -52,8 +52,14 @@ class Visualizer {
 
     private:
 
-        bool fillMarkermsg();
-        bool fillPointCloudmsg();
+        void fillMarkermsg(const objects::Trajectory& trajectories);
+        void fillPointCloudmsg(const objects::Trajectory& trajectories);
+
+        bool getMarkerTrajectories();
+        bool getMarkerOptimalTrajectory();
+
+        bool getPointCloudTrajectories();
+        bool getPointCloudOptimalTrajectory();
 
         void reset();
 
@@ -76,8 +82,11 @@ Visualizer::Visualizer(MPPIc* mppic,
 
     reset();
 
-    marker_pub_ = nh_ptr_->advertise<visualization_msgs::MarkerArray>("/nano_mppic/trajectories", 1);
-    pcl_pub_    = nh_ptr_->advertise<sensor_msgs::PointCloud2>("/nano_mppic/pcl_trajectories", 1);
+    marker_pub_      = nh_ptr_->advertise<visualization_msgs::MarkerArray>("/nano_mppic/trajectories", 1);
+    marker_opt_pub_  = nh_ptr_->advertise<visualization_msgs::MarkerArray>("/nano_mppic/optimal_trajectory", 1);
+
+    pcl_pub_     = nh_ptr_->advertise<sensor_msgs::PointCloud2>("/nano_mppic/pcl_trajectories", 1);
+    pcl_opt_pub_ = nh_ptr_->advertise<sensor_msgs::PointCloud2>("/nano_mppic/pcl_optimal_trajectory", 1);
 
     pub_thread_ = std::thread(std::bind(&Visualizer::publishThread, this));
 }
@@ -88,37 +97,94 @@ void Visualizer::publishThread()
 
     while(ros::ok()){
 
-
-        if( (marker_pub_.getNumSubscribers() > 0) && fillMarkermsg() ) {
+        if( (marker_pub_.getNumSubscribers() > 0) && getMarkerTrajectories() ) {
             marker_pub_.publish(*points_);
         }
 
-        if( (pcl_pub_.getNumSubscribers() > 0) && fillPointCloudmsg() ) {
+        if( (pcl_pub_.getNumSubscribers() > 0) && getPointCloudTrajectories() ) {
             pcl_pub_.publish(*points_pcl_);
+        }
+
+        if( (marker_opt_pub_.getNumSubscribers() > 0) && getMarkerOptimalTrajectory() ) {
+            marker_opt_pub_.publish(*points_);
+        }
+
+        if( (pcl_opt_pub_.getNumSubscribers() > 0) && getPointCloudOptimalTrajectory() ) {
+            pcl_opt_pub_.publish(*points_pcl_);
         }
 
         reset();
     }
 }
 
-void Visualizer::reset()
+bool Visualizer::getMarkerTrajectories()
 {
-    marker_id_ = 0;
-    points_     = std::make_unique<visualization_msgs::MarkerArray>();
-    points_pcl_ = std::make_unique<sensor_msgs::PointCloud2>();
-}
-
-bool Visualizer::fillMarkermsg()
-{
-
     const objects::Trajectory trajectories = mppic_->getCandidateTrajectories();
 
     auto & shape = trajectories.x.shape();
     if(shape[0] < 1)
         return false;
+    
+    fillMarkermsg(trajectories);
 
+    return true;
+}
+
+bool Visualizer::getMarkerOptimalTrajectory()
+{
+    const objects::Trajectory trajectory = mppic_->getOptimalTrajectory();
+
+    auto & shape = trajectory.x.shape();
+    if(shape[1] < 1)
+        return false;
+    
+    fillMarkermsg(trajectory);
+
+    return true;
+}
+
+bool Visualizer::getPointCloudTrajectories()
+{
+    const objects::Trajectory trajectories = mppic_->getCandidateTrajectories();
+
+    auto & shape = trajectories.x.shape();
+    if(shape[0] < 1)
+        return false;
+    
+    fillPointCloudmsg(trajectories);
+
+    return true;
+}
+
+bool Visualizer::getPointCloudOptimalTrajectory()
+{
+    const objects::Trajectory trajectory = mppic_->getOptimalTrajectory();
+
+    auto & shape = trajectory.x.shape();
+    if(shape[1] < 1)
+        return false;
+    
+    fillPointCloudmsg(trajectory);
+
+    return true;
+}
+
+
+void Visualizer::reset()
+{
+    marker_id_ = 0;
+}
+
+void Visualizer::fillMarkermsg(const objects::Trajectory& trajectories)
+{
+    points_ = std::make_unique<visualization_msgs::MarkerArray>(); // reset points
+
+    auto & shape = trajectories.x.shape();
     const float shape_1 = static_cast<float>(shape[1]);
-    points_->markers.reserve(floor(shape[0] / batch_stride_) * floor(shape[1] / time_stride_));
+    if(shape[0] > 1)
+        points_->markers.reserve(floor(shape[0] / batch_stride_) * floor(shape[1] / time_stride_));
+    else
+        points_->markers.reserve(floor(shape[1] / time_stride_));
 
     for (size_t i = 0; i < shape[0]; i += batch_stride_) {
         for (size_t j = 0; j < shape[1]; j += time_stride_) {
@@ -134,18 +200,13 @@ bool Visualizer::fillMarkermsg()
             points_->markers.push_back(marker);
         }
     }
-
-    return true;
 }
 
-bool Visualizer::fillPointCloudmsg(){
-
-    const objects::Trajectory trajectories = mppic_->getCandidateTrajectories();
+void Visualizer::fillPointCloudmsg(const objects::Trajectory& trajectories)
+{
+    points_pcl_ = std::make_unique<sensor_msgs::PointCloud2>();
 
     auto & shape = trajectories.x.shape();
-    if(shape[0] < 1)
-        return false;
-    
     const float shape_0 = static_cast<float>(shape[0]);
     const float shape_1 = static_cast<float>(shape[1]);
 
@@ -164,7 +225,7 @@ bool Visualizer::fillPointCloudmsg(){
     points_pcl_->header.frame_id = frame_id_;
 
     points_pcl_->height = 1;
-    points_pcl_->width = ceil(shape_0 / batch_stride_) * ceil(shape_1 / time_stride_);
+    points_pcl_->width = (shape_0 > 1) ? ceil(shape_0 / batch_stride_) * ceil(shape_1 / time_stride_) : ceil(shape_1 / time_stride_);
     points_pcl_->is_dense = true;
 
     //Total number of bytes per point
@@ -197,8 +258,6 @@ bool Visualizer::fillPointCloudmsg(){
             ++iter_i;
         }
     }
-
-    return true;
 }
 
 } // namespace nano_mppic

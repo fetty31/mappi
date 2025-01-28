@@ -24,6 +24,7 @@ void MPPIc::configure(config::MPPIc& cfg,
     obs_critic_.configure("obstacles_critic", cfg.obs_crtc, costmap);
     goal_critic_.configure("goal_critic", cfg.goal_crtc, costmap);
     pathfollow_critic_.configure("pathfollow_critic", cfg.pathfollow_crtc, costmap);
+    pathangle_critic_.configure("pathangle_critic", cfg.pathangle_crtc, costmap);
     pathdist_critic_.configure("pathdist_critic", cfg.pathdist_crtc, costmap);
     goalangle_critic_.configure("goalangle_critic", cfg.goalangle_crtc, costmap);
     twir_critic_.configure("twir_critic", cfg.twir_crtc, costmap);
@@ -40,19 +41,29 @@ void MPPIc::shutdown()
 
 void MPPIc::reset()
 {
+    std::cout << "NANO_MPPIC::MPPIc resetting all...\n";
+
     state_.reset(cfg_.noise.batch_size, cfg_.noise.time_steps);
+
+    std::cout << "NANO_MPPIC::MPPIc resetting trajectories...\n";
+
     trajectory_.reset(cfg_.noise.batch_size, cfg_.noise.time_steps);
+
+    std::cout << "NANO_MPPIC::MPPIc resetting control sequence...\n";
+
     ctrl_seq_.reset(cfg_.noise.time_steps);
+
+    std::cout << "NANO_MPPIC::MPPIc resetting noise generator...\n";
 
     noise_gen_.reset(cfg_.noise, isHolonomic());
 
+    std::cout << "NANO_MPPIC::MPPIc resetting costs...\n";
     costs_ = xt::zeros<float>({cfg_.noise.batch_size});
 }
 
 void MPPIc::setConfig(config::MPPIc& cfg)
 {
-
-    std::unique_lock<std::mutex> guard(p_lock_); // lock for param update
+    loop_mtx.lock(); // lock control loop
 
     std::cout << "NANO_MPPIC::MPPIc updating parameters...\n";
 
@@ -83,13 +94,18 @@ void MPPIc::setConfig(config::MPPIc& cfg)
         noise_gen_.reset(cfg.noise, isHolonomic()); // reset noise generator
     }
 
+    std::cout << "NANO_MPPIC::MPPIc updating Critics...\n";
+
     // Re-configure Critics
     obs_critic_.setConfig(cfg.obs_crtc);
     goal_critic_.setConfig(cfg.goal_crtc);
     pathfollow_critic_.setConfig(cfg.pathfollow_crtc);
+    pathangle_critic_.setConfig(cfg.pathangle_crtc);
     pathdist_critic_.setConfig(cfg.pathdist_crtc);
     goalangle_critic_.setConfig(cfg.goalangle_crtc);
     twir_critic_.setConfig(cfg.twir_crtc);
+
+    loop_mtx.unlock(); // unlock control loop
 
     std::cout << "NANO_MPPIC::MPPIc finished param update\n";
 }
@@ -104,10 +120,28 @@ objects::Path MPPIc::getCurrentPlan()
     return objects::Path(plan_);
 }
 
+objects::Trajectory MPPIc::getOptimalTrajectory()
+{
+    objects::Trajectory opt_trajectory; 
+    opt_trajectory.reset(1, trajectory_.x.shape(1)); // the one and only optimal trajectory
+
+    objects::State opt_state;
+    opt_state.reset(1, ctrl_seq_.vx.size());
+
+    opt_state.odom = state_.odom; // last received odom
+    xt::view(opt_state.vx, xt::all(), xt::all()) = ctrl_seq_.vx;
+    xt::view(opt_state.vy, xt::all(), xt::all()) = ctrl_seq_.vy;
+    xt::view(opt_state.wz, xt::all(), xt::all()) = ctrl_seq_.wz;
+
+    motion_mdl_ptr_->integrate(opt_state, opt_trajectory);
+
+    return std::move(opt_trajectory);
+}
+
 objects::Control MPPIc::getControl(const objects::Odometry2d& odom, 
                                         const objects::Path& plan)
 {
-    std::unique_lock<std::mutex> guard(p_lock_); // lock until param update finished
+    loop_mtx.lock();; // lock until param update finished
 
     static objects::Control output;
     
@@ -148,6 +182,8 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
 
     // shift control 
     shiftControlSeq();
+
+    loop_mtx.unlock();
 
     return output;
 }
@@ -208,6 +244,7 @@ void MPPIc::evalTrajectories(bool &failed)
     obs_critic_.score(state_, trajectory_, plan_, costs_, failed);
     goal_critic_.score(state_, trajectory_, plan_, costs_, failed);
     pathfollow_critic_.score(state_, trajectory_, plan_, costs_, failed);
+    pathangle_critic_.score(state_, trajectory_, plan_, costs_, failed);
     goalangle_critic_.score(state_, trajectory_, plan_, costs_, failed);
     pathdist_critic_.score(state_, trajectory_, plan_, costs_, failed); // too much overhead
     twir_critic_.score(state_, trajectory_, plan_, costs_, failed);
@@ -272,7 +309,7 @@ void MPPIc::updateState(objects::State& st,
             xt::view(st.cvy, xt::all(), xt::range(0, -1));
 
     // Integrate new trajectories
-    motion_mdl_ptr_->predict(st, traj);
+    motion_mdl_ptr_->integrate(st, traj);
 }
 
 void MPPIc::applyControlConstraints(objects::ControlSequence& sequence)

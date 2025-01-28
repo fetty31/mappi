@@ -239,6 +239,8 @@ void MPPIcROS::reconfigure_callback(nano_mppic::MPPIPlannerROSConfig &dyn_cfg, u
     if(not is_initialized())
         return;
 
+    try {
+
     config::MPPIc config;
     config.settings.num_iters  = static_cast<unsigned int>(dyn_cfg.num_iterations);
     config.settings.num_retry   = static_cast<unsigned int>(dyn_cfg.num_retry);
@@ -297,7 +299,14 @@ void MPPIcROS::reconfigure_callback(nano_mppic::MPPIPlannerROSConfig &dyn_cfg, u
     config.pathfollow_crtc.common.active     = static_cast<unsigned int>(dyn_cfg.pathfollow_active);
     config.pathfollow_crtc.common.weight    = static_cast<float>(dyn_cfg.pathfollow_weight);
     config.pathfollow_crtc.common.threshold = static_cast<float>(dyn_cfg.pathfollow_threshold);
-    config.pathfollow_crtc.offset_from_furthest = static_cast<size_t>(dyn_cfg.offset_from_furthest);
+    config.pathfollow_crtc.offset_from_furthest = static_cast<size_t>(dyn_cfg.pathfollow_offset);
+
+    // PathFollow critic config
+    config.pathangle_crtc.common.power     = static_cast<unsigned int>(dyn_cfg.pathangle_power);
+    config.pathangle_crtc.common.active     = static_cast<unsigned int>(dyn_cfg.pathangle_active);
+    config.pathangle_crtc.common.weight    = static_cast<float>(dyn_cfg.pathangle_weight);
+    config.pathangle_crtc.common.threshold = static_cast<float>(dyn_cfg.pathangle_threshold);
+    config.pathangle_crtc.offset_from_furthest = static_cast<size_t>(dyn_cfg.pathangle_offset);
 
     // Obstacles critic config
     config.obs_crtc.common.power     = static_cast<unsigned int>(dyn_cfg.obs_power);
@@ -322,6 +331,10 @@ void MPPIcROS::reconfigure_callback(nano_mppic::MPPIPlannerROSConfig &dyn_cfg, u
 
     // Reconfigure MPPI controller
     nano_mppic_.setConfig(config);
+
+    } catch (...) {
+        ROS_ERROR("NANO_MPPIC:: Dynamic Reconfigure parameters could not be read!");
+    }
 }
 
 } // namespace nano_mppic

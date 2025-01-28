@@ -28,7 +28,7 @@ class MotionModel {
 
         virtual ~MotionModel() = default;
 
-        virtual void predict(nano_mppic::objects::State& st, 
+        virtual void integrate(nano_mppic::objects::State& st, 
                             nano_mppic::objects::Trajectory& traj)
         {
             const double initial_yaw = st.odom.yaw;

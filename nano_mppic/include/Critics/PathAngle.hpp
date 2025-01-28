@@ -1,11 +1,11 @@
-#ifndef __NANO_MPPI_PATHFOLLOW_CRITIC_HPP__
-#define __NANO_MPPI_PATHFOLLOW_CRITIC_HPP__
+#ifndef __NANO_MPPI_PATHANGLE_CRITIC_HPP__
+#define __NANO_MPPI_PATHANGLE_CRITIC_HPP__
 
 #include "Critics/Critic.hpp"
 
 namespace nano_mppic::critics {
 
-class PathFollow : public Critic {
+class PathAngle : public Critic {
 
     // VARIABLES
 
@@ -15,7 +15,7 @@ class PathFollow : public Critic {
     // FUNCTIONS
 
     public:
-        PathFollow();
+        PathAngle();
         
         void configure(std::string name, 
                         nano_mppic::config::
@@ -32,9 +32,9 @@ class PathFollow : public Critic {
         void setConfig(nano_mppic::config::PathCritic&);
 };
 
-PathFollow::PathFollow() { }
+PathAngle::PathAngle() { }
 
-void PathFollow::configure(std::string name, 
+void PathAngle::configure(std::string name, 
                         nano_mppic::config::
                             PathCritic& config,
                         nano_mppic::shared_ptr
@@ -44,7 +44,7 @@ void PathFollow::configure(std::string name,
     cfg_ = config;
 }
 
-void PathFollow::score(nano_mppic::objects::State& states,
+void PathAngle::score(nano_mppic::objects::State& states,
                         nano_mppic::objects::Trajectory& trajectories,
                         nano_mppic::objects::Path& plan,
                         xt::xtensor<float,1>& costs,
@@ -52,7 +52,7 @@ void PathFollow::score(nano_mppic::objects::State& states,
 {
 
     if(not costmap_ros_ptr_ || not cfg_.common.active){
-        std::cout << "NANO_MPPIC::PathFollow critic not active\n";
+        std::cout << "NANO_MPPIC::PathAngle critic not active\n";
         return;
     }
 
@@ -80,18 +80,18 @@ void PathFollow::score(nano_mppic::objects::State& states,
     const auto path_x = plan.x(offseted_idx);
     const auto path_y = plan.y(offseted_idx);
 
-    const auto last_x = xt::view(trajectories.x, xt::all(), -1);
-    const auto last_y = xt::view(trajectories.y, xt::all(), -1);
+    const auto yaws_between_points = xt::atan2(
+        path_y - trajectories.y,
+        path_x - trajectories.x);
+    const auto yaws =
+        xt::abs(nano_mppic::aux::angularDist(trajectories.yaw, yaws_between_points));
 
-    auto dists = xt::sqrt(
-        xt::pow(last_x - path_x, 2) +
-        xt::pow(last_y - path_y, 2));
-
-    costs += xt::pow(cfg_.common.weight * std::move(dists), cfg_.common.power);
+    using xt::evaluation_strategy::immediate;
+    costs += xt::pow(xt::mean(yaws, {1}, immediate) * cfg_.common.weight, cfg_.common.power);
 
 }
 
-void PathFollow::setConfig(nano_mppic::config::PathCritic& config)
+void PathAngle::setConfig(nano_mppic::config::PathCritic& config)
 {
     cfg_ = config;
 }

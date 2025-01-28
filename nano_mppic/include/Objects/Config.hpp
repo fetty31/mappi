@@ -48,7 +48,7 @@ struct PathDistCritic{
     int start_from_end;
 };
 
-struct PathFollowCritic 
+struct PathCritic 
 {
     CommonCost common;
     size_t offset_from_furthest;
@@ -78,7 +78,8 @@ struct MPPIc
     Noise noise;
     Constraints bounds;
 
-    PathFollowCritic pathfollow_crtc;
+    PathCritic pathfollow_crtc;
+    PathCritic pathangle_crtc;
     GenericCritic goal_crtc;
     PathDistCritic pathdist_crtc;
     GenericCritic twir_crtc;

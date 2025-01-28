@@ -30,7 +30,7 @@ class SteeringBased : public MotionModel {
 
         bool isHolonomic() override { return false; }
 
-        void predict(nano_mppic::objects::State& st, 
+        void integrate(nano_mppic::objects::State& st, 
                     nano_mppic::objects::Trajectory& traj) override 
         {
             const double initial_yaw = st.odom.yaw;
