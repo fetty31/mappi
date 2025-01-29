@@ -199,6 +199,22 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
 {
     ROS_INFO_ONCE("NANO_MPPIC:: setting new global plan");
     ros_utils::ros2mppic(global_plan, global_plan_);
+
+    // Interpolate received plan
+    std::vector<std::array<float,2>> plan;
+    for(size_t i=0; i < global_plan_.x.size(); i++){
+        std::array<float,2> arr = {global_plan_.x(i), global_plan_.y(i)};
+        plan.push_back(arr);
+    }
+    fCubicBSpline spline(plan);
+
+    /* To-Do:
+        - define spline for 3D data (x,y,yaw)
+        - save spline into shared object
+        - publish interpolated plan
+        - segment interpolated plan into smaller path (equidistant points approx)
+    */
+
     return true;
 }
 

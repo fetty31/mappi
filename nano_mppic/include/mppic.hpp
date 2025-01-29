@@ -20,6 +20,7 @@
 
 #include "Utils/NoiseGenerator.hpp"
 #include "Utils/Auxiliar.hpp"
+#include "Utils/CubicBSpline.hpp"
 
 #include <memory>
 
