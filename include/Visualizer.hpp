@@ -28,8 +28,6 @@ class Visualizer {
         ros::Publisher marker_pub_, marker_opt_pub_;
         ros::Publisher pcl_pub_, pcl_opt_pub_;
 
-        std::unique_ptr<visualization_msgs::MarkerArray> points_;
-        std::unique_ptr<sensor_msgs::PointCloud2> points_pcl_;
         std::thread pub_thread_;
 
         int batch_stride_;
@@ -52,14 +50,16 @@ class Visualizer {
 
     private:
 
-        void fillMarkermsg(const objects::Trajectory& trajectories);
-        void fillPointCloudmsg(const objects::Trajectory& trajectories);
+        void fillMarkermsg(const objects::Trajectory& trajectories,
+                            visualization_msgs::MarkerArray* msg);
+        void fillPointCloudmsg(const objects::Trajectory& trajectories,
+                                sensor_msgs::PointCloud2* msg);
 
-        bool getMarkerTrajectories();
-        bool getMarkerOptimalTrajectory();
+        bool getMarkerTrajectories(visualization_msgs::MarkerArray* msg);
+        bool getMarkerOptimalTrajectory(visualization_msgs::MarkerArray* msg);
 
-        bool getPointCloudTrajectories();
-        bool getPointCloudOptimalTrajectory();
+        bool getPointCloudTrajectories(sensor_msgs::PointCloud2* msg);
+        bool getPointCloudOptimalTrajectory(sensor_msgs::PointCloud2* msg);
 
         void reset();
 
@@ -97,27 +97,30 @@ void Visualizer::publishThread()
 
     while(ros::ok()){
 
-        if( (marker_pub_.getNumSubscribers() > 0) && getMarkerTrajectories() ) {
-            marker_pub_.publish(*points_);
+        sensor_msgs::PointCloud2 pcl_msg; 
+        visualization_msgs::MarkerArray m_msg;
+
+        if( (marker_pub_.getNumSubscribers() > 0) && getMarkerTrajectories(&m_msg) ) {
+            marker_pub_.publish(m_msg);
         }
 
-        if( (pcl_pub_.getNumSubscribers() > 0) && getPointCloudTrajectories() ) {
-            pcl_pub_.publish(*points_pcl_);
+        if( (pcl_pub_.getNumSubscribers() > 0) && getPointCloudTrajectories(&pcl_msg) ) {
+            pcl_pub_.publish(pcl_msg);
         }
 
-        if( (marker_opt_pub_.getNumSubscribers() > 0) && getMarkerOptimalTrajectory() ) {
-            marker_opt_pub_.publish(*points_);
+        if( (marker_opt_pub_.getNumSubscribers() > 0) && getMarkerOptimalTrajectory(&m_msg) ) {
+            marker_opt_pub_.publish(m_msg);
         }
 
-        if( (pcl_opt_pub_.getNumSubscribers() > 0) && getPointCloudOptimalTrajectory() ) {
-            pcl_opt_pub_.publish(*points_pcl_);
+        if( (pcl_opt_pub_.getNumSubscribers() > 0) && getPointCloudOptimalTrajectory(&pcl_msg) ) {
+            pcl_opt_pub_.publish(pcl_msg);
         }
 
         reset();
     }
 }
 
-bool Visualizer::getMarkerTrajectories()
+bool Visualizer::getMarkerTrajectories(visualization_msgs::MarkerArray* msg)
 {
     const objects::Trajectory trajectories = mppic_->getCandidateTrajectories();
 
@@ -125,12 +128,12 @@ bool Visualizer::getMarkerTrajectories()
     if(shape[0] < 1)
         return false;
     
-    fillMarkermsg(trajectories);
+    fillMarkermsg(trajectories, msg);
 
     return true;
 }
 
-bool Visualizer::getMarkerOptimalTrajectory()
+bool Visualizer::getMarkerOptimalTrajectory(visualization_msgs::MarkerArray* msg)
 {
     const objects::Trajectory trajectory = mppic_->getOptimalTrajectory();
 
@@ -138,12 +141,12 @@ bool Visualizer::getMarkerOptimalTrajectory()
     if(shape[1] < 1)
         return false;
     
-    fillMarkermsg(trajectory);
+    fillMarkermsg(trajectory, msg);
 
     return true;
 }
 
-bool Visualizer::getPointCloudTrajectories()
+bool Visualizer::getPointCloudTrajectories(sensor_msgs::PointCloud2* msg)
 {
     const objects::Trajectory trajectories = mppic_->getCandidateTrajectories();
 
@@ -151,12 +154,12 @@ bool Visualizer::getPointCloudTrajectories()
     if(shape[0] < 1)
         return false;
     
-    fillPointCloudmsg(trajectories);
+    fillPointCloudmsg(trajectories, msg);
 
     return true;
 }
 
-bool Visualizer::getPointCloudOptimalTrajectory()
+bool Visualizer::getPointCloudOptimalTrajectory(sensor_msgs::PointCloud2* msg)
 {
     const objects::Trajectory trajectory = mppic_->getOptimalTrajectory();
 
@@ -164,7 +167,7 @@ bool Visualizer::getPointCloudOptimalTrajectory()
     if(shape[1] < 1)
         return false;
     
-    fillPointCloudmsg(trajectory);
+    fillPointCloudmsg(trajectory, msg);
 
     return true;
 }
@@ -175,16 +178,17 @@ void Visualizer::reset()
     marker_id_ = 0;
 }
 
-void Visualizer::fillMarkermsg(const objects::Trajectory& trajectories)
+void Visualizer::fillMarkermsg(const objects::Trajectory& trajectories, 
+                                visualization_msgs::MarkerArray* msg)
 {
-    points_ = std::make_unique<visualization_msgs::MarkerArray>(); // reset points
+    msg->markers.clear();
 
     auto & shape = trajectories.x.shape();
     const float shape_1 = static_cast<float>(shape[1]);
     if(shape[0] > 1)
-        points_->markers.reserve(floor(shape[0] / batch_stride_) * floor(shape[1] / time_stride_));
+        msg->markers.reserve(floor(shape[0] / batch_stride_) * floor(shape[1] / time_stride_));
     else
-        points_->markers.reserve(floor(shape[1] / time_stride_));
+        msg->markers.reserve(floor(shape[1] / time_stride_));
 
     for (size_t i = 0; i < shape[0]; i += batch_stride_) {
         for (size_t j = 0; j < shape[1]; j += time_stride_) {
@@ -197,21 +201,20 @@ void Visualizer::fillMarkermsg(const objects::Trajectory& trajectories)
             auto color = ros_utils::createColor(0, green_component, blue_component, 1);
             auto marker = ros_utils::createMarker(marker_id_++, pose, scale, color, frame_id_);
 
-            points_->markers.push_back(marker);
+            msg->markers.push_back(marker);
         }
     }
 }
 
-void Visualizer::fillPointCloudmsg(const objects::Trajectory& trajectories)
+void Visualizer::fillPointCloudmsg(const objects::Trajectory& trajectories, 
+                                    sensor_msgs::PointCloud2* msg)
 {
-    points_pcl_ = std::make_unique<sensor_msgs::PointCloud2>();
-
     auto & shape = trajectories.x.shape();
     const float shape_0 = static_cast<float>(shape[0]);
     const float shape_1 = static_cast<float>(shape[1]);
 
     //Modifier to describe what the fields are.
-    sensor_msgs::PointCloud2Modifier modifier(*points_pcl_);
+    sensor_msgs::PointCloud2Modifier modifier(*msg);
 
     modifier.setPointCloud2Fields(4,
         "x", 1, sensor_msgs::PointField::FLOAT32,
@@ -220,24 +223,27 @@ void Visualizer::fillPointCloudmsg(const objects::Trajectory& trajectories)
         "intensity", 1, sensor_msgs::PointField::FLOAT32);
 
     //Msg header
-    points_pcl_->header = std_msgs::Header();
-    points_pcl_->header.stamp = ros::Time::now();
-    points_pcl_->header.frame_id = frame_id_;
+    msg->header = std_msgs::Header();
+    msg->header.stamp = ros::Time::now();
+    msg->header.frame_id = frame_id_;
 
-    points_pcl_->height = 1;
-    points_pcl_->width = (shape_0 > 1) ? ceil(shape_0 / batch_stride_) * ceil(shape_1 / time_stride_) : ceil(shape_1 / time_stride_);
-    points_pcl_->is_dense = true;
+    msg->height = 1;
+    msg->width = (shape_0 > 1) ? ceil(shape_0 / batch_stride_) * ceil(shape_1 / time_stride_) : ceil(shape_1 / time_stride_);
+    msg->is_dense = true;
 
     //Total number of bytes per point
-    points_pcl_->point_step = 16;
-    points_pcl_->row_step = points_pcl_->point_step * points_pcl_->width;
-    points_pcl_->data.resize(points_pcl_->row_step);
+    msg->point_step = 16;
+    msg->row_step = msg->point_step * msg->width;
+
+    // Set up data
+    msg->data.clear();
+    msg->data.resize(msg->row_step);
 
     //Iterators for PointCloud msg
-    sensor_msgs::PointCloud2Iterator<float> iter_x(*points_pcl_, "x");
-    sensor_msgs::PointCloud2Iterator<float> iter_y(*points_pcl_, "y");
-    sensor_msgs::PointCloud2Iterator<float> iter_z(*points_pcl_, "z");
-    sensor_msgs::PointCloud2Iterator<float> iter_i(*points_pcl_, "intensity");
+    sensor_msgs::PointCloud2Iterator<float> iter_x(*msg, "x");
+    sensor_msgs::PointCloud2Iterator<float> iter_y(*msg, "y");
+    sensor_msgs::PointCloud2Iterator<float> iter_z(*msg, "z");
+    sensor_msgs::PointCloud2Iterator<float> iter_i(*msg, "intensity");
 
     //iterate over the message and populate the fields.  
     int c=0;

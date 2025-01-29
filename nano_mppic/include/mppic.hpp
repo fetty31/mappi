@@ -49,6 +49,8 @@ class MPPIc {
         objects::Trajectory trajectory_;
         objects::Path plan_;
 
+        std::array<objects::Control,2> ctrl_history_;
+
         // To-Do: define critics manager 
         critics::Obstacles obs_critic_; 
         critics::Goal goal_critic_; 
@@ -67,6 +69,7 @@ class MPPIc {
         bool is_configured_;
 
         std::mutex loop_mtx;
+        std::mutex reset_mtx;
 
     // FUNCTIONS
 

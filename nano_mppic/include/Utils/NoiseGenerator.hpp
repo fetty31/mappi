@@ -120,6 +120,8 @@ void NoiseGenerator::generateNoise()
         xt::noalias(noises_vy_) = xt::random::randn<float>(
             {cfg_.batch_size, cfg_.time_steps}, 0.0, cfg_.std_vy);
     }
+
+    std::cout << "GENERATE NOISE \n";
 }
 
 } // namespace nano_mppic::utils

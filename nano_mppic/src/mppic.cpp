@@ -41,6 +41,8 @@ void MPPIc::shutdown()
 
 void MPPIc::reset()
 {
+    reset_mtx.lock(); // avoid accessing objects while being reset
+
     std::cout << "NANO_MPPIC::MPPIc resetting all...\n";
 
     state_.reset(cfg_.noise.batch_size, cfg_.noise.time_steps);
@@ -59,6 +61,12 @@ void MPPIc::reset()
 
     std::cout << "NANO_MPPIC::MPPIc resetting costs...\n";
     costs_ = xt::zeros<float>({cfg_.noise.batch_size});
+
+    std::cout << "NANO_MPPIC::MPPIc resetting control history...\n";
+    ctrl_history_[0] = {0.0, 0.0, 0.0};
+    ctrl_history_[1] = {0.0, 0.0, 0.0};
+
+    reset_mtx.unlock(); 
 }
 
 void MPPIc::setConfig(config::MPPIc& cfg)
@@ -112,16 +120,26 @@ void MPPIc::setConfig(config::MPPIc& cfg)
 
 objects::Trajectory MPPIc::getCandidateTrajectories()
 {
-    return objects::Trajectory(trajectory_);
+    reset_mtx.lock(); // avoid access while being reset
+        objects::Trajectory traj_cpy(trajectory_);
+    reset_mtx.unlock();
+
+    return std::move(traj_cpy);
 }
 
 objects::Path MPPIc::getCurrentPlan()
 {
-    return objects::Path(plan_);
+    reset_mtx.lock(); // avoid access while being reset
+        objects::Path plan_cpy(plan_);
+    reset_mtx.unlock();
+
+    return std::move(plan_cpy);
 }
 
 objects::Trajectory MPPIc::getOptimalTrajectory()
 {
+    reset_mtx.lock(); // avoid access while being reset
+    
     objects::Trajectory opt_trajectory; 
     opt_trajectory.reset(1, trajectory_.x.shape(1)); // the one and only optimal trajectory
 
@@ -134,6 +152,8 @@ objects::Trajectory MPPIc::getOptimalTrajectory()
     xt::view(opt_state.wz, xt::all(), xt::all()) = ctrl_seq_.wz;
 
     motion_mdl_ptr_->integrate(opt_state, opt_trajectory);
+
+    reset_mtx.unlock(); 
 
     return std::move(opt_trajectory);
 }
@@ -169,6 +189,7 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
     } while (fallback(has_failed));
 
     // filter control sequence (smooth out)
+    aux::savitskyGolayFilter(ctrl_seq_, ctrl_history_);
 
     // get control from sequence
     float vx = ctrl_seq_.vx(cfg_.settings.offset);
