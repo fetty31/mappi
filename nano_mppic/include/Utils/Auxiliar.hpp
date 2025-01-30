@@ -6,6 +6,10 @@
 #include <xtensor/xmath.hpp>
 #include <xtensor/xview.hpp>
 
+#include "Objects/State.hpp"
+#include "Objects/Trajectory.hpp"
+#include "Objects/ControlSequence.hpp"
+
 #include <cmath>
 
 namespace nano_mppic::aux {
@@ -15,6 +19,17 @@ auto normalize_angles(const T & angles)
 {
   auto && theta = xt::eval(xt::fmod(angles + M_PI, 2.0 * M_PI));
   return xt::eval(xt::where(theta <= 0.0, theta + M_PI, theta - M_PI));
+}
+
+template <typename T>
+std::vector<T> linspace(T a, T b, size_t N) {
+    T h = (b - a) / static_cast<T>(N-1);
+    std::vector<T> xs(N);
+    typename std::vector<T>::iterator x;
+    T val;
+    for (x = xs.begin(), val = a; x != xs.end(); ++x, val += h)
+        *x = val;
+    return xs;
 }
 
 size_t findPathMinDistPoint(const nano_mppic::objects::Trajectory& trajectories,

@@ -38,6 +38,9 @@ void MPPIcROS::initialize(std::string name,
     odom_sub_ = nh.subscribe<nav_msgs::Odometry>( "/ona2/fast_limo/state", 1,
                     boost::bind( &MPPIcROS::odom_callback, this, _1 ));
 
+    global_pub_ = nh.advertise<nav_msgs::Path>("global_plan", 1);
+    local_pub_  = nh.advertise<nav_msgs::Path>("strided_plan", 1);
+
     config::MPPIc config;
 
     int batch_size, num_iters, time_steps, num_retry, offset;
@@ -110,8 +113,17 @@ void MPPIcROS::initialize(std::string name,
     nh.param<bool>("Critics/PathFollow/active",     config.pathfollow_crtc.common.active,   true);
     nh.param<float>("Critics/PathFollow/weight",    config.pathfollow_crtc.common.weight,    5.0f);
     nh.param<float>("Critics/PathFollow/threshold", config.pathfollow_crtc.common.threshold, 0.5f);
-    nh.param<int>("Critics/PathFollow/offset_from_furthest", offset, 6);
+    nh.param<int>("Critics/PathFollow/offset_from_furthest", offset, 3);
     config.pathfollow_crtc.offset_from_furthest = static_cast<size_t>(offset);
+
+    // PathFollow critic config
+    nh.param<int>("Critics/PathAngle/power", power, 1);
+    config.pathangle_crtc.common.power = static_cast<unsigned int>(power);
+    nh.param<bool>("Critics/PathAngle/active",     config.pathangle_crtc.common.active,   true);
+    nh.param<float>("Critics/PathAngle/weight",    config.pathangle_crtc.common.weight,    15.0f);
+    nh.param<float>("Critics/PathAngle/threshold", config.pathangle_crtc.common.threshold, 0.5f);
+    nh.param<int>("Critics/PathAngle/offset_from_furthest", offset, 3);
+    config.pathangle_crtc.offset_from_furthest = static_cast<size_t>(offset);
 
     // Obstacles critic config
     nh.param<int>("Critics/Obstacles/power", power, 1);
@@ -200,13 +212,39 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
     ROS_INFO_ONCE("NANO_MPPIC:: setting new global plan");
     ros_utils::ros2mppic(global_plan, global_plan_);
 
-    // Interpolate received plan
-    std::vector<std::array<float,2>> plan;
-    for(size_t i=0; i < global_plan_.x.size(); i++){
-        std::array<float,2> arr = {global_plan_.x(i), global_plan_.y(i)};
-        plan.push_back(arr);
-    }
-    fCubicBSpline spline(plan);
+    nav_msgs::Path path_msg;
+    nano_mppic::ros_utils::mppic2ros(global_plan_, path_msg);
+    path_msg.header.frame_id = "ona2/map"; // to-do: read global frame
+    path_msg.header.stamp = ros::Time::now();
+
+    global_pub_.publish(path_msg);
+
+
+    ROS_INFO("NANO_MPPIC:: started spline interpolation");
+
+    nano_mppic::spline::BSplineMPPI spline(global_plan_);
+
+    std::vector<float> u = nano_mppic::aux::linspace<float>(0.0f, 0.99f, 100);
+
+    for(auto uu : u)
+        std::cout << uu << std::endl;
+
+    ROS_INFO("NANO_MPPIC:: evaluating spline");
+
+    const std::array<float,2> p_eval = spline.evaluate(0.02f, 0);
+
+    ROS_INFO("NANO_MPPIC:: multiple evaluation of spline");
+
+    const nano_mppic::objects::Path path = spline.evaluate(u, 0);
+
+    ROS_INFO("NANO_MPPIC:: publishing spline");
+
+    nav_msgs::Path local_path_msg;
+    nano_mppic::ros_utils::mppic2ros(path, local_path_msg);
+    local_path_msg.header.frame_id = "ona2/odom"; // to-do: read local frame
+    local_path_msg.header.stamp = ros::Time::now();
+
+    local_pub_.publish(local_path_msg);
 
     /* To-Do:
         - define spline for 3D data (x,y,yaw)

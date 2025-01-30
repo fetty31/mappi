@@ -4,8 +4,12 @@
 
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Pose.h>
+
 #include <std_msgs/ColorRGBA.h>
+
 #include <nav_msgs/Odometry.h>
+#include <nav_msgs/Path.h>
+
 #include <visualization_msgs/Marker.h>
 
 #include <tf2/utils.h>
@@ -63,6 +67,25 @@ void mppic2ros(const nano_mppic::objects::Path& in_path,
         pose_msg.pose.orientation = tf2::toMsg(q);
 
         out_path.push_back(pose_msg);
+    }
+}
+
+void mppic2ros(const nano_mppic::objects::Path& in_path, 
+                nav_msgs::Path& out_path)
+{
+    out_path.poses.clear();
+    out_path.poses.reserve(in_path.x.size());
+
+    for (size_t i=0; i < in_path.x.size(); ++i) {
+        static geometry_msgs::PoseStamped pose_msg;
+        pose_msg.pose.position.x = in_path.x(i);
+        pose_msg.pose.position.y = in_path.y(i);
+
+        tf2::Quaternion q;
+        q.setRPY( 0, 0, in_path.yaw(i) ); 
+        pose_msg.pose.orientation = tf2::toMsg(q);
+
+        out_path.poses.push_back(pose_msg);
     }
 }
 

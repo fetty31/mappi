@@ -1,22 +1,21 @@
 #ifndef __NANO_MPPIC_ROS_HPP__
 #define __NANO_MPPIC_ROS_HPP__
 
+#include <chrono>
+#include <cmath>
+
 #include "mppic.hpp"
 #include "ROSutils.hpp"
 #include "Visualizer.hpp"
 
-#include <nano_mppic/MPPIPlannerROSConfig.h>
 #include <dynamic_reconfigure/server.h>
-
-#include <chrono>
-#include <cmath>
+#include <nano_mppic/MPPIPlannerROSConfig.h>
 
 #include <nav_core/base_local_planner.h>
 
 #include <ros/ros.h>
 #include <tf2_ros/buffer.h>
 #include <costmap_2d/costmap_2d_ros.h>
-#include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
 
 namespace nano_mppic {
@@ -40,6 +39,8 @@ class MPPIcROS : public nav_core::BaseLocalPlanner {
         bool initialized_;
 
         ros::Subscriber odom_sub_;
+        ros::Publisher global_pub_;
+        ros::Publisher local_pub_;
 
         dynamic_reconfigure::Server<nano_mppic::MPPIPlannerROSConfig> *dyn_srv_;
 

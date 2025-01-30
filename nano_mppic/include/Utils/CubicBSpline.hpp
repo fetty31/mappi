@@ -91,8 +91,11 @@ void CubicBSpline<T>::initialize()
 template<typename T>
 const size_t CubicBSpline<T>::findKnotSpan(const size_t n, const T u)
 {
-    if (u == knotVector_[n+1])
+    if (u >= knotVector_[n+1])
         return n;
+
+    std::cout << "findKnotSpan n: " << n << " u: " << u << std::endl;
+    std::cout << "knotVector_[n+1]: " << knotVector_[n+1] << std::endl;
     
     size_t low = degree_;
     size_t high = n + 1;
@@ -153,6 +156,8 @@ const std::array<T,2> CubicBSpline<T>::evaluate(const T u, const size_t d_order)
 {
     const size_t n = control_points_.size() - 1;
     const auto span = findKnotSpan(n, u);
+
+    std::cout << "spline eval with span: " << span << " | n: " << n << " | u: " << u << std::endl; 
     
     std::array<T,2> result = {0.0, 0.0};
     
