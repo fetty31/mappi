@@ -130,6 +130,8 @@ void MPPIcROS::initialize(std::string name,
     config.obs_crtc.common.power = static_cast<unsigned int>(power);
     nh.param<bool>("Critics/Obstacles/active",                  config.obs_crtc.common.active,          true);
     nh.param<float>("Critics/Obstacles/weight",                 config.obs_crtc.common.weight,          5.0f);
+    nh.param<float>("Critics/Obstacles/threshold",              config.obs_crtc.common.threshold,       1.0f);
+    nh.param<float>("Critics/Obstacles/repulsive_weight",       config.obs_crtc.repulsive_weight,       5.0f);
     nh.param<float>("Critics/Obstacles/collision_cost",         config.obs_crtc.collision_cost,         100000.0f);
     nh.param<float>("Critics/Obstacles/collision_margin_dist",  config.obs_crtc.collision_margin_dist,  0.1f);
 
@@ -140,10 +142,6 @@ void MPPIcROS::initialize(std::string name,
     nh_upper.param<float>("local_costmap/inflation_layer/cost_scaling_factor", 
                             config.obs_crtc.inflation_scale_factor, 
                             10.0f);
-
-    // Not repulsion cost for now (debugging)
-    config.obs_crtc.inflation_scale_factor  = 0.0f;
-    config.obs_crtc.inflation_radius        = 0.0f;
 
     config.print_out(); // print out config (debug)
 
@@ -178,12 +176,27 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
         cmd_vel.angular.z = 0.0;
         return false;
     }
-    // nano_mppic::objects::Odometry2d odom;
-    // ros_utils::ros2mppic(current_pose, odom);
+
+    // Cut down global plan horizon
+
+    // float dist = 15.0f;
+    // size_t index = nano_mppic::aux::getIdxFromDistance(global_plan_, dist);
+
+    nano_mppic::spline::BSpline spline(global_plan_);
+    std::vector<float> u = nano_mppic::aux::linspace<float>(0.0f, 0.99f, 100);
+
+    nano_mppic::objects::Path path = spline.interpolate(u, 0);
+
+    static nav_msgs::Path path_msg;
+    nano_mppic::ros_utils::mppic2ros(path, path_msg);
+    path_msg.header.frame_id = "ona2/odom"; // to-do: read local frame
+    path_msg.header.stamp = ros::Time::now();
+
+    local_pub_.publish(path_msg);
     
     auto start_time = std::chrono::system_clock::now();
 
-    objects::Control cmd = nano_mppic_.getControl(current_odom_, global_plan_);
+    objects::Control cmd = nano_mppic_.getControl(current_odom_, path);
     cmd_vel.linear.x  = cmd.vx;
     cmd_vel.linear.y  = cmd.vy;
     cmd_vel.angular.z  = cmd.wz;
@@ -212,46 +225,12 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
     ROS_INFO_ONCE("NANO_MPPIC:: setting new global plan");
     ros_utils::ros2mppic(global_plan, global_plan_);
 
-    nav_msgs::Path path_msg;
+    static nav_msgs::Path path_msg;
     nano_mppic::ros_utils::mppic2ros(global_plan_, path_msg);
     path_msg.header.frame_id = "ona2/map"; // to-do: read global frame
     path_msg.header.stamp = ros::Time::now();
 
     global_pub_.publish(path_msg);
-
-
-    ROS_INFO("NANO_MPPIC:: started spline interpolation");
-
-    nano_mppic::spline::BSplineMPPI spline(global_plan_);
-
-    std::vector<float> u = nano_mppic::aux::linspace<float>(0.0f, 0.99f, 100);
-
-    for(auto uu : u)
-        std::cout << uu << std::endl;
-
-    ROS_INFO("NANO_MPPIC:: evaluating spline");
-
-    const std::array<float,2> p_eval = spline.evaluate(0.02f, 0);
-
-    ROS_INFO("NANO_MPPIC:: multiple evaluation of spline");
-
-    const nano_mppic::objects::Path path = spline.evaluate(u, 0);
-
-    ROS_INFO("NANO_MPPIC:: publishing spline");
-
-    nav_msgs::Path local_path_msg;
-    nano_mppic::ros_utils::mppic2ros(path, local_path_msg);
-    local_path_msg.header.frame_id = "ona2/odom"; // to-do: read local frame
-    local_path_msg.header.stamp = ros::Time::now();
-
-    local_pub_.publish(local_path_msg);
-
-    /* To-Do:
-        - define spline for 3D data (x,y,yaw)
-        - save spline into shared object
-        - publish interpolated plan
-        - segment interpolated plan into smaller path (equidistant points approx)
-    */
 
     return true;
 }
@@ -364,8 +343,10 @@ void MPPIcROS::reconfigure_callback(nano_mppic::MPPIPlannerROSConfig &dyn_cfg, u
 
     // Obstacles critic config
     config.obs_crtc.common.power     = static_cast<unsigned int>(dyn_cfg.obs_power);
-    config.obs_crtc.common.active     = static_cast<unsigned int>(dyn_cfg.obs_active);
+    config.obs_crtc.common.active    = static_cast<unsigned int>(dyn_cfg.obs_active);
     config.obs_crtc.common.weight    = static_cast<float>(dyn_cfg.obs_weight);
+    config.obs_crtc.common.threshold = static_cast<float>(dyn_cfg.obs_threshold);
+    config.obs_crtc.repulsive_weight = static_cast<float>(dyn_cfg.obs_repulsive_weight);
     config.obs_crtc.collision_cost   = static_cast<float>(dyn_cfg.obs_collision_cost);
     config.obs_crtc.collision_margin_dist = static_cast<float>(dyn_cfg.obs_collision_margin_dist);
 
@@ -376,10 +357,6 @@ void MPPIcROS::reconfigure_callback(nano_mppic::MPPIPlannerROSConfig &dyn_cfg, u
     nh_upper.param<float>("local_costmap/inflation_layer/cost_scaling_factor", 
                             config.obs_crtc.inflation_scale_factor, 
                             10.0f);
-
-    // Not repulsion cost for now (debugging)
-    config.obs_crtc.inflation_scale_factor  = 0.0f;
-    config.obs_crtc.inflation_radius        = 0.0f;
 
     config.print_out(); // print out config (debug)
 

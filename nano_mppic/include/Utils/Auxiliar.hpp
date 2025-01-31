@@ -89,6 +89,19 @@ auto angularDist(const F& from, const T& to)
   return normalize_angles(to - from);
 }
 
+size_t getIdxFromDistance(nano_mppic::objects::Path& path, float dist)
+{
+  float cumdist = 0.0f;
+  for(size_t i=0; i < path.x.size()-1; i++){
+      cumdist += std::sqrt( std::pow(path.x(i+1)-path.x(i),2) + 
+                            std::pow(path.y(i+1)-path.y(i),2) );
+      if(cumdist >= dist)
+          return i;
+  }
+
+  return path.x.size();
+}
+
 void savitskyGolayFilter( nano_mppic::objects::ControlSequence& ctrl_seq,
                           std::array<nano_mppic::objects::Control, 2> & ctrl_history)
 {

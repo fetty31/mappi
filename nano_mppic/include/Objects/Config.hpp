@@ -57,6 +57,7 @@ struct PathCritic
 struct ObstaclesCritic
 {
     CommonCost common;
+    float repulsive_weight;
     float inflation_radius;
     float inflation_scale_factor;
     float collision_cost;
@@ -138,17 +139,26 @@ void MPPIc::print_out(){
     std::cout << "  - power: "      << twir_crtc.common.power       << std::endl;
     std::cout << "  - weight: "     << twir_crtc.common.weight      << std::endl;
 
-    std::cout << "PathFollow Critic Settings: " << std::endl;
+    std::cout << "Path Follow Critic Settings: " << std::endl;
     std::cout << "  - active: "     << pathfollow_crtc.common.active       << std::endl;
     std::cout << "  - power: "      << pathfollow_crtc.common.power       << std::endl;
     std::cout << "  - weight: "     << pathfollow_crtc.common.weight      << std::endl;
     std::cout << "  - threshold: "  << pathfollow_crtc.common.threshold   << std::endl;
     std::cout << "  - offset_from_furthest: "  << pathfollow_crtc.offset_from_furthest  << std::endl;
 
+    std::cout << "Path Angle Critic Settings: " << std::endl;
+    std::cout << "  - active: "     << pathangle_crtc.common.active       << std::endl;
+    std::cout << "  - power: "      << pathangle_crtc.common.power       << std::endl;
+    std::cout << "  - weight: "     << pathangle_crtc.common.weight      << std::endl;
+    std::cout << "  - threshold: "  << pathangle_crtc.common.threshold   << std::endl;
+    std::cout << "  - offset_from_furthest: "  << pathangle_crtc.offset_from_furthest  << std::endl;
+
     std::cout << "Obstacles Critic Settings: " << std::endl;
-    std::cout << "  - active: "     << obs_crtc.common.active       << std::endl;
+    std::cout << "  - active: "     << obs_crtc.common.active      << std::endl;
     std::cout << "  - power: "      << obs_crtc.common.power       << std::endl;
     std::cout << "  - weight: "     << obs_crtc.common.weight      << std::endl;
+    std::cout << "  - threshold: "  << obs_crtc.common.threshold   << std::endl;
+    std::cout << "  - repulsive weight: "       << obs_crtc.repulsive_weight        << std::endl;
     std::cout << "  - inflation_radius: "       << obs_crtc.inflation_radius        << std::endl;
     std::cout << "  - inflation_scale_factor: " << obs_crtc.inflation_scale_factor  << std::endl;
     std::cout << "  - collision_cost: "         << obs_crtc.collision_cost          << std::endl;

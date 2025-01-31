@@ -2,42 +2,13 @@
 #define __NANO_MPPI_CRITIC_HPP__
 
 #include "Objects/Config.hpp"
+#include "Utils/SharedPtr.hpp"
 
 #include <string>
 
-#include <costmap_2d/costmap_2d_ros.h>
+#include <costmap_2d/costmap_2d_ros.h> // to-do: avoid ros dependency
 #include <costmap_2d/costmap_2d.h>
 #include <costmap_2d/inflation_layer.h>
-
-#include <ros/common.h> // to-do: avoid ros dependency
-
-namespace nano_mppic {
-#if ROS_VERSION_MAJOR > 1
-
-    #include <memory> // Use std::shared_ptr for ROS2
-	 
-	template <typename T>
-	using shared_ptr = std::shared_ptr<T>;
-
-	template <typename T, typename... Args>
-	std::shared_ptr<T> make_shared(Args&&... args) {
-    	return std::make_shared<T>(std::forward<Args>(args)...);
-	}
-
-#else
-
-    #include <boost/shared_ptr.hpp> // Use boost::shared_ptr for ROS
-    
-	template <typename T>
-	using shared_ptr = boost::shared_ptr<T>;
-
-	template <typename T, typename... Args>
-	boost::shared_ptr<T> make_shared(Args&&... args) {
-    	return boost::make_shared<T>(std::forward<Args>(args)...);
-	}
-
-#endif
-}
 
 namespace nano_mppic::critics {
 

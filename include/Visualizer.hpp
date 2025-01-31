@@ -82,11 +82,11 @@ Visualizer::Visualizer(MPPIc* mppic,
 
     reset();
 
-    marker_pub_      = nh_ptr_->advertise<visualization_msgs::MarkerArray>("/nano_mppic/trajectories", 1);
-    marker_opt_pub_  = nh_ptr_->advertise<visualization_msgs::MarkerArray>("/nano_mppic/optimal_trajectory", 1);
+    marker_pub_      = nh_ptr_->advertise<visualization_msgs::MarkerArray>("trajectories", 1);
+    marker_opt_pub_  = nh_ptr_->advertise<visualization_msgs::MarkerArray>("optimal_trajectory", 1);
 
-    pcl_pub_     = nh_ptr_->advertise<sensor_msgs::PointCloud2>("/nano_mppic/pcl_trajectories", 1);
-    pcl_opt_pub_ = nh_ptr_->advertise<sensor_msgs::PointCloud2>("/nano_mppic/pcl_optimal_trajectory", 1);
+    pcl_pub_     = nh_ptr_->advertise<sensor_msgs::PointCloud2>("pcl_trajectories", 1);
+    pcl_opt_pub_ = nh_ptr_->advertise<sensor_msgs::PointCloud2>("pcl_optimal_trajectory", 1);
 
     pub_thread_ = std::thread(std::bind(&Visualizer::publishThread, this));
 }
@@ -117,6 +117,8 @@ void Visualizer::publishThread()
         }
 
         reset();
+
+        ros::Duration(0.05).sleep();
     }
 }
 

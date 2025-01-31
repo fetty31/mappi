@@ -60,12 +60,14 @@ void Obstacles::score(nano_mppic::objects::State& states,
         return;
     }
 
-    // bool near_goal = false;
-    // if(nano_mppic::aux::robotNearGoal(0.1, states.odom, plan))
-    //     near_goal = true;
+    bool near_goal = false;
+    if(nano_mppic::aux::robotNearGoal(cfg_.common.threshold, states.odom, plan))
+        near_goal = true;
 
     auto && raw_cost = xt::xtensor<float,1>::from_shape({costs.shape(0)});
     raw_cost.fill(0.0);
+    auto && repulsive_cost = xt::xtensor<float,1>::from_shape({costs.shape(0)});
+    repulsive_cost.fill(0.0);
 
     const size_t n_traj = trajectories.x.shape(1);
     bool all_collide = true;
@@ -75,6 +77,7 @@ void Obstacles::score(nano_mppic::objects::State& states,
         
         for(size_t j=0; j < n_traj; j++){
             unsigned char cost_c = this->costAtPose(trajectories.x(i,j), trajectories.y(i,j), trajectories.yaw(i,j));
+
             if(cost_c < 1) // free space
                 continue; 
             
@@ -90,8 +93,8 @@ void Obstacles::score(nano_mppic::objects::State& states,
 
             if( dist2obs < cfg_.collision_margin_dist )
                 cost += (cfg_.collision_margin_dist - dist2obs);
-            // else if(not near_goal)
-                // compute repulsive cost
+            else if(not near_goal)
+                repulsive_cost[i] += (cfg_.inflation_radius - dist2obs);
         }
 
         if(collision){
@@ -102,7 +105,9 @@ void Obstacles::score(nano_mppic::objects::State& states,
         raw_cost[i] = collision ? cfg_.collision_cost : cost;
     }
 
-    costs += xt::pow( (cfg_.common.weight * raw_cost), cfg_.common.power);
+    costs += xt::pow( 
+        (cfg_.common.weight * raw_cost) + 
+        (cfg_.repulsive_weight * repulsive_cost / n_traj), cfg_.common.power);
     fail_flag = all_collide;
 }
 
