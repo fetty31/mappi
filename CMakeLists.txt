@@ -22,6 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
   costmap_2d
   nav_core
+  std_srvs
   tf2
 )
 
@@ -32,7 +33,7 @@ generate_dynamic_reconfigure_options(
 catkin_package(
  INCLUDE_DIRS include nano_mppic/include
  LIBRARIES ${PROJECT_NAME}_local_planner 
- CATKIN_DEPENDS roscpp nav_msgs tf2 costmap_2d geometry_msgs nav_core visualization_msgs std_msgs sensor_msgs
+ CATKIN_DEPENDS roscpp nav_msgs tf2 costmap_2d geometry_msgs nav_core visualization_msgs std_msgs sensor_msgs std_srvs
 #  DEPENDS XTENSOR
 )
 

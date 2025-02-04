@@ -31,15 +31,23 @@ void MPPIcROS::initialize(std::string name,
     ROS_INFO("NANO_MPPIC:: Initializing...");
 
     // Set up private ROS handlers (tf, costmap, node)
+    ros::NodeHandle nh("~/" + name);
+    ros::NodeHandle nh_upper("~/");
+
     tf_ = tf;
     costmap_ros_ptr_ = shared_ptr<costmap_2d::Costmap2DROS>(costmap_ros);
 
-    ros::NodeHandle nh("~/" + name);
+        // Subscriber
     odom_sub_ = nh.subscribe<nav_msgs::Odometry>( "/ona2/fast_limo/state", 1,
                     boost::bind( &MPPIcROS::odom_callback, this, _1 ));
 
+        // Publishers
     global_pub_ = nh.advertise<nav_msgs::Path>("global_plan", 1);
     local_pub_  = nh.advertise<nav_msgs::Path>("strided_plan", 1);
+
+        // Srv client
+    costmap_client_ = nh_upper.serviceClient<std_srvs::Empty>("clear_costmaps");
+
 
     config::MPPIc config;
 
@@ -91,8 +99,7 @@ void MPPIcROS::initialize(std::string name,
     nh.param<bool>("Critics/PathDist/active",       config.pathdist_crtc.common.active,     true);
     nh.param<float>("Critics/PathDist/weight",      config.pathdist_crtc.common.weight,     5.0f);
     nh.param<float>("Critics/PathDist/threshold",   config.pathdist_crtc.common.threshold,  1.0f);
-    nh.param<int>("Critics/PathDist/stride",        config.pathdist_crtc.path_stride,       2);
-    nh.param<int>("Critics/PathDist/start_from_end",  config.pathdist_crtc.start_from_end,  10);
+    nh.param<int>("Critics/PathDist/stride",        config.pathdist_crtc.traj_stride,       2);
 
     // GoalAngle critic config
     nh.param<int>("Critics/GoalAngle/power", power, 1);
@@ -122,6 +129,8 @@ void MPPIcROS::initialize(std::string name,
     nh.param<bool>("Critics/PathAngle/active",     config.pathangle_crtc.common.active,   true);
     nh.param<float>("Critics/PathAngle/weight",    config.pathangle_crtc.common.weight,    15.0f);
     nh.param<float>("Critics/PathAngle/threshold", config.pathangle_crtc.common.threshold, 0.5f);
+    nh.param<float>("Critics/PathAngle/angle_threshold", config.pathangle_crtc.angle_threshold, 90.0f);
+    config.pathangle_crtc.angle_threshold *= M_PI/180.0; // from deg to rad
     nh.param<int>("Critics/PathAngle/offset_from_furthest", offset, 3);
     config.pathangle_crtc.offset_from_furthest = static_cast<size_t>(offset);
 
@@ -135,7 +144,6 @@ void MPPIcROS::initialize(std::string name,
     nh.param<float>("Critics/Obstacles/collision_cost",         config.obs_crtc.collision_cost,         100000.0f);
     nh.param<float>("Critics/Obstacles/collision_margin_dist",  config.obs_crtc.collision_margin_dist,  0.1f);
 
-    ros::NodeHandle nh_upper("~/");
     nh_upper.param<float>("local_costmap/inflation_layer/inflation_radius",    
                             config.obs_crtc.inflation_radius, 
                             0.55f);
@@ -149,7 +157,7 @@ void MPPIcROS::initialize(std::string name,
     nano_mppic_.configure(config, costmap_ros_ptr_);
 
     // Set up Visualizer instance
-    vis_ptr_ = std::make_unique<Visualizer>(&nano_mppic_, &nh);
+    visualizer_ptr_ = std::make_unique<Visualizer>(&nano_mppic_, &nh);
 
     // Set up dynamic reconfigure server
     dyn_srv_ = new dynamic_reconfigure::Server<nano_mppic::MPPIPlannerROSConfig>(nh);
@@ -201,21 +209,14 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
     cmd_vel.linear.y  = cmd.vy;
     cmd_vel.angular.z  = cmd.wz;
 
-    // // Custom tranform for ONA control
-    // double K = 1.0;
-    // double vx = cmd.vx;
-    // double vy = K*cmd.wz;
-    // double steer = atan2(vy, vx);
-    // cmd_vel.angular.z = steer;
-
-    // double v = sqrt(pow(vx,2) + pow(vy,2));
-    // cmd_vel.linear.x = std::signbit(vx) ? -v : v;
-
     auto end_time = std::chrono::system_clock::now();
     static std::chrono::duration<double> elapsed_time;
     elapsed_time = end_time - start_time;
 
     ROS_INFO("NANO_MPPIC::elapsed time: %f ms", elapsed_time.count()*1000.0);
+
+    // Publish generated trajectories
+    visualizer_ptr_->publish();
 
     return true;
 }
@@ -224,6 +225,18 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
 {
     ROS_INFO_ONCE("NANO_MPPIC:: setting new global plan");
     ros_utils::ros2mppic(global_plan, global_plan_);
+
+    nano_mppic_.reset(); // reset mppi controller
+
+    static std_srvs::Empty srv;
+    if (costmap_client_.call(srv))
+    {
+        ROS_INFO("NANO_MPPIC:: Resetting costmaps");
+    }
+    else
+    {
+        ROS_ERROR("NANO_MPPIC:: Failed to call service ~clear_costmaps");
+    }
 
     static nav_msgs::Path path_msg;
     nano_mppic::ros_utils::mppic2ros(global_plan_, path_msg);
@@ -324,8 +337,7 @@ void MPPIcROS::reconfigure_callback(nano_mppic::MPPIPlannerROSConfig &dyn_cfg, u
     config.pathdist_crtc.common.active = static_cast<unsigned int>(dyn_cfg.pathdist_active);
     config.pathdist_crtc.common.weight = static_cast<float>(dyn_cfg.pathdist_weight);
     config.pathdist_crtc.common.threshold = static_cast<float>(dyn_cfg.pathdist_threshold);
-    config.pathdist_crtc.path_stride = dyn_cfg.pathdist_stride;
-    config.pathdist_crtc.start_from_end = dyn_cfg.pathdist_start_from_end;
+    config.pathdist_crtc.traj_stride = dyn_cfg.pathdist_stride;
 
     // PathFollow critic config
     config.pathfollow_crtc.common.power     = static_cast<unsigned int>(dyn_cfg.pathfollow_power);
@@ -340,6 +352,7 @@ void MPPIcROS::reconfigure_callback(nano_mppic::MPPIPlannerROSConfig &dyn_cfg, u
     config.pathangle_crtc.common.weight    = static_cast<float>(dyn_cfg.pathangle_weight);
     config.pathangle_crtc.common.threshold = static_cast<float>(dyn_cfg.pathangle_threshold);
     config.pathangle_crtc.offset_from_furthest = static_cast<size_t>(dyn_cfg.pathangle_offset);
+    config.pathangle_crtc.angle_threshold = static_cast<float>(dyn_cfg.pathangle_angle_threshold) * M_PI/180.0;
 
     // Obstacles critic config
     config.obs_crtc.common.power     = static_cast<unsigned int>(dyn_cfg.obs_power);

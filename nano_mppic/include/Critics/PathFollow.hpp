@@ -65,17 +65,11 @@ void PathFollow::score(nano_mppic::objects::State& states,
 
     auto offseted_idx = std::min(min_dist_path_point + cfg_.offset_from_furthest, path_size);
 
-    /*To-Do:
-        - check if offseted_idx is a valid point 
-    */
-
-    // bool valid = false;
-    // while (!valid && offseted_idx < path_size - 1) {
-    //     valid = (*data.path_pts_valid)[offseted_idx];
-    //     if (!valid) {
-    //     offseted_idx++;
-    //     }
-    // }
+    bool valid = false;
+    while ( (not valid) && (offseted_idx < path_size-1) ) {
+        valid = plan.free(offseted_idx);
+        if (not valid) offseted_idx++;
+    }
 
     const auto path_x = plan.x(offseted_idx);
     const auto path_y = plan.y(offseted_idx);

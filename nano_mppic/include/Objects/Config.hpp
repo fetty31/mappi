@@ -44,14 +44,20 @@ struct GenericCritic{
 
 struct PathDistCritic{
     CommonCost common;
-    int path_stride;
-    int start_from_end;
+    int traj_stride;
 };
 
 struct PathCritic 
 {
     CommonCost common;
     size_t offset_from_furthest;
+};
+
+struct PathAngleCritic
+{
+    CommonCost common;
+    size_t offset_from_furthest;
+    float angle_threshold;
 };
 
 struct ObstaclesCritic
@@ -80,7 +86,7 @@ struct MPPIc
     Constraints bounds;
 
     PathCritic pathfollow_crtc;
-    PathCritic pathangle_crtc;
+    PathAngleCritic pathangle_crtc;
     GenericCritic goal_crtc;
     PathDistCritic pathdist_crtc;
     GenericCritic twir_crtc;
@@ -132,7 +138,8 @@ void MPPIc::print_out(){
     std::cout << "  - active: "     << pathdist_crtc.common.active       << std::endl;
     std::cout << "  - power: "      << pathdist_crtc.common.power       << std::endl;
     std::cout << "  - weight: "     << pathdist_crtc.common.weight      << std::endl;
-    std::cout << "  - stride: "     << pathdist_crtc.path_stride      << std::endl;
+    std::cout << "  - threshold: "     << pathdist_crtc.common.threshold      << std::endl;
+    std::cout << "  - stride: "     << pathdist_crtc.traj_stride      << std::endl;
 
     std::cout << "Twirling Settings: " << std::endl;
     std::cout << "  - active: "     << twir_crtc.common.active       << std::endl;
@@ -152,6 +159,7 @@ void MPPIc::print_out(){
     std::cout << "  - weight: "     << pathangle_crtc.common.weight      << std::endl;
     std::cout << "  - threshold: "  << pathangle_crtc.common.threshold   << std::endl;
     std::cout << "  - offset_from_furthest: "  << pathangle_crtc.offset_from_furthest  << std::endl;
+    std::cout << "  - angle_threshold: "  << pathangle_crtc.angle_threshold  << std::endl;
 
     std::cout << "Obstacles Critic Settings: " << std::endl;
     std::cout << "  - active: "     << obs_crtc.common.active      << std::endl;

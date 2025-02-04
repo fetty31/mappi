@@ -25,12 +25,14 @@ struct Path
     xt::xtensor<float, 1> x;
     xt::xtensor<float, 1> y;
     xt::xtensor<float, 1> yaw;
+    xt::xtensor<bool, 1> free;
 
     void reset(unsigned int size)
     {
         x = xt::zeros<float>({size});
         y = xt::zeros<float>({size});
         yaw = xt::zeros<float>({size});
+        free = xt::ones<bool>({size});
     }
 
 };

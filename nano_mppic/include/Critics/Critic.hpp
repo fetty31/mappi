@@ -5,6 +5,7 @@
 #include "Utils/SharedPtr.hpp"
 
 #include <string>
+#include <cmath>
 
 #include <costmap_2d/costmap_2d_ros.h> // to-do: avoid ros dependency
 #include <costmap_2d/costmap_2d.h>
@@ -42,13 +43,16 @@ class Critic {
 
         std::string getName(){ return name_; }
     
-    protected:
+        unsigned char costAtPose(float x, float y){
+            costmap_ptr_->getMutex()->lock(); // lock costmap
 
-        unsigned char costAtPose(float x, float y, float yaw){
             unsigned int x_i, y_i;
             costmap_ptr_->worldToMap(x, y, x_i, y_i);
-            
-            return costmap_ptr_->getCost(x_i, y_i);
+
+            unsigned char cost = costmap_ptr_->getCost(x_i, y_i);
+
+            costmap_ptr_->getMutex()->unlock(); // unlock costmap
+            return cost;
         }
 
         bool isInCollision(unsigned char cost){

@@ -10,7 +10,7 @@ class PathAngle : public Critic {
     // VARIABLES
 
     protected:
-        nano_mppic::config::PathCritic cfg_;
+        nano_mppic::config::PathAngleCritic cfg_;
 
     // FUNCTIONS
 
@@ -19,7 +19,7 @@ class PathAngle : public Critic {
         
         void configure(std::string name, 
                         nano_mppic::config::
-                            PathCritic& config,
+                            PathAngleCritic& config,
                         nano_mppic::shared_ptr
                             <costmap_2d::Costmap2DROS>& costmap_ros);
 
@@ -29,14 +29,14 @@ class PathAngle : public Critic {
                     xt::xtensor<float,1>& costs,
                     bool &fail_flag) override;
 
-        void setConfig(nano_mppic::config::PathCritic&);
+        void setConfig(nano_mppic::config::PathAngleCritic&);
 };
 
 PathAngle::PathAngle() { }
 
 void PathAngle::configure(std::string name, 
                         nano_mppic::config::
-                            PathCritic& config,
+                            PathAngleCritic& config,
                         nano_mppic::shared_ptr
                             <costmap_2d::Costmap2DROS>& costmap_ros){
 
@@ -65,33 +65,24 @@ void PathAngle::score(nano_mppic::objects::State& states,
 
     auto offseted_idx = std::min(min_dist_path_point + cfg_.offset_from_furthest, path_size);
 
-    /*To-Do:
-        - check if offseted_idx is a valid point 
-    */
-
-    // bool valid = false;
-    // while (!valid && offseted_idx < path_size - 1) {
-    //     valid = (*data.path_pts_valid)[offseted_idx];
-    //     if (!valid) {
-    //     offseted_idx++;
-    //     }
-    // }
-
     const auto path_x = plan.x(offseted_idx);
     const auto path_y = plan.y(offseted_idx);
+
+    if ( std::fabs(nano_mppic::aux::poseToPointAngle(states.odom, path_x, path_y)) > cfg_.angle_threshold ) 
+        return;
 
     const auto yaws_between_points = xt::atan2(
         path_y - trajectories.y,
         path_x - trajectories.x);
     const auto yaws =
-        xt::abs(nano_mppic::aux::angularDist(trajectories.yaw, yaws_between_points));
+        xt::abs(nano_mppic::aux::shortest_angular_dist(trajectories.yaw, yaws_between_points));
 
     using xt::evaluation_strategy::immediate;
     costs += xt::pow(xt::mean(yaws, {1}, immediate) * cfg_.common.weight, cfg_.common.power);
 
 }
 
-void PathAngle::setConfig(nano_mppic::config::PathCritic& config)
+void PathAngle::setConfig(nano_mppic::config::PathAngleCritic& config)
 {
     cfg_ = config;
 }

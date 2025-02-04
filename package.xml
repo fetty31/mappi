@@ -13,6 +13,7 @@
   <license>TODO</license>
 
   <depend>dynamic_reconfigure</depend>
+  <depend>std_srvs</depend>
 
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>roscpp</build_depend>

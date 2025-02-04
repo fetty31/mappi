@@ -173,6 +173,13 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
     state_.odom = odom; // update current robot state
     plan_ = plan;
 
+    std::cout << "setPlanFreeSpace()\n";
+
+    // Compute free space in received plan
+    setPlanFreeSpace();
+
+    std::cout << "costs fill with zeros\n";
+
     // Reset costs
     costs_.fill(0.0);
 
@@ -182,11 +189,9 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
     // Predict trajectories
     do {
         predict(has_failed);
-        if(has_failed)
-            std::cout << "NANO_MPPIC::MPPIc prediction failed\n";
-        else
-            std::cout << "NANO_MPPIC::MPPIc prediction done\n";
     } while (fallback(has_failed));
+
+    std::cout << "savitskyGolayFilter()\n";
 
     // filter control sequence (smooth out)
     aux::savitskyGolayFilter(ctrl_seq_, ctrl_history_);
@@ -200,6 +205,8 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
     output.vx = vx;
     output.vy = vy;
     output.wz = wz;
+
+    std::cout << "shiftControlSeq()\n";
 
     // shift control 
     shiftControlSeq();
@@ -234,9 +241,12 @@ bool MPPIc::fallback(bool &failed)
     static size_t count = 0;
 
     if(not failed){
+        std::cout << "NANO_MPPIC::MPPIc prediction done\n";
         count = 0;
         return false;
     }
+
+    std::cout << "NANO_MPPIC::MPPIc prediction failed\n";
 
     reset();
 
@@ -357,6 +367,29 @@ void MPPIc::shiftControlSeq()
         ctrl_seq_.vy = xt::roll(ctrl_seq_.vy, -1);
         xt::view(ctrl_seq_.vy, -1) = xt::view(ctrl_seq_.vy, -2);
     }
+}
+
+void MPPIc::setPlanFreeSpace()
+{
+    reset_mtx.lock(); // avoid access while being reset
+    for(size_t i=0; i < plan_.x.size(); ++i){
+
+        std::cout << "accessing plan_ " << i << " : (x,y) = (" << plan_.x(i) << "," << plan_.y(i) << ")\n";
+        
+        unsigned char cost_c = pathfollow_critic_.costAtPose(plan_.x(i), plan_.y(i));
+
+        std::cout << "cost_c: " << static_cast<float>(cost_c) << std::endl;
+
+        if(pathfollow_critic_.isInCollision(cost_c)){
+            plan_.free(i) = false;
+        }else{
+            plan_.free(i) = true;
+        }
+    }
+    reset_mtx.unlock();
+
+    std::cout << "finished setting new plan\n";
+
 }
 
 } // namespace nano_mppic

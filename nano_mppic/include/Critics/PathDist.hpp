@@ -59,42 +59,13 @@ void PathDist::score(nano_mppic::objects::State& states,
     if(nano_mppic::aux::robotNearGoal(cfg_.common.threshold, states.odom, plan))
         return;
 
-    // const size_t path_size = plan.x.shape(0) - 1;
-
-    // const size_t time_steps = trajectories.x.shape(2);
-    // const size_t start = time_steps - cfg_.start_from_end;
-
-    // if(start > time_steps){
-    //     std::cout << "NANO_MPPIC::PathDist ERROR: start_from_end > time_steps\n";
-    //     return;
-    // }
-
-    // for(size_t i=start; i < time_steps; i+=cfg_.path_stride){
-
-    //     size_t min_dist_path_point = nano_mppic::aux::findPathMinDistPoint(trajectories, plan, i);
-
-    //     auto offseted_idx = std::min(min_dist_path_point, path_size);
-
-    //     const auto path_x = plan.x(offseted_idx);
-    //     const auto path_y = plan.y(offseted_idx);
-
-    //     const auto x = xt::view(trajectories.x, xt::all(), i);
-    //     const auto y = xt::view(trajectories.y, xt::all(), i);
-
-    //     auto dists = xt::sqrt(
-    //         xt::pow(x - path_x, 2) +
-    //         xt::pow(y - path_y, 2));
-
-    //     costs += xt::pow(cfg_.common.weight * std::move(dists), cfg_.common.power);
-    // }
-
     const auto & T_x = trajectories.x;
     const auto & T_y = trajectories.y;
 
     const auto P_x = xt::view(plan.x, xt::range(xt::placeholders::_, -1));  // path points
     const auto P_y = xt::view(plan.y, xt::range(xt::placeholders::_, -1));  // path points
 
-    int trajectory_point_step_ = 2;
+    int trajectory_point_step_ = cfg_.traj_stride;
 
     const size_t batch_size = T_x.shape(0);
     const size_t time_steps = T_x.shape(1);
@@ -119,11 +90,9 @@ void PathDist::score(nano_mppic::objects::State& states,
                 }
             }
 
-            /*To Do:
-                - check if path point is in collision, if it is let obstacle critic take over
-            */
-
-            if(min_s != 0)
+            // The nearest path point needs to be not in collision, else
+            // let the obstacle critic take over in this region due to dynamic obstacles
+            if( (min_s != 0) && plan.free(min_s))
                 summed_dist += std::sqrt(min_dist_sq);
         }
 

@@ -46,9 +46,13 @@ class Visualizer {
 
         Visualizer(MPPIc* mppic, ros::NodeHandle* nh_ptr);
 
-        void publishThread();
+        void startThread();
+        void stopThread();
+        void publish();
 
     private:
+
+        void publishThread();
 
         void fillMarkermsg(const objects::Trajectory& trajectories,
                             visualization_msgs::MarkerArray* msg);
@@ -87,8 +91,41 @@ Visualizer::Visualizer(MPPIc* mppic,
 
     pcl_pub_     = nh_ptr_->advertise<sensor_msgs::PointCloud2>("pcl_trajectories", 1);
     pcl_opt_pub_ = nh_ptr_->advertise<sensor_msgs::PointCloud2>("pcl_optimal_trajectory", 1);
+}
 
+void Visualizer::startThread()
+{
     pub_thread_ = std::thread(std::bind(&Visualizer::publishThread, this));
+}
+
+void Visualizer::stopThread()
+{
+    if (pub_thread_.joinable())
+        pub_thread_.join();
+}
+
+void Visualizer::publish()
+{
+    sensor_msgs::PointCloud2 pcl_msg; 
+    visualization_msgs::MarkerArray m_msg;
+
+    if( (marker_pub_.getNumSubscribers() > 0) && getMarkerTrajectories(&m_msg) ) {
+        marker_pub_.publish(m_msg);
+    }
+
+    if( (pcl_pub_.getNumSubscribers() > 0) && getPointCloudTrajectories(&pcl_msg) ) {
+        pcl_pub_.publish(pcl_msg);
+    }
+
+    if( (marker_opt_pub_.getNumSubscribers() > 0) && getMarkerOptimalTrajectory(&m_msg) ) {
+        marker_opt_pub_.publish(m_msg);
+    }
+
+    if( (pcl_opt_pub_.getNumSubscribers() > 0) && getPointCloudOptimalTrajectory(&pcl_msg) ) {
+        pcl_opt_pub_.publish(pcl_msg);
+    }
+
+    reset();
 }
 
 void Visualizer::publishThread()
@@ -97,26 +134,7 @@ void Visualizer::publishThread()
 
     while(ros::ok()){
 
-        sensor_msgs::PointCloud2 pcl_msg; 
-        visualization_msgs::MarkerArray m_msg;
-
-        if( (marker_pub_.getNumSubscribers() > 0) && getMarkerTrajectories(&m_msg) ) {
-            marker_pub_.publish(m_msg);
-        }
-
-        if( (pcl_pub_.getNumSubscribers() > 0) && getPointCloudTrajectories(&pcl_msg) ) {
-            pcl_pub_.publish(pcl_msg);
-        }
-
-        if( (marker_opt_pub_.getNumSubscribers() > 0) && getMarkerOptimalTrajectory(&m_msg) ) {
-            marker_opt_pub_.publish(m_msg);
-        }
-
-        if( (pcl_opt_pub_.getNumSubscribers() > 0) && getPointCloudOptimalTrajectory(&pcl_msg) ) {
-            pcl_opt_pub_.publish(pcl_msg);
-        }
-
-        reset();
+        publish();
 
         ros::Duration(0.05).sleep();
     }

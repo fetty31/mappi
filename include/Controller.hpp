@@ -17,6 +17,7 @@
 #include <tf2_ros/buffer.h>
 #include <costmap_2d/costmap_2d_ros.h>
 #include <geometry_msgs/Twist.h>
+#include <std_srvs/Empty.h>
 
 namespace nano_mppic {
 
@@ -29,9 +30,10 @@ class MPPIcROS : public nav_core::BaseLocalPlanner {
         tf2_ros::Buffer* tf_;
 
         shared_ptr<costmap_2d::Costmap2DROS> costmap_ros_ptr_;
+        ros::ServiceClient costmap_client_;
 
         MPPIc nano_mppic_;
-        std::unique_ptr<Visualizer> vis_ptr_;
+        std::unique_ptr<Visualizer> visualizer_ptr_;
 
         objects::Path global_plan_;
         objects::Odometry2d current_odom_;

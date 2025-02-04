@@ -63,7 +63,9 @@ void GoalAngle::score(nano_mppic::objects::State& states,
     const float goal_yaw = plan.yaw(goal_idx);
 
     costs += xt::pow(
-        xt::mean(xt::abs(nano_mppic::aux::angularDist(trajectories.yaw, goal_yaw)), {1}) * cfg_.common.weight, cfg_.common.power);
+        xt::mean( xt::abs(
+                    nano_mppic::aux::shortest_angular_dist(trajectories.yaw, goal_yaw)
+                    ), {1}) * cfg_.common.weight, cfg_.common.power);
 }
 
 void GoalAngle::setConfig(nano_mppic::config::GenericCritic& config)

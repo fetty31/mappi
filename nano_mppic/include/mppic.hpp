@@ -114,6 +114,8 @@ class MPPIc {
 
         void applyControlConstraints(objects::ControlSequence&);
 
+        void setPlanFreeSpace();
+
 };
 
 } // namespace nano_mppic

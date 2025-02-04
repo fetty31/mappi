@@ -76,7 +76,7 @@ void Obstacles::score(nano_mppic::objects::State& states,
         float cost = 0.0;
         
         for(size_t j=0; j < n_traj; j++){
-            unsigned char cost_c = this->costAtPose(trajectories.x(i,j), trajectories.y(i,j), trajectories.yaw(i,j));
+            unsigned char cost_c = this->costAtPose(trajectories.x(i,j), trajectories.y(i,j));
 
             if(cost_c < 1) // free space
                 continue; 
@@ -92,9 +92,9 @@ void Obstacles::score(nano_mppic::objects::State& states,
             const float dist2obs = dist2obstacle(cost_c);
 
             if( dist2obs < cfg_.collision_margin_dist )
-                cost += (cfg_.collision_margin_dist - dist2obs);
+                cost += std::fabs(cfg_.collision_margin_dist - dist2obs);
             else if(not near_goal)
-                repulsive_cost[i] += (cfg_.inflation_radius - dist2obs);
+                repulsive_cost[i] += std::fabs(cfg_.inflation_radius - dist2obs);
         }
 
         if(collision){

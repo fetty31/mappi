@@ -17,8 +17,15 @@ namespace nano_mppic::aux {
 template<typename T>
 auto normalize_angles(const T & angles)
 {
-  auto && theta = xt::eval(xt::fmod(angles + M_PI, 2.0 * M_PI));
-  return xt::eval(xt::where(theta <= 0.0, theta + M_PI, theta - M_PI));
+  // auto && theta = xt::eval(xt::fmod(angles + M_PI, 2.0 * M_PI));
+  auto && theta = xt::eval(xt::fmod( xt::fmod(angles, 2.0*M_PI) + 2.0*M_PI, 2.0*M_PI ));
+  return xt::eval(xt::where(theta > M_PI, theta - 2.0*M_PI, theta));
+}
+
+template<typename F, typename T>
+auto shortest_angular_dist(const F& from, const T& to)
+{
+  return normalize_angles(to - from);
 }
 
 template <typename T>
@@ -30,6 +37,14 @@ std::vector<T> linspace(T a, T b, size_t N) {
     for (x = xs.begin(), val = a; x != xs.end(); ++x, val += h)
         *x = val;
     return xs;
+}
+
+inline float poseToPointAngle(nano_mppic::objects::Odometry2d& odom, float x, float y)
+{
+  float diff_yaw = odom.yaw - std::atan2(y - odom.y, x - odom.x);
+  float norm_yaw = std::fmod( std::fmod(diff_yaw, 2.0*M_PI) + 2.0*M_PI, 2.0*M_PI );
+
+  return (norm_yaw > M_PI) ? norm_yaw - 2.0*M_PI : norm_yaw;
 }
 
 size_t findPathMinDistPoint(const nano_mppic::objects::Trajectory& trajectories,
@@ -81,12 +96,6 @@ bool robotNearGoal(float pose_tolerance,
   else
     return false;
 
-}
-
-template<typename F, typename T>
-auto angularDist(const F& from, const T& to)
-{
-  return normalize_angles(to - from);
 }
 
 size_t getIdxFromDistance(nano_mppic::objects::Path& path, float dist)
