@@ -44,15 +44,14 @@ class Critic {
         std::string getName(){ return name_; }
     
         unsigned char costAtPose(float x, float y){
-            costmap_ptr_->getMutex()->lock(); // lock costmap
-
             unsigned int x_i, y_i;
             costmap_ptr_->worldToMap(x, y, x_i, y_i);
 
-            unsigned char cost = costmap_ptr_->getCost(x_i, y_i);
+            if( (x_i > costmap_ptr_->getSizeInCellsX()) ||
+                (y_i > costmap_ptr_->getSizeInCellsY()) ) // this point lies outside the costmap
+                return 0;
 
-            costmap_ptr_->getMutex()->unlock(); // unlock costmap
-            return cost;
+            return costmap_ptr_->getCost(x_i, y_i);
         }
 
         bool isInCollision(unsigned char cost){

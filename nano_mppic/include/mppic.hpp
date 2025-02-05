@@ -85,6 +85,7 @@ class MPPIc {
         void setConfig(config::MPPIc&);
 
         void reset();
+        void resetControls();
 
         objects::Control getControl(const objects::Odometry2d& odom, 
                                     const objects::Path& plan);

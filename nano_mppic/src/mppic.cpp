@@ -69,6 +69,15 @@ void MPPIc::reset()
     reset_mtx.unlock(); 
 }
 
+void MPPIc::resetControls()
+{
+    reset_mtx.lock();
+    ctrl_seq_.reset(cfg_.noise.time_steps);
+    ctrl_history_[0] = {0.0, 0.0, 0.0};
+    ctrl_history_[1] = {0.0, 0.0, 0.0};
+    reset_mtx.unlock();
+}
+
 void MPPIc::setConfig(config::MPPIc& cfg)
 {
     loop_mtx.lock(); // lock control loop
@@ -95,7 +104,6 @@ void MPPIc::setConfig(config::MPPIc& cfg)
     }
     else
     {
-
         std::cout << "NANO_MPPIC::MPPIc resetting only noise generator\n";
 
         cfg_ = cfg;
@@ -161,24 +169,27 @@ objects::Trajectory MPPIc::getOptimalTrajectory()
 objects::Control MPPIc::getControl(const objects::Odometry2d& odom, 
                                         const objects::Path& plan)
 {
-    loop_mtx.lock();; // lock until param update finished
+    loop_mtx.lock(); // lock main control loop
 
     static objects::Control output;
     
     if(not is_configured_){
         std::cout << "NANO_MPPIC::MPPIc ERROR: calling getControl() without MPPIc being configured\n";
-        return output;
+        return objects::Control();
     }
 
-    state_.odom = odom; // update current robot state
-    plan_ = plan;
+    // Update current robot state
+    state_.odom = odom; 
 
-    std::cout << "setPlanFreeSpace()\n";
+    // Interpolate global plan (optional)
+    nano_mppic::spline::BSpline spline(plan);
+    std::vector<float> u = nano_mppic::aux::linspace<float>(0.0f, 0.99f, 100);
+
+    nano_mppic::objects::Path interp_plan = spline.interpolate(u, 0);
+    plan_ = interp_plan;
 
     // Compute free space in received plan
     setPlanFreeSpace();
-
-    std::cout << "costs fill with zeros\n";
 
     // Reset costs
     costs_.fill(0.0);
@@ -191,12 +202,10 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
         predict(has_failed);
     } while (fallback(has_failed));
 
-    std::cout << "savitskyGolayFilter()\n";
-
-    // filter control sequence (smooth out)
+    // Filter control sequence (smooth out)
     aux::savitskyGolayFilter(ctrl_seq_, ctrl_history_);
 
-    // get control from sequence
+    // Get control from sequence
     float vx = ctrl_seq_.vx(cfg_.settings.offset);
     float wz = ctrl_seq_.wz(cfg_.settings.offset);
     float vy = 0.0;
@@ -206,9 +215,7 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
     output.vy = vy;
     output.wz = wz;
 
-    std::cout << "shiftControlSeq()\n";
-
-    // shift control 
+    // Shift control 
     shiftControlSeq();
 
     loop_mtx.unlock();
@@ -371,14 +378,8 @@ void MPPIc::shiftControlSeq()
 
 void MPPIc::setPlanFreeSpace()
 {
-    reset_mtx.lock(); // avoid access while being reset
     for(size_t i=0; i < plan_.x.size(); ++i){
-
-        std::cout << "accessing plan_ " << i << " : (x,y) = (" << plan_.x(i) << "," << plan_.y(i) << ")\n";
-        
         unsigned char cost_c = pathfollow_critic_.costAtPose(plan_.x(i), plan_.y(i));
-
-        std::cout << "cost_c: " << static_cast<float>(cost_c) << std::endl;
 
         if(pathfollow_critic_.isInCollision(cost_c)){
             plan_.free(i) = false;
@@ -386,10 +387,6 @@ void MPPIc::setPlanFreeSpace()
             plan_.free(i) = true;
         }
     }
-    reset_mtx.unlock();
-
-    std::cout << "finished setting new plan\n";
-
 }
 
 } // namespace nano_mppic

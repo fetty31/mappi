@@ -48,7 +48,10 @@ void MPPIcROS::initialize(std::string name,
         // Srv client
     costmap_client_ = nh_upper.serviceClient<std_srvs::Empty>("clear_costmaps");
 
+    // Set up ROS wrapper params
+    nh.param<float>("GeneralSettings/goal_tolerance", goal_tolerance_, 0.1f);
 
+    // Set up MPPI config
     config::MPPIc config;
 
     int batch_size, num_iters, time_steps, num_retry, offset;
@@ -85,7 +88,7 @@ void MPPIcROS::initialize(std::string name,
     nh.param<float>("Constraints/max_wz", config.bounds.max_wz, 0.7f);
     nh.param<float>("Constraints/min_wz", config.bounds.min_wz, -0.7f);
     
-    // Goal critic config
+        // Goal critic config
     int power;
     nh.param<int>("Critics/Goal/power", power, 1);
     config.goal_crtc.common.power = static_cast<unsigned int>(power);
@@ -93,7 +96,7 @@ void MPPIcROS::initialize(std::string name,
     nh.param<float>("Critics/Goal/weight",      config.goal_crtc.common.weight,     5.0f);
     nh.param<float>("Critics/Goal/threshold",   config.goal_crtc.common.threshold,  0.5f);
 
-    // PathDist critic config
+        // PathDist critic config
     nh.param<int>("Critics/PathDist/power", power, 1);
     config.pathdist_crtc.common.power = static_cast<unsigned int>(power);
     nh.param<bool>("Critics/PathDist/active",       config.pathdist_crtc.common.active,     true);
@@ -101,20 +104,20 @@ void MPPIcROS::initialize(std::string name,
     nh.param<float>("Critics/PathDist/threshold",   config.pathdist_crtc.common.threshold,  1.0f);
     nh.param<int>("Critics/PathDist/stride",        config.pathdist_crtc.traj_stride,       2);
 
-    // GoalAngle critic config
+        // GoalAngle critic config
     nh.param<int>("Critics/GoalAngle/power", power, 1);
     config.goalangle_crtc.common.power = static_cast<unsigned int>(power);
     nh.param<bool>("Critics/GoalAngle/active",      config.goalangle_crtc.common.active,    true);
     nh.param<float>("Critics/GoalAngle/weight",     config.goalangle_crtc.common.weight,    5.0f);
     nh.param<float>("Critics/GoalAngle/threshold",  config.goalangle_crtc.common.threshold, 1.0f);
 
-    // Twirling critic config
+        // Twirling critic config
     nh.param<int>("Critics/Twirling/power", power, 1);
     config.twir_crtc.common.power = static_cast<unsigned int>(power);
     nh.param<bool>("Critics/Twirling/active",   config.twir_crtc.common.active, true);
     nh.param<float>("Critics/Twirling/weight",  config.twir_crtc.common.weight, 10.0f);
 
-    // PathFollow critic config
+        // PathFollow critic config
     nh.param<int>("Critics/PathFollow/power", power, 1);
     config.pathfollow_crtc.common.power = static_cast<unsigned int>(power);
     nh.param<bool>("Critics/PathFollow/active",     config.pathfollow_crtc.common.active,   true);
@@ -123,7 +126,7 @@ void MPPIcROS::initialize(std::string name,
     nh.param<int>("Critics/PathFollow/offset_from_furthest", offset, 3);
     config.pathfollow_crtc.offset_from_furthest = static_cast<size_t>(offset);
 
-    // PathFollow critic config
+        // PathFollow critic config
     nh.param<int>("Critics/PathAngle/power", power, 1);
     config.pathangle_crtc.common.power = static_cast<unsigned int>(power);
     nh.param<bool>("Critics/PathAngle/active",     config.pathangle_crtc.common.active,   true);
@@ -134,7 +137,7 @@ void MPPIcROS::initialize(std::string name,
     nh.param<int>("Critics/PathAngle/offset_from_furthest", offset, 3);
     config.pathangle_crtc.offset_from_furthest = static_cast<size_t>(offset);
 
-    // Obstacles critic config
+        // Obstacles critic config
     nh.param<int>("Critics/Obstacles/power", power, 1);
     config.obs_crtc.common.power = static_cast<unsigned int>(power);
     nh.param<bool>("Critics/Obstacles/active",                  config.obs_crtc.common.active,          true);
@@ -173,7 +176,6 @@ void MPPIcROS::initialize(std::string name,
 
 bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 {
-
     if(not is_initialized()) return false;
 
     static geometry_msgs::PoseStamped current_pose;
@@ -189,22 +191,10 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 
     // float dist = 15.0f;
     // size_t index = nano_mppic::aux::getIdxFromDistance(global_plan_, dist);
-
-    nano_mppic::spline::BSpline spline(global_plan_);
-    std::vector<float> u = nano_mppic::aux::linspace<float>(0.0f, 0.99f, 100);
-
-    nano_mppic::objects::Path path = spline.interpolate(u, 0);
-
-    static nav_msgs::Path path_msg;
-    nano_mppic::ros_utils::mppic2ros(path, path_msg);
-    path_msg.header.frame_id = "ona2/odom"; // to-do: read local frame
-    path_msg.header.stamp = ros::Time::now();
-
-    local_pub_.publish(path_msg);
     
     auto start_time = std::chrono::system_clock::now();
 
-    objects::Control cmd = nano_mppic_.getControl(current_odom_, path);
+    objects::Control cmd = nano_mppic_.getControl(current_odom_, global_plan_);
     cmd_vel.linear.x  = cmd.vx;
     cmd_vel.linear.y  = cmd.vy;
     cmd_vel.angular.z  = cmd.wz;
@@ -218,15 +208,28 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
     // Publish generated trajectories
     visualizer_ptr_->publish();
 
+    // Publish interpolated plan
+    static nav_msgs::Path path_msg;
+    nano_mppic::ros_utils::mppic2ros(nano_mppic_.getCurrentPlan(), path_msg);
+    path_msg.header.frame_id = "ona2/odom"; // to-do: read local frame
+    path_msg.header.stamp = ros::Time::now();
+
+    local_pub_.publish(path_msg);
+
     return true;
 }
 
 bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_plan)
 {
+    if(not is_initialized()){
+        ROS_ERROR("NANO_MPPIC: this planner/controller has not been initialized, please call initialize() before using this planner");
+        return false;
+    }
+
     ROS_INFO_ONCE("NANO_MPPIC:: setting new global plan");
     ros_utils::ros2mppic(global_plan, global_plan_);
 
-    nano_mppic_.reset(); // reset mppi controller
+    nano_mppic_.resetControls(); // reset mppi control commands
 
     static std_srvs::Empty srv;
     if (costmap_client_.call(srv))
@@ -255,14 +258,12 @@ bool MPPIcROS::isGoalReached()
         return false;
     }
 
-    ROS_INFO_ONCE("NANO_MPPIC:: checking if Goal is reached");
-
-    // if()
-    // {
-    //     ROS_INFO("NANO_MPPIC: Goal reached!");
-    //     return true;
-    // }
-    // else
+    if(nano_mppic::aux::robotNearGoal(this->goal_tolerance_, current_odom_, global_plan_))
+    {
+        ROS_INFO("NANO_MPPIC: Goal reached!");
+        return true;
+    }
+    else
         return false;
 }
 
@@ -286,6 +287,8 @@ void MPPIcROS::reconfigure_callback(nano_mppic::MPPIPlannerROSConfig &dyn_cfg, u
         return;
 
     try {
+
+    goal_tolerance_ = static_cast<float>(dyn_cfg.goal_tolerance);
 
     config::MPPIc config;
     config.settings.num_iters  = static_cast<unsigned int>(dyn_cfg.num_iterations);

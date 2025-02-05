@@ -45,6 +45,7 @@ class Visualizer {
     public:
 
         Visualizer(MPPIc* mppic, ros::NodeHandle* nh_ptr);
+        ~Visualizer();
 
         void startThread();
         void stopThread();
@@ -91,6 +92,12 @@ Visualizer::Visualizer(MPPIc* mppic,
 
     pcl_pub_     = nh_ptr_->advertise<sensor_msgs::PointCloud2>("pcl_trajectories", 1);
     pcl_opt_pub_ = nh_ptr_->advertise<sensor_msgs::PointCloud2>("pcl_optimal_trajectory", 1);
+}
+
+Visualizer::~Visualizer()
+{
+    delete mppic_;
+    delete nh_ptr_;
 }
 
 void Visualizer::startThread()
