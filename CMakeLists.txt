@@ -26,6 +26,16 @@ find_package(catkin REQUIRED COMPONENTS
   tf2
 )
 
+# Check for Homotopy Guidance Planner
+find_package(guidance_planner)
+if(guidance_planner_FOUND)
+  add_compile_definitions(HAS_GUIDANCE_PLANNER)
+  add_definitions(-DMPC_PLANNER_ROS) # necessary for ROS 1
+  message("INFO: guidance_planner found!")
+else(guidance_planner_FOUND)
+  message("ERROR: guidance_planner could not be found.")
+endif()
+
 generate_dynamic_reconfigure_options(
   cfg/NanoMPPIc.cfg
 )
@@ -44,12 +54,19 @@ include_directories(
   ${xtensor_INLCUDE_DIRS}
 )
 
+if(guidance_planner_FOUND)
+include_directories(
+  ${guidance_planner_INLCUDE_DIRS}
+)
+endif()
+
 # Not all machines have <cpuid.h> available
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 file(WRITE ${CMAKE_BINARY_DIR}/test_cpuid.cpp "#include <cpuid.h>")
 try_compile(HAS_CPUID ${CMAKE_BINARY_DIR} ${CMAKE_BINARY_DIR}/test_cpuid.cpp)
 file(REMOVE ${CMAKE_BINARY_DIR}/test_cpuid.cpp)
 if(HAS_CPUID)
+  message("INFO: CPUID found!")
   add_compile_definitions(HAS_CPUID)
 endif()
 
@@ -68,6 +85,12 @@ add_library(${PROJECT_NAME}_local_planner
 
 add_dependencies(${PROJECT_NAME}_local_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_gencfg)
 target_link_libraries(${PROJECT_NAME}_local_planner ${PROJECT_NAME} ${catkin_LIBRARIES})
+
+if(guidance_planner_FOUND)
+  add_dependencies(${PROJECT_NAME}_local_planner guidance_planner)
+  target_include_directories(${PROJECT_NAME}_local_planner PUBLIC ${guidance_planner_INCLUDE_DIRS})
+  target_link_libraries(${PROJECT_NAME}_local_planner guidance_planner)
+endif()
 
 # Binaries
 install(TARGETS ${PROJECT_NAME}_local_planner

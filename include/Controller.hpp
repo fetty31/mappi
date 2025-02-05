@@ -5,8 +5,13 @@
 #include <cmath>
 
 #include "mppic.hpp"
+
 #include "ROSutils.hpp"
 #include "Visualizer.hpp"
+
+#ifdef HAS_GUIDANCE_PLANNER
+#include "GuidanceWrapper.hpp"
+#endif
 
 #include <dynamic_reconfigure/server.h>
 #include <nano_mppic/MPPIPlannerROSConfig.h>
@@ -47,6 +52,10 @@ class MPPIcROS : public nav_core::BaseLocalPlanner {
         ros::Publisher local_pub_;
 
         dynamic_reconfigure::Server<nano_mppic::MPPIPlannerROSConfig> *dyn_srv_;
+
+        #ifdef HAS_GUIDANCE_PLANNER
+        std::unique_ptr<GuidanceWrapper> guidance_ptr_;
+        #endif
 
     // FUNCTIONS
 
