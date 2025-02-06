@@ -79,7 +79,7 @@ Visualizer::Visualizer(MPPIc* mppic,
     nh_ptr->param<float>("Visualization/default_z",  default_z_,    0.03f); 
     nh_ptr->param<float>("Visualization/scale",      scale_,        0.03f); 
 
-    nh_ptr->param<std::string>("Visualization/global_frame_id", frame_id_, ""); 
+    nh_ptr->param<std::string>("GeneralSettings/global_frame", frame_id_, ""); 
     if(frame_id_ == ""){
         ros::NodeHandle nh_upper("~");
         nh_upper.param<std::string>("local_costmap/global_frame", frame_id_, "odom");

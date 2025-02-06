@@ -50,6 +50,12 @@ void MPPIcROS::initialize(std::string name,
 
     // Set up ROS wrapper params
     nh.param<float>("GeneralSettings/goal_tolerance", goal_tolerance_, 0.1f);
+    nh.param<std::string>("GeneralSettings/global_frame", global_frame_, ""); 
+    nh.param<std::string>("GeneralSettings/local_frame", local_frame_, ""); 
+    if(local_frame_ == "")
+        nh_upper.param<std::string>("local_costmap/global_frame", local_frame_, "odom");
+    if(global_frame_ == "")
+        nh_upper.param<std::string>("global_costmap/global_frame", global_frame_, "map");
 
     // Set up MPPI config
     config::MPPIc config;
@@ -162,6 +168,11 @@ void MPPIcROS::initialize(std::string name,
     // Set up Visualizer instance
     visualizer_ptr_ = std::make_unique<Visualizer>(&nano_mppic_, &nh);
 
+    // Set up Guidance Planner (if available)
+    #ifdef HAS_GUIDANCE_PLANNER
+        guidance_planner_.configure(costmap_ros_ptr_);
+    #endif
+
     // Set up dynamic reconfigure server
     dyn_srv_ = new dynamic_reconfigure::Server<nano_mppic::MPPIPlannerROSConfig>(nh);
     dynamic_reconfigure::Server
@@ -187,14 +198,26 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
         return false;
     }
 
+    auto start_time = std::chrono::system_clock::now();
+
     // Cut down global plan horizon
 
     // float dist = 15.0f;
     // size_t index = nano_mppic::aux::getIdxFromDistance(global_plan_, dist);
-    
-    auto start_time = std::chrono::system_clock::now();
 
-    objects::Control cmd = nano_mppic_.getControl(current_odom_, global_plan_);
+    // Compute Guidance Trajectory (if available)
+    objects::Path path = global_plan_;
+    #ifdef HAS_GUIDANCE_PLANNER
+        // guidance_planner_.setReferencePlan(global_plan_); // set up reference path 
+        ROS_WARN("GUIDANCE_PLANNER: setting goals");
+        guidance_planner_.setGoals(global_plan_); // set up goals
+
+        ROS_WARN("GUIDANCE_PLANNER: getting plan");
+        if(guidance_planner_.getPlan(current_odom_, path))
+            guidance_planner_.Visualize();
+    #endif
+    
+    objects::Control cmd = nano_mppic_.getControl(current_odom_, path);
     cmd_vel.linear.x  = cmd.vx;
     cmd_vel.linear.y  = cmd.vy;
     cmd_vel.angular.z  = cmd.wz;
@@ -210,8 +233,8 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 
     // Publish interpolated plan
     static nav_msgs::Path path_msg;
-    nano_mppic::ros_utils::mppic2ros(nano_mppic_.getCurrentPlan(), path_msg);
-    path_msg.header.frame_id = "ona2/odom"; // to-do: read local frame
+    ros_utils::mppic2ros(nano_mppic_.getCurrentPlan(), path_msg);
+    path_msg.header.frame_id = local_frame_;
     path_msg.header.stamp = ros::Time::now();
 
     local_pub_.publish(path_msg);
@@ -227,7 +250,18 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
     }
 
     ROS_INFO_ONCE("NANO_MPPIC:: setting new global plan");
-    ros_utils::ros2mppic(global_plan, global_plan_);
+
+    geometry_msgs::TransformStamped transformStamped;
+    try{
+        transformStamped = tf_->lookupTransform(local_frame_, global_frame_,
+                               ros::Time(0));
+        ros_utils::ros2mppic(global_plan, global_plan_, transformStamped);
+    }
+    catch (tf2::TransformException &ex) {
+        ros_utils::ros2mppic(global_plan, global_plan_);
+        ROS_ERROR("NANO_MPPIC::\n %s",ex.what());
+        ROS_ERROR("NANO_MPPIC::\t assuming global and local frame are the same!");
+    }
 
     nano_mppic_.resetControls(); // reset mppi control commands
 
@@ -242,8 +276,8 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
     }
 
     static nav_msgs::Path path_msg;
-    nano_mppic::ros_utils::mppic2ros(global_plan_, path_msg);
-    path_msg.header.frame_id = "ona2/map"; // to-do: read global frame
+    ros_utils::mppic2ros(global_plan_, path_msg);
+    path_msg.header.frame_id = global_frame_; 
     path_msg.header.stamp = ros::Time::now();
 
     global_pub_.publish(path_msg);
@@ -258,7 +292,7 @@ bool MPPIcROS::isGoalReached()
         return false;
     }
 
-    if(nano_mppic::aux::robotNearGoal(this->goal_tolerance_, current_odom_, global_plan_))
+    if(aux::robotNearGoal(this->goal_tolerance_, current_odom_, global_plan_))
     {
         ROS_INFO("NANO_MPPIC: Goal reached!");
         return true;

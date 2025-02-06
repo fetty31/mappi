@@ -22,6 +22,7 @@
 #include <tf2_ros/buffer.h>
 #include <costmap_2d/costmap_2d_ros.h>
 #include <geometry_msgs/Twist.h>
+#include <geometry_msgs/TransformStamped.h>
 #include <std_srvs/Empty.h>
 
 namespace nano_mppic {
@@ -33,6 +34,7 @@ class MPPIcROS : public nav_core::BaseLocalPlanner {
     private:
 
         tf2_ros::Buffer* tf_;
+        std::string local_frame_, global_frame_;
 
         shared_ptr<costmap_2d::Costmap2DROS> costmap_ros_ptr_;
         ros::ServiceClient costmap_client_;
@@ -54,7 +56,7 @@ class MPPIcROS : public nav_core::BaseLocalPlanner {
         dynamic_reconfigure::Server<nano_mppic::MPPIPlannerROSConfig> *dyn_srv_;
 
         #ifdef HAS_GUIDANCE_PLANNER
-        std::unique_ptr<GuidanceWrapper> guidance_ptr_;
+        GuidanceWrapper guidance_planner_;
         #endif
 
     // FUNCTIONS

@@ -27,7 +27,7 @@ class Critic {
     public:
         Critic() = default;
 
-        virtual ~Critic() = default;
+        virtual ~Critic() {delete costmap_ptr_;};
 
         virtual void configure(std::string name, nano_mppic::shared_ptr<costmap_2d::Costmap2DROS>& costmap_ros){
             name_ = name;
@@ -45,10 +45,7 @@ class Critic {
     
         unsigned char costAtPose(float x, float y){
             unsigned int x_i, y_i;
-            costmap_ptr_->worldToMap(x, y, x_i, y_i);
-
-            if( (x_i > costmap_ptr_->getSizeInCellsX()) ||
-                (y_i > costmap_ptr_->getSizeInCellsY()) ) // this point lies outside the costmap
+            if(not costmap_ptr_->worldToMap(x, y, x_i, y_i)) // this point lies outside the costmap
                 return 0;
 
             return costmap_ptr_->getCost(x_i, y_i);

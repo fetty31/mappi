@@ -182,11 +182,13 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
     state_.odom = odom; 
 
     // Interpolate global plan (optional)
-    nano_mppic::spline::BSpline spline(plan);
-    std::vector<float> u = nano_mppic::aux::linspace<float>(0.0f, 0.99f, 100);
+    // nano_mppic::spline::BSpline spline(plan);
+    // std::vector<float> u = nano_mppic::aux::linspace<float>(0.0f, 0.99f, 100);
 
-    nano_mppic::objects::Path interp_plan = spline.interpolate(u, 0);
-    plan_ = interp_plan;
+    // nano_mppic::objects::Path interp_plan = spline.interpolate(u, 0);
+    // plan_ = interp_plan;
+    
+    plan_ = plan;
 
     // Compute free space in received plan
     setPlanFreeSpace();

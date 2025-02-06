@@ -3,6 +3,7 @@
 #include "mppic.hpp"
 
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/TransformStamped.h>
 #include <geometry_msgs/Pose.h>
 
 #include <std_msgs/ColorRGBA.h>
@@ -26,6 +27,21 @@ void ros2mppic(const std::vector<geometry_msgs::PoseStamped>& in_path,
         out_path.x(i) = in_path[i].pose.position.x;
         out_path.y(i) = in_path[i].pose.position.y;
         out_path.yaw(i) = tf2::getYaw(in_path[i].pose.orientation);
+    }
+}
+
+void ros2mppic(const std::vector<geometry_msgs::PoseStamped>& in_path, 
+                nano_mppic::objects::Path& out_path,
+                geometry_msgs::TransformStamped& transform)
+{
+    out_path.reset(in_path.size());
+
+    for (size_t i=0; i < in_path.size(); ++i) {
+        geometry_msgs::PoseStamped pose_transformed;
+        tf2::doTransform(in_path[i], pose_transformed, transform);
+        out_path.x(i) = pose_transformed.pose.position.x;
+        out_path.y(i) = pose_transformed.pose.position.y;
+        out_path.yaw(i) = tf2::getYaw(pose_transformed.pose.orientation);
     }
 }
 

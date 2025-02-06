@@ -97,10 +97,6 @@ void Obstacles::score(nano_mppic::objects::State& states,
                 repulsive_cost[i] += std::fabs(cfg_.inflation_radius - dist2obs);
         }
 
-        if(collision){
-            std::cout << "NANO_MPPIC::MPPIc::Obstacles collision detected!\n";
-        }
-
         if(not collision) all_collide = false;
         raw_cost[i] = collision ? cfg_.collision_cost : cost;
     }
