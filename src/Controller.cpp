@@ -206,18 +206,25 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
     // size_t index = nano_mppic::aux::getIdxFromDistance(global_plan_, dist);
 
     // Compute Guidance Trajectory (if available)
-    objects::Path path = global_plan_;
+    guidance_plan_ = global_plan_;
     #ifdef HAS_GUIDANCE_PLANNER
+        
+        ROS_WARN("GUIDANCE_PLANNER: setting start point");
+        guidance_planner_.setStart(current_odom_);
+    
         // guidance_planner_.setReferencePlan(global_plan_); // set up reference path 
+
         ROS_WARN("GUIDANCE_PLANNER: setting goals");
         guidance_planner_.setGoals(global_plan_); // set up goals
 
         ROS_WARN("GUIDANCE_PLANNER: getting plan");
-        if(guidance_planner_.getPlan(current_odom_, path))
+        if(guidance_planner_.getPlan(guidance_plan_)){
+            std::cout << "GUIDANCE PLAN FOUND!\n";
             guidance_planner_.Visualize();
+        }
     #endif
     
-    objects::Control cmd = nano_mppic_.getControl(current_odom_, path);
+    objects::Control cmd = nano_mppic_.getControl(current_odom_, guidance_plan_);
     cmd_vel.linear.x  = cmd.vx;
     cmd_vel.linear.y  = cmd.vy;
     cmd_vel.angular.z  = cmd.wz;
@@ -263,7 +270,7 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
         ROS_ERROR("NANO_MPPIC::\t assuming global and local frame are the same!");
     }
 
-    nano_mppic_.resetControls(); // reset mppi control commands
+    // nano_mppic_.resetControls(); // reset mppi control commands
 
     static std_srvs::Empty srv;
     if (costmap_client_.call(srv))

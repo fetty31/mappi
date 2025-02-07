@@ -43,6 +43,7 @@ class MPPIcROS : public nav_core::BaseLocalPlanner {
         std::unique_ptr<Visualizer> visualizer_ptr_;
 
         objects::Path global_plan_;
+        objects::Path guidance_plan_;
         objects::Odometry2d current_odom_;
 
         bool initialized_;

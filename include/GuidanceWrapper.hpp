@@ -38,7 +38,9 @@ class GuidanceWrapper : public GuidancePlanner::GlobalGuidance {
         void setGoals(nano_mppic::objects::Path&);
         void setReferencePlan(nano_mppic::objects::Path&);
 
-        bool getPlan(nano_mppic::objects::Odometry2d odom, nano_mppic::objects::Path&);
+        void setStart(nano_mppic::objects::Odometry2d odom);
+
+        bool getPlan(nano_mppic::objects::Path&);
 };
 
 GuidanceWrapper::~GuidanceWrapper()
@@ -51,14 +53,12 @@ void GuidanceWrapper::configure(nano_mppic::shared_ptr<costmap_2d::Costmap2DROS>
     costmap_ptr_ = costmap_ros->getCostmap();
 }
 
-bool GuidanceWrapper::getPlan(nano_mppic::objects::Odometry2d odom, nano_mppic::objects::Path& plan)
+bool GuidanceWrapper::getPlan(nano_mppic::objects::Path& plan)
 {
     if(not costmap_ros_ptr_){
         std::cout << "GUIDANCE_WRAPPER::ERROR not configured!\n";
         return false;
     }
-
-    this->SetStart(Eigen::Vector2d(odom.x, odom.y), odom.yaw, odom.vx); // Position, yaw angle, velocity magnitude
 
     // this->getStaticObstacles(); // probably only once ??
 
@@ -79,17 +79,17 @@ bool GuidanceWrapper::getPlan(nano_mppic::objects::Odometry2d odom, nano_mppic::
 
         auto guidance_trajectory = guidance_spline.GetTrajectory(); // Retrieves the trajectory: t -> (x, y))
 
-        plan.reset(std::floor(GuidancePlanner::Config::N * GuidancePlanner::Config::DT)); // resize output plan
-
-        int idx = 0;
-        for (double t = 0; t < GuidancePlanner::Config::N * GuidancePlanner::Config::DT; t += GuidancePlanner::Config::DT)
-        {
+        plan.reset(GuidancePlanner::Config::N); // resize output plan
+        
+        double t=0.0;
+        for(int i=0; i < GuidancePlanner::Config::N; i++){
             Eigen::Vector2d pos = guidance_trajectory.getPoint(t);
-            plan.x(idx) = static_cast<float>(pos(0));
-            plan.y(idx) = static_cast<float>(pos(1));
-            idx++;
+            plan.x(i) = static_cast<float>(pos(0));
+            plan.y(i) = static_cast<float>(pos(1));
             ROS_INFO_STREAM("\t[t = " << t << "]: (" << pos(0) << ", " << pos(1) << ")");
+            t+=GuidancePlanner::Config::DT;
         }
+
         auto guidance_path = guidance_spline.GetPath(); // Retrieves the path: s -> (x, y)
 
         return true;
@@ -102,17 +102,22 @@ bool GuidanceWrapper::getPlan(nano_mppic::objects::Odometry2d odom, nano_mppic::
 
 }
 
+void GuidanceWrapper::setStart(nano_mppic::objects::Odometry2d odom)
+{
+    this->SetStart(Eigen::Vector2d(odom.x, odom.y), odom.yaw, odom.vx); // Position, yaw angle, velocity magnitude
+}
+
 void GuidanceWrapper::setGoals(nano_mppic::objects::Path& goals)
 {
-    if(goals.x.size() < 10){
-        ROS_ERROR("Guidance planner: a minimum of 10 goals should be given to setGoals()");
+    if(goals.x.size() < 5){
+        ROS_ERROR("Guidance planner: a minimum of 5 goals should be given to setGoals()");
         return;
     }
 
     // Using explicit goals as a set of 2D points with costs
     std::vector<GuidancePlanner::Goal> eigen_goals;
     eigen_goals.reserve(goals.x.size());
-    for(int i=goals.x.size()-10; i < goals.x.size(); i++){
+    for(int i=10; i < goals.x.size(); i+=5){
         eigen_goals.emplace_back(Eigen::Vector2d(goals.x(i), goals.y(i)), 1.); // cost = 1
     }
     this->SetGoals(eigen_goals);
