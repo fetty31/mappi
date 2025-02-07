@@ -212,15 +212,14 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
         ROS_WARN("GUIDANCE_PLANNER: setting start point");
         guidance_planner_.setStart(current_odom_);
     
-        // guidance_planner_.setReferencePlan(global_plan_); // set up reference path 
-
         ROS_WARN("GUIDANCE_PLANNER: setting goals");
-        guidance_planner_.setGoals(global_plan_); // set up goals
+        guidance_planner_.setReferencePlan(global_plan_); // set up reference path 
+        // guidance_planner_.setGoals(global_plan_); // set up goals
 
         ROS_WARN("GUIDANCE_PLANNER: getting plan");
         if(guidance_planner_.getPlan(guidance_plan_)){
             std::cout << "GUIDANCE PLAN FOUND!\n";
-            guidance_planner_.Visualize();
+            // guidance_planner_.Visualize(); // segfault
         }
     #endif
     
