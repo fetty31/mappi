@@ -9,14 +9,14 @@
 #include "ROSutils.hpp"
 #include "Visualizer.hpp"
 
-#ifdef HAS_GUIDANCE_PLANNER
-#include "GuidanceWrapper.hpp"
-#endif
-
 #include <dynamic_reconfigure/server.h>
 #include <nano_mppic/MPPIPlannerROSConfig.h>
 
 #include <nav_core/base_local_planner.h>
+
+#ifdef HAS_NAVFN
+    #include "NavFnWrapper.hpp"
+#endif
 
 #include <ros/ros.h>
 #include <tf2_ros/buffer.h>
@@ -42,8 +42,13 @@ class MPPIcROS : public nav_core::BaseLocalPlanner {
         MPPIc nano_mppic_;
         std::unique_ptr<Visualizer> visualizer_ptr_;
 
+        #ifdef HAS_NAVFN
+            NavFnWrapper navfn_wrapper_;
+        #endif
+
         objects::Path global_plan_;
-        objects::Path guidance_plan_;
+        objects::Path local_plan_;
+
         objects::Odometry2d current_odom_;
 
         bool initialized_;
@@ -55,10 +60,6 @@ class MPPIcROS : public nav_core::BaseLocalPlanner {
         ros::Publisher local_pub_;
 
         dynamic_reconfigure::Server<nano_mppic::MPPIPlannerROSConfig> *dyn_srv_;
-
-        #ifdef HAS_GUIDANCE_PLANNER
-        GuidanceWrapper guidance_planner_;
-        #endif
 
     // FUNCTIONS
 

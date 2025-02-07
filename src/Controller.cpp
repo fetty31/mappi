@@ -168,9 +168,9 @@ void MPPIcROS::initialize(std::string name,
     // Set up Visualizer instance
     visualizer_ptr_ = std::make_unique<Visualizer>(&nano_mppic_, &nh);
 
-    // Set up Guidance Planner (if available)
-    #ifdef HAS_GUIDANCE_PLANNER
-        guidance_planner_.configure(costmap_ros_ptr_);
+    // Set up NavFn Wrapper (if available)
+    #ifdef HAS_NAVFN
+        navfn_wrapper_.configure("navfn_wrapper", costmap_ros_ptr_);
     #endif
 
     // Set up dynamic reconfigure server
@@ -203,28 +203,9 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
     // Cut down global plan horizon
 
     // float dist = 15.0f;
-    // size_t index = nano_mppic::aux::getIdxFromDistance(global_plan_, dist);
+    // size_t index = nano_mppic::aux::getIdxFromDistance(local_plan_, dist);
 
-    // Compute Guidance Trajectory (if available)
-    guidance_plan_ = global_plan_;
-    #ifdef HAS_GUIDANCE_PLANNER
-        
-        ROS_WARN("GUIDANCE_PLANNER: setting start point");
-        guidance_planner_.setStart(current_odom_);
-    
-        // guidance_planner_.setReferencePlan(global_plan_); // set up reference path 
-
-        ROS_WARN("GUIDANCE_PLANNER: setting goals");
-        guidance_planner_.setGoals(global_plan_); // set up goals
-
-        ROS_WARN("GUIDANCE_PLANNER: getting plan");
-        if(guidance_planner_.getPlan(guidance_plan_)){
-            std::cout << "GUIDANCE PLAN FOUND!\n";
-            guidance_planner_.Visualize();
-        }
-    #endif
-    
-    objects::Control cmd = nano_mppic_.getControl(current_odom_, guidance_plan_);
+    objects::Control cmd = nano_mppic_.getControl(current_odom_, local_plan_);
     cmd_vel.linear.x  = cmd.vx;
     cmd_vel.linear.y  = cmd.vy;
     cmd_vel.angular.z  = cmd.wz;
@@ -269,6 +250,11 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
         ROS_ERROR("NANO_MPPIC::\n %s",ex.what());
         ROS_ERROR("NANO_MPPIC::\t assuming global and local frame are the same!");
     }
+
+    local_plan_ = global_plan_;
+    #ifdef HAS_NAVFN
+        navfn_wrapper_.getPlan(current_odom_, global_plan_, local_plan_);
+    #endif
 
     // nano_mppic_.resetControls(); // reset mppi control commands
 
