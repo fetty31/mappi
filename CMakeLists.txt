@@ -87,12 +87,6 @@ add_library(${PROJECT_NAME}_local_planner
 add_dependencies(${PROJECT_NAME}_local_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_gencfg)
 target_link_libraries(${PROJECT_NAME}_local_planner ${PROJECT_NAME} ${catkin_LIBRARIES})
 
-# if(navfn_FOUND)
-#   add_dependencies(${PROJECT_NAME}_local_planner navfn)
-#   target_include_directories(${PROJECT_NAME}_local_planner PUBLIC ${navfn_INCLUDE_DIRS})
-#   target_link_libraries(${PROJECT_NAME}_local_planner navfn)
-# endif()
-
 # Binaries
 install(TARGETS ${PROJECT_NAME}_local_planner
          ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

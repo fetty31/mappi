@@ -37,10 +37,6 @@ void MPPIcROS::initialize(std::string name,
     tf_ = tf;
     costmap_ros_ptr_ = shared_ptr<costmap_2d::Costmap2DROS>(costmap_ros);
 
-        // Subscriber
-    odom_sub_ = nh.subscribe<nav_msgs::Odometry>( "/ona2/fast_limo/state", 1,
-                    boost::bind( &MPPIcROS::odom_callback, this, _1 ));
-
         // Publishers
     global_pub_ = nh.advertise<nav_msgs::Path>("global_plan", 1);
     local_pub_  = nh.advertise<nav_msgs::Path>("strided_plan", 1);
@@ -197,10 +193,11 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
         cmd_vel.angular.z = 0.0;
         return false;
     }
+    ros_utils::ros2mppic(current_pose, current_odom_);
 
     auto start_time = std::chrono::system_clock::now();
 
-    // Cut down global plan horizon
+    // Cut down global plan horizon (TO-DO)
 
     // float dist = 15.0f;
     // size_t index = nano_mppic::aux::getIdxFromDistance(local_plan_, dist);
@@ -292,12 +289,6 @@ bool MPPIcROS::isGoalReached()
     }
     else
         return false;
-}
-
-void MPPIcROS::odom_callback(const nav_msgs::Odometry::ConstPtr& msg)
-{
-    ros_utils::ros2mppic(*msg, current_odom_);
-    ROS_INFO_ONCE("NANO_MPPIC::odom_callback started");
 }
 
 bool MPPIcROS::is_initialized()

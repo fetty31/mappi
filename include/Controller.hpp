@@ -55,7 +55,6 @@ class MPPIcROS : public nav_core::BaseLocalPlanner {
 
         float goal_tolerance_;
 
-        ros::Subscriber odom_sub_;
         ros::Publisher global_pub_;
         ros::Publisher local_pub_;
 
