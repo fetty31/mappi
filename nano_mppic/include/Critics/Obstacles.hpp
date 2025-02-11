@@ -56,7 +56,6 @@ void Obstacles::score(nano_mppic::objects::State& states,
                     bool &fail_flag) 
 {
     if(not costmap_ros_ptr_ || not cfg_.common.active){
-        std::cout << "NANO_MPPIC::OBSTACLES critic not active\n";
         return;
     }
 

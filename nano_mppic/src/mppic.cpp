@@ -43,26 +43,14 @@ void MPPIc::reset()
 {
     reset_mtx.lock(); // avoid accessing objects while being reset
 
-    std::cout << "NANO_MPPIC::MPPIc resetting all...\n";
-
     state_.reset(cfg_.noise.batch_size, cfg_.noise.time_steps);
-
-    std::cout << "NANO_MPPIC::MPPIc resetting trajectories...\n";
-
     trajectory_.reset(cfg_.noise.batch_size, cfg_.noise.time_steps);
-
-    std::cout << "NANO_MPPIC::MPPIc resetting control sequence...\n";
-
     ctrl_seq_.reset(cfg_.noise.time_steps);
-
-    std::cout << "NANO_MPPIC::MPPIc resetting noise generator...\n";
-
+    
     noise_gen_.reset(cfg_.noise, isHolonomic());
 
-    std::cout << "NANO_MPPIC::MPPIc resetting costs...\n";
     costs_ = xt::zeros<float>({cfg_.noise.batch_size});
 
-    std::cout << "NANO_MPPIC::MPPIc resetting control history...\n";
     ctrl_history_[0] = {0.0, 0.0, 0.0};
     ctrl_history_[1] = {0.0, 0.0, 0.0};
 

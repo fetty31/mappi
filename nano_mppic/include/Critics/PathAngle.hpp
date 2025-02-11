@@ -52,7 +52,6 @@ void PathAngle::score(nano_mppic::objects::State& states,
 {
 
     if(not costmap_ros_ptr_ || not cfg_.common.active){
-        std::cout << "NANO_MPPIC::PathAngle critic not active\n";
         return;
     }
 
