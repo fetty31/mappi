@@ -1,0 +1,96 @@
+MPPIPlannerROS:
+
+  GeneralSettings:
+
+    global_frame: ""  # if left null it will be the same as global_costmap frame
+    local_frame: ""   # if left null it will be the same as local_costmap frame
+
+    num_iterations: 4
+    batch_size: 1000
+    time_steps: 60
+    num_retry: 4
+    control_offset: 1
+
+    goal_tolerance: 0.2
+
+    model_dt: 0.05
+    temperature: 0.3
+    gamma: 0.015
+
+  Constraints:
+    max_vx: 2.0
+    min_vx: -2.0
+
+    max_vy: 1.0
+    min_vy: -1.0
+
+    max_wz: 3.0
+    min_wz: -3.0
+
+  MotionModel: "SteeringBased" # ["Ackermann", "SteeringBased", "Holonomic"]
+
+  Ackermann: 
+    min_radius: 3.0 # [m]
+
+  SteeringModel: 
+    length: 1.0 # [m]
+
+  NoiseGeneration:
+    std_vx: 0.3
+    std_vy: 0.3
+    std_wz: 0.1
+
+  Critics:
+    Goal:
+      active: true
+      power: 1
+      weight: 1.0
+      threshold: 1.5
+
+    GoalAngle:
+      active: true
+      power: 1
+      weight: 1.0
+      threshold: 1.5
+
+    PathDist:
+      active: false
+      power: 2
+      weight: 5.0
+      threshold: 1.0
+      stride: 2
+
+    Twirling:
+      active: false
+      power: 1
+      weight: 10.0
+    
+    PathFollow:
+      active: true
+      power: 1
+      weight: 10.0
+      threshold: 1.0
+      offset_from_furthest: 3
+
+    PathAngle:
+      active: true
+      power: 1
+      weight: 25.0
+      threshold: 1.0
+      offset_from_furthest: 3
+      angle_threshold: 150.0
+
+    Obstacles:
+      active: true
+      power: 1
+      weight: 20.0
+      threshold: 1.0
+      repulsive_weight: 200.0
+      collision_cost: 100000.0
+      collision_margin_dist: 0.6
+
+  Visualization:
+    batch_stride: 100
+    time_stride: 3
+    default_z: 0.2
+    scale: 0.05
