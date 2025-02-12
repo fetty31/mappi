@@ -1,4 +1,4 @@
-# **Nano MPPIc - Lightweight Model Predictive Path Integral Controller**  
+# **Nano MPPIc 🏁**  
 
 <details>
     <summary>Table of Contents</summary>
