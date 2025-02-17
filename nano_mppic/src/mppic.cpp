@@ -160,6 +160,8 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
     loop_mtx.lock(); // lock main control loop
 
     static objects::Control output;
+
+    auto start_time = std::chrono::system_clock::now();
     
     if(not is_configured_){
         std::cout << "NANO_MPPIC::MPPIc ERROR: calling getControl() without MPPIc being configured\n";
@@ -175,11 +177,22 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
 
     nano_mppic::objects::Path interp_plan = spline.interpolate(u, 0);
     plan_ = interp_plan;
+
+    auto spline_time = std::chrono::system_clock::now();
+    static std::chrono::duration<double> elapsed_time;
+    elapsed_time = spline_time - start_time;
+
+    std::cout << "NANO_MPPIC::MPPIc spline time: " << elapsed_time.count()*1000.0 << " ms\n";
     
     // plan_ = plan;
 
     // Compute free space in received plan
     setPlanFreeSpace();
+
+    auto free_time = std::chrono::system_clock::now();
+    elapsed_time = free_time - spline_time;
+
+    std::cout << "NANO_MPPIC::MPPIc free plan time: " << elapsed_time.count()*1000.0 << " ms\n";
 
     // Reset costs
     costs_.fill(0.0);
@@ -187,13 +200,27 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
     static bool has_failed;
     has_failed = false;
 
+    auto prediction_time = std::chrono::system_clock::now();
+    
     // Predict trajectories
     do {
         predict(has_failed);
+
+        auto prediction_time = std::chrono::system_clock::now();
+        elapsed_time = prediction_time - free_time;
+        free_time = prediction_time;
+
+        std::cout << "NANO_MPPIC::MPPIc prediction time: " << elapsed_time.count()*1000.0 << " ms\n";
+
     } while (fallback(has_failed));
 
     // Filter control sequence (smooth out)
     aux::savitskyGolayFilter(ctrl_seq_, ctrl_history_);
+
+    auto filter_time = std::chrono::system_clock::now();
+    elapsed_time = filter_time - prediction_time;
+
+    std::cout << "NANO_MPPIC::MPPIc savitsky-golay time: " << elapsed_time.count()*1000.0 << " ms\n";
 
     // Get control from sequence
     float vx = ctrl_seq_.vx(cfg_.settings.offset);
@@ -207,6 +234,11 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
 
     // Shift control 
     shiftControlSeq();
+
+    auto end_time = std::chrono::system_clock::now();
+    elapsed_time = end_time - filter_time;
+
+    std::cout << "NANO_MPPIC::MPPIc end time: " << elapsed_time.count()*1000.0 << " ms\n";
 
     loop_mtx.unlock();
 

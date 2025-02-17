@@ -23,6 +23,7 @@
 #include "Utils/SplineAdaptor.hpp"
 
 #include <memory>
+#include <chrono>
 
 namespace nano_mppic {
 
