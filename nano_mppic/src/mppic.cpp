@@ -161,8 +161,6 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
 
     static objects::Control output;
 
-    auto start_time = std::chrono::system_clock::now();
-    
     if(not is_configured_){
         std::cout << "NANO_MPPIC::MPPIc ERROR: calling getControl() without MPPIc being configured\n";
         return objects::Control();
@@ -178,21 +176,8 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
     nano_mppic::objects::Path interp_plan = spline.interpolate(u, 0);
     plan_ = interp_plan;
 
-    auto spline_time = std::chrono::system_clock::now();
-    static std::chrono::duration<double> elapsed_time;
-    elapsed_time = spline_time - start_time;
-
-    std::cout << "NANO_MPPIC::MPPIc spline time: " << elapsed_time.count()*1000.0 << " ms\n";
-    
-    // plan_ = plan;
-
     // Compute free space in received plan
     setPlanFreeSpace();
-
-    auto free_time = std::chrono::system_clock::now();
-    elapsed_time = free_time - spline_time;
-
-    std::cout << "NANO_MPPIC::MPPIc free plan time: " << elapsed_time.count()*1000.0 << " ms\n";
 
     // Reset costs
     costs_.fill(0.0);
@@ -200,27 +185,14 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
     static bool has_failed;
     has_failed = false;
 
-    auto prediction_time = std::chrono::system_clock::now();
-    
     // Predict trajectories
     do {
         predict(has_failed);
-
-        prediction_time = std::chrono::system_clock::now();
-        elapsed_time = prediction_time - free_time;
-        free_time = prediction_time;
-
-        std::cout << "NANO_MPPIC::MPPIc total prediction time: " << elapsed_time.count()*1000.0 << " ms\n";
 
     } while (fallback(has_failed));
 
     // Filter control sequence (smooth out)
     aux::savitskyGolayFilter(ctrl_seq_, ctrl_history_);
-
-    auto filter_time = std::chrono::system_clock::now();
-    elapsed_time = filter_time - prediction_time;
-
-    std::cout << "NANO_MPPIC::MPPIc savitsky-golay time: " << elapsed_time.count()*1000.0 << " ms\n";
 
     // Get control from sequence
     float vx = ctrl_seq_.vx(cfg_.settings.offset);
@@ -234,11 +206,6 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
 
     // Shift control 
     shiftControlSeq();
-
-    auto end_time = std::chrono::system_clock::now();
-    elapsed_time = end_time - filter_time;
-
-    std::cout << "NANO_MPPIC::MPPIc end time: " << elapsed_time.count()*1000.0 << " ms\n";
 
     loop_mtx.unlock();
 
@@ -257,35 +224,13 @@ bool MPPIc::isHolonomic()
 
 void MPPIc::predict(bool &failed)
 {
-
-    static std::chrono::duration<double> elapsed_time;
-
     for(unsigned int i=0; i < cfg_.settings.num_iters; ++i){
-
-        auto start_time = std::chrono::system_clock::now();
-
         generateNoisedTrajectories();   // integrate new trajectories with newly computed control inputs
-
-        auto noise_time = std::chrono::system_clock::now();
-        elapsed_time = noise_time - start_time;
-
-        std::cout << "NANO_MPPIC::MPPIc noise gen "<< i <<"/" << cfg_.settings.num_iters << " time: " << elapsed_time.count()*1000.0 << " ms\n";
 
         evalTrajectories(failed);       // evaluate trajectories score
 
-        auto eval_time = std::chrono::system_clock::now();
-        elapsed_time = eval_time - start_time;
-
-        std::cout << "NANO_MPPIC::MPPIc evaluation "<< i <<"/" << cfg_.settings.num_iters << " time: " << elapsed_time.count()*1000.0 << " ms\n";
-
         optimizeControlSeq();           // compute optimal control sequence
-
-        auto end_time = std::chrono::system_clock::now();
-        elapsed_time = end_time - start_time;
-
-        std::cout << "NANO_MPPIC::MPPIc optimization "<< i <<"/" << cfg_.settings.num_iters << " time: " << elapsed_time.count()*1000.0 << " ms\n";
     }
-
 }
 
 bool MPPIc::fallback(bool &failed)
