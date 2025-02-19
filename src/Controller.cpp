@@ -284,7 +284,7 @@ bool MPPIcROS::isGoalReached()
 
     if(aux::robotNearGoal(this->goal_tolerance_, current_odom_, global_plan_))
     {
-        ROS_INFO("NANO_MPPIC: Goal reached!");
+        ROS_WARN("NANO_MPPIC: Goal reached!");
         return true;
     }
     else
