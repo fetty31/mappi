@@ -101,7 +101,7 @@ sudo make install
 ```sh
 git clone https://github.com/xtensor-stack/xtensor.git # install xtensor library
 cd xtensor
-mkdir build & cd build
+mkdir build && cd build
 cmake -DCMAKE_INSTALL_PREFIX=/usr/local ..
 sudo make install
 ```

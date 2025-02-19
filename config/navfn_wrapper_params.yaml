@@ -1,0 +1,3 @@
+navfn_wrapper:
+  allow_unknown: true
+  default_tolerance: 0.5

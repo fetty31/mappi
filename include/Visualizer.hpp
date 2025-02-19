@@ -56,8 +56,12 @@ class Visualizer {
         void publishThread();
 
         void fillMarkermsg(const objects::Trajectory& trajectories,
+                            const int &batch_stride,
+                            const int &time_stride,
                             visualization_msgs::MarkerArray* msg);
         void fillPointCloudmsg(const objects::Trajectory& trajectories,
+                                const int &batch_stride,
+                                const int &time_stride,
                                 sensor_msgs::PointCloud2* msg);
 
         bool getMarkerTrajectories(visualization_msgs::MarkerArray* msg);
@@ -155,7 +159,7 @@ bool Visualizer::getMarkerTrajectories(visualization_msgs::MarkerArray* msg)
     if(shape[0] < 1)
         return false;
     
-    fillMarkermsg(trajectories, msg);
+    fillMarkermsg(trajectories, batch_stride_, time_stride_, msg);
 
     return true;
 }
@@ -168,7 +172,7 @@ bool Visualizer::getMarkerOptimalTrajectory(visualization_msgs::MarkerArray* msg
     if(shape[1] < 1)
         return false;
     
-    fillMarkermsg(trajectory, msg);
+    fillMarkermsg(trajectory, batch_stride_, 1 /*time_stride_*/, msg);
 
     return true;
 }
@@ -181,7 +185,7 @@ bool Visualizer::getPointCloudTrajectories(sensor_msgs::PointCloud2* msg)
     if(shape[0] < 1)
         return false;
     
-    fillPointCloudmsg(trajectories, msg);
+    fillPointCloudmsg(trajectories, batch_stride_, time_stride_, msg);
 
     return true;
 }
@@ -194,7 +198,7 @@ bool Visualizer::getPointCloudOptimalTrajectory(sensor_msgs::PointCloud2* msg)
     if(shape[1] < 1)
         return false;
     
-    fillPointCloudmsg(trajectory, msg);
+    fillPointCloudmsg(trajectory, batch_stride_, 1 /*time_stride_*/, msg);
 
     return true;
 }
@@ -205,7 +209,9 @@ void Visualizer::reset()
     marker_id_ = 0;
 }
 
-void Visualizer::fillMarkermsg(const objects::Trajectory& trajectories, 
+void Visualizer::fillMarkermsg(const objects::Trajectory& trajectories,
+                                const int &batch_stride,
+                                const int &time_stride,
                                 visualization_msgs::MarkerArray* msg)
 {
     msg->markers.clear();
@@ -213,12 +219,12 @@ void Visualizer::fillMarkermsg(const objects::Trajectory& trajectories,
     auto & shape = trajectories.x.shape();
     const float shape_1 = static_cast<float>(shape[1]);
     if(shape[0] > 1)
-        msg->markers.reserve(floor(shape[0] / batch_stride_) * floor(shape[1] / time_stride_));
+        msg->markers.reserve(floor(shape[0] / batch_stride) * floor(shape[1] / time_stride));
     else
-        msg->markers.reserve(floor(shape[1] / time_stride_));
+        msg->markers.reserve(floor(shape[1] / time_stride));
 
-    for (size_t i = 0; i < shape[0]; i += batch_stride_) {
-        for (size_t j = 0; j < shape[1]; j += time_stride_) {
+    for (size_t i = 0; i < shape[0]; i += batch_stride) {
+        for (size_t j = 0; j < shape[1]; j += time_stride) {
             const float j_flt = static_cast<float>(j);
             float blue_component = 1.0f - j_flt / shape_1;
             float green_component = j_flt / shape_1;
@@ -234,6 +240,8 @@ void Visualizer::fillMarkermsg(const objects::Trajectory& trajectories,
 }
 
 void Visualizer::fillPointCloudmsg(const objects::Trajectory& trajectories, 
+                                    const int &batch_stride,
+                                    const int &time_stride,
                                     sensor_msgs::PointCloud2* msg)
 {
     auto & shape = trajectories.x.shape();
@@ -255,7 +263,7 @@ void Visualizer::fillPointCloudmsg(const objects::Trajectory& trajectories,
     msg->header.frame_id = frame_id_;
 
     msg->height = 1;
-    msg->width = (shape_0 > 1) ? ceil(shape_0 / batch_stride_) * ceil(shape_1 / time_stride_) : ceil(shape_1 / time_stride_);
+    msg->width = (shape_0 > 1) ? ceil(shape_0 / batch_stride) * ceil(shape_1 / time_stride) : ceil(shape_1 / time_stride);
     msg->is_dense = true;
 
     //Total number of bytes per point
@@ -274,8 +282,8 @@ void Visualizer::fillPointCloudmsg(const objects::Trajectory& trajectories,
 
     //iterate over the message and populate the fields.  
     int c=0;
-    for (size_t i = 0; i < shape[0]; i += batch_stride_) {
-        for (size_t j = 0; j < shape[1]; j += time_stride_) {
+    for (size_t i = 0; i < shape[0]; i += batch_stride) {
+        for (size_t j = 0; j < shape[1]; j += time_stride) {
             *iter_x = trajectories.x(i, j);
             *iter_y = trajectories.y(i, j);
             *iter_z = default_z_;
