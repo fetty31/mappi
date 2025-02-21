@@ -1,4 +1,4 @@
-# **Nano MPPIc 🏁**  
+# **🏁 MaPPI 🏁**  
 
 <details>
     <summary>Table of Contents</summary>
@@ -22,23 +22,23 @@
 
 <br>
 
-Nano MPPIc is a lightweight **Model Predictive Path Integral (MPPI)** controller for autonomous navigation. It efficiently computes kinematically feasible trajectories by sampling control inputs and evaluating them based on multiple cost functions (critics). This controller is designed for **real-time performance**, **obstacle avoidance**, and **smooth motion planning**, making it ideal for **embedded systems and resource-constrained platforms**.  
+MaPPI is a lightweight **Model Predictive Path Integral (MPPI)** controller for autonomous navigation. It efficiently computes kinematically feasible trajectories by sampling control inputs and evaluating them based on multiple cost functions (critics). This controller is designed for **real-time performance**, **obstacle avoidance**, and **smooth motion planning**, making it ideal for **embedded systems and resource-constrained platforms**.  
 
 ### **Distinctive Features**  
 ✅ **Kinematic Bicycle Model** available for vehicle-alike robots _(long. velocity + steering commands)_   
-✅ **Stand alone _C++_ library** - Nano MPPIc is implemented as a stand-alone _C++_ library in order to be used outside the ROS framework without changes, making it more portable.   
+✅ **Stand alone _C++_ library** - MaPPI is implemented as a stand-alone _C++_ library in order to be used outside the ROS framework without changes, making it more portable.   
 ✅ **ROS Noetic compatibility** - _C++_ plugin that integrates with `move_base` ___nav_core::BaseLocalPlanner___
 
 ---
 
 ## **Disclaimer**
-_This project is based on the [nav2](https://docs.nav2.org/) MPPI controller, developed by [Alex](https://github.com/artofnothingness) in [mppic](https://github.com/artofnothingness/mppic). If you plan to use `Nano MPPIc` please make sure to give some love to [nav2](https://github.com/ros-navigation/navigation2) and [mppic](https://github.com/artofnothingness/mppic) projects, which greatly influenced this work._
+_This project is based on the [nav2](https://docs.nav2.org/) MPPI controller, developed by [Alex](https://github.com/artofnothingness) in [mppic](https://github.com/artofnothingness/mppic). If you plan to use `MaPPI` please make sure to give some love to [nav2](https://github.com/ros-navigation/navigation2) and [mppic](https://github.com/artofnothingness/mppic) projects, which greatly influenced this work._
 
 ## **Installation**  
 
 ### **Dependencies**  
 <details open>
-    <summary>Nano-MPPIc C++14 library:</summary>
+    <summary>MaPPI C++14 library:</summary>
     <ol>
         <li>
         <a href="https://github.com/xtensor-stack/xtensor">xtensor</a>
@@ -56,7 +56,7 @@ _This project is based on the [nav2](https://docs.nav2.org/) MPPI controller, de
     <summary>ROS (Noetic) wrapper:</summary>
     <ol>
         <li>
-        <a href="./nano_mppic/">nano_mppic</a>
+        <a href="./mappi/">mappi</a>
         <li>
         <a href="http://wiki.ros.org/sensor_msgs">sensor_msgs</a>
         </li>
@@ -109,7 +109,7 @@ sudo make install
 Clone the repository and build the package:  
 ```bash
 cd ~/catkin_ws/src
-git clone https://gitlab.iri.upc.edu/mobile_robotics/botnet_project/vaive/nano_mppic.git
+git clone https://gitlab.iri.upc.edu/mobile_robotics/botnet_project/vaive/mappi.git
 cd ..
 rosdep install --from-paths src --ignore-src -r -y
 catkin_make 
@@ -119,17 +119,17 @@ catkin_make
 
 ## **Quick Start**  
 
-### 1. Nano MPPIc as Local Planner
+### 1. MaPPI as Local Planner
 Make sure your `move_base` configuration includes:
 ```xml
-<param name="base_global_planner" value="nano_mppic/MPPIPlannerROS"/>
+<param name="base_global_planner" value="mappi/MPPIPlannerROS"/>
 ```
-This allows `move_base` to call the _MPPIPlannerROS_ plugin, which wraps around the `Nano MPPIc` library.
+This allows `move_base` to call the _MPPIPlannerROS_ plugin, which wraps around the stand-alone `MaPPI` library.
 
 ### **2. Tuning Configuration Parameters**  
-Modify [`config/nano_mppic_local_planner.yaml`](config/nano_mppic_local_planner.yaml) to adjust the controller behavior. Remember to add this to the `move_base` launch:
+Modify [`config/mappi_local_planner.yaml`](config/mappi_local_planner.yaml) to adjust the controller behavior. Remember to add this to your `move_base` launch:
 ```xml
-<rosparam file="$(find nano_mppic)/config/nano_mppic_local_planner.yaml" command="load"/>
+<rosparam file="$(find mappi)/config/mappi_local_planner.yaml" command="load"/>
 ```
 ---
 
@@ -138,13 +138,13 @@ To-Do
 
 ## **Package Structure**  
 ```
-nano_mppic/
+mappi/
 │── cfg/                    # Dynamic Reconfigure definition
 │── include/                # Header files for ROS functionality
-│── nano_mppic/             # Nano MPPIc stand-alone C++ library
+│── mappi/                  # MaPPI stand-alone C++ library
 │── src/                    # nav_core::BaseLocalPlanner definition
 │── CMakeLists.txt          # Build system configuration
-│── nano_mppic_plugin.xml   # nav_core pluginlib definition
+│── mappi_plugin.xml        # nav_core pluginlib definition
 │── package.xml             # ROS package metadata
 └── README.md               # This file
 ```
