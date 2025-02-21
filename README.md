@@ -20,8 +20,6 @@
     </ol>
 </details>
 
-<br>
-
 MaPPI is a lightweight **Model Predictive Path Integral (MPPI)** controller for autonomous navigation. It efficiently computes kinematically feasible trajectories by sampling control inputs and evaluating them based on multiple cost functions (critics). This controller is designed for **real-time performance**, **obstacle avoidance**, and **smooth motion planning**, making it ideal for **embedded systems and resource-constrained platforms**.  
 
 ### **Distinctive Features**  

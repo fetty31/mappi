@@ -44,6 +44,8 @@ class NavFnWrapper {
         bool validPointPotential(const geometry_msgs::Point& world_point);
 
         bool validPointPotential(const geometry_msgs::Point& world_point, double tolerance);
+
+        double getTolerance();
   
     protected:
         mappi::shared_ptr<costmap_2d::Costmap2DROS> costmap_ros_ptr_;
@@ -410,6 +412,11 @@ bool NavFnWrapper::getPlanFromPotential(const geometry_msgs::PoseStamped& goal, 
     }
 
     return !plan.empty();
+}
+
+double NavFnWrapper::getTolerance()
+{
+    return default_tolerance_;
 }
 
 #endif

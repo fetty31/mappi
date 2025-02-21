@@ -5,40 +5,40 @@ MPPIPlannerROS:
     global_frame: ""  # if left null it will be the same as global_costmap frame
     local_frame: ""   # if left null it will be the same as local_costmap frame
 
-    num_iterations: 4
-    batch_size: 1000
-    time_steps: 60
-    num_retry: 4
-    control_offset: 1
+    num_iterations: 4   # number of iterations solving the Path Integral problem 
+    batch_size: 1000    # number of propagated trajectories
+    time_steps: 60      # horizon length of the propagation ( prediction_time = model_dt*time_steps )
+    num_retry: 4        # number of retries when the solution fails (all generated trajectories collide)
+    control_offset: 1   # offset to choose the control commands to send
 
-    goal_tolerance: 0.2
+    goal_tolerance: 0.2   # [m] tolerance for considering we have reached the goal 
 
-    model_dt: 0.05
-    temperature: 0.3
-    gamma: 0.015
+    model_dt: 0.05        # [s] integration delta time 
+    temperature: 0.3      # Path Integral parameter
+    gamma: 0.015          # Path Integral parameter
 
   Constraints:
-    max_vx: 2.0
-    min_vx: -2.0
+    max_vx: 2.0         # [m/s]
+    min_vx: -2.0        # [m/s]
 
-    max_vy: 1.0
-    min_vy: -1.0
+    max_vy: 1.0         # [m/s]
+    min_vy: -1.0        # [m/s]
 
-    max_wz: 3.0
-    min_wz: -3.0
+    max_wz: 3.0         # [rad/s] (or [rad] if SteeringBased model is chosen)
+    min_wz: -3.0        # [rad/s] (or [rad] if SteeringBased model is chosen)
 
   MotionModel: "SteeringBased" # ["Ackermann", "SteeringBased", "Holonomic"]
 
   Ackermann: 
-    min_radius: 3.0 # [m]
+    min_radius: 3.0     # [m]
 
   SteeringModel: 
-    length: 1.0 # [m]
+    length: 1.0         # [m]
 
   NoiseGeneration:
-    std_vx: 0.3
-    std_vy: 0.3
-    std_wz: 0.1
+    std_vx: 0.3         # [m/s]
+    std_vy: 0.3         # [m/s]
+    std_wz: 0.1         # [rad/s] (or [rad] if SteeringBased model is chosen)
 
   Critics:
     Goal:
@@ -90,7 +90,7 @@ MPPIPlannerROS:
       collision_margin_dist: 0.6
 
   Visualization:
-    batch_stride: 100
-    time_stride: 3
-    default_z: 0.2
-    scale: 0.05
+    batch_stride: 100   # stride for visualizing less trajectories (rendering all trajectories can lead to too much overhead)
+    time_stride: 3      # stride for the horizon length
+    default_z: 0.2      # default z value for the visualized trajectories
+    scale: 0.05         # markers scale

@@ -250,7 +250,11 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
 
     local_plan_ = global_plan_;
     #ifdef HAS_NAVFN
-        navfn_wrapper_.getPlan(current_odom_, global_plan_, local_plan_);
+        if(not aux::robotNearGoal(goal_tolerance_+static_cast<float>(navfn_wrapper_.getTolerance()), 
+                                    current_odom_, 
+                                    global_plan_ ) 
+            )
+            navfn_wrapper_.getPlan(current_odom_, global_plan_, local_plan_);
     #endif
 
     // mappi_.resetControls(); // reset mppi control commands
