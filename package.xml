@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>nano_mppic</name>
+  <name>mappi</name>
   <version>0.0.0</version>
-  <description>The nano_mppic package</description>
+  <description>The mappi package</description>
 
   <maintainer email="oriol.martinez.fite@gmail.com">fetty</maintainer>
   <author email="oriol.martinez.fite@gmail.com">fetty</author>
@@ -55,6 +55,6 @@
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->
-    <nav_core plugin="${prefix}/nano_mppic_plugin.xml" />
+    <nav_core plugin="${prefix}/mappi_plugin.xml" />
   </export>
 </package>

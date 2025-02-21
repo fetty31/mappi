@@ -16,10 +16,10 @@
 #include <tf2/utils.h>
 #include <tf2/LinearMath/Quaternion.h>
 
-namespace nano_mppic::ros_utils {
+namespace mappi::ros_utils {
 
 void ros2mppic(const std::vector<geometry_msgs::PoseStamped>& in_path, 
-                nano_mppic::objects::Path& out_path)
+                mappi::objects::Path& out_path)
 {
     out_path.reset(in_path.size());
 
@@ -31,7 +31,7 @@ void ros2mppic(const std::vector<geometry_msgs::PoseStamped>& in_path,
 }
 
 void ros2mppic(const std::vector<geometry_msgs::PoseStamped>& in_path, 
-                nano_mppic::objects::Path& out_path,
+                mappi::objects::Path& out_path,
                 geometry_msgs::TransformStamped& transform)
 {
     out_path.reset(in_path.size());
@@ -46,7 +46,7 @@ void ros2mppic(const std::vector<geometry_msgs::PoseStamped>& in_path,
 }
 
 void ros2mppic(const geometry_msgs::PoseStamped& in_pose, 
-                nano_mppic::objects::Odometry2d& out_pose)
+                mappi::objects::Odometry2d& out_pose)
 {
     out_pose.x   = in_pose.pose.position.x;
     out_pose.y   = in_pose.pose.position.y;
@@ -55,7 +55,7 @@ void ros2mppic(const geometry_msgs::PoseStamped& in_pose,
 }
 
 void ros2mppic(const nav_msgs::Odometry& in_odom,
-                nano_mppic::objects::Odometry2d& out_odom)
+                mappi::objects::Odometry2d& out_odom)
 {
     out_odom.x   = in_odom.pose.pose.position.x;
     out_odom.y   = in_odom.pose.pose.position.y;
@@ -68,7 +68,7 @@ void ros2mppic(const nav_msgs::Odometry& in_odom,
     out_odom.stamp = static_cast<float>(in_odom.header.stamp.toSec());
 }
 
-void mppic2ros(const nano_mppic::objects::Path& in_path, 
+void mppic2ros(const mappi::objects::Path& in_path, 
                 std::vector<geometry_msgs::PoseStamped>& out_path)
 {
     out_path.reserve(in_path.x.size());
@@ -86,7 +86,7 @@ void mppic2ros(const nano_mppic::objects::Path& in_path,
     }
 }
 
-void mppic2ros(const nano_mppic::objects::Path& in_path, 
+void mppic2ros(const mappi::objects::Path& in_path, 
                 nav_msgs::Path& out_path)
 {
     out_path.poses.clear();
@@ -156,4 +156,4 @@ inline visualization_msgs::Marker createMarker(
     return marker;
 }
 
-} // namespace nano_mppic::ros_utils
+} // namespace mappi::ros_utils

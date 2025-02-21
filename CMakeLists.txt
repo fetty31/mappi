@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(nano_mppic)
+project(mappi)
 
 add_compile_options(-std=c++14)
 set(CMAKE_BUILD_TYPE "Release")
@@ -37,11 +37,11 @@ endif()
 
 
 generate_dynamic_reconfigure_options(
-  cfg/NanoMPPIc.cfg
+  cfg/MaPPI.cfg
 )
 
 catkin_package(
- INCLUDE_DIRS include nano_mppic/include
+ INCLUDE_DIRS include mappi/include
  LIBRARIES ${PROJECT_NAME}_local_planner 
  CATKIN_DEPENDS roscpp nav_msgs tf2 costmap_2d geometry_msgs nav_core visualization_msgs std_msgs sensor_msgs std_srvs
 #  DEPENDS XTENSOR
@@ -49,7 +49,7 @@ catkin_package(
 
 include_directories(
   include
-  nano_mppic/include
+  mappi/include
   ${catkin_INCLUDE_DIRS}
   ${xtensor_INLCUDE_DIRS}
 )
@@ -73,7 +73,7 @@ endif()
 
 # Nano MPPIC (standalone lib)
 add_library(${PROJECT_NAME} 
-            nano_mppic/src/mppic.cpp
+            mappi/src/mppic.cpp
             )
 target_compile_options(${PROJECT_NAME} PUBLIC)
 target_include_directories(${PROJECT_NAME} PUBLIC ${xtensor_INCLUDE_DIRS})
@@ -99,6 +99,6 @@ install(TARGETS ${PROJECT_NAME}_local_planner
          RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION})
 
 install(FILES
-  nano_mppic_plugin.xml
+  mappi_plugin.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )

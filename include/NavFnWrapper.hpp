@@ -1,5 +1,5 @@
-#ifndef __NANO_MPPIC_NAVFN_WRAPPER_HPP__
-#define __NANO_MPPIC_NAVFN_WRAPPER_HPP__
+#ifndef __MAPPI_NAVFN_WRAPPER_HPP__
+#define __MAPPI_NAVFN_WRAPPER_HPP__
 
 #include <navfn/navfn.h>
 #include <navfn/potarr_point.h>
@@ -18,14 +18,14 @@ class NavFnWrapper {
 
     public:
         NavFnWrapper();
-        NavFnWrapper(std::string name, nano_mppic::shared_ptr<costmap_2d::Costmap2DROS>&);
+        NavFnWrapper(std::string name, mappi::shared_ptr<costmap_2d::Costmap2DROS>&);
         ~NavFnWrapper();
 
-        void configure(std::string name, nano_mppic::shared_ptr<costmap_2d::Costmap2DROS>&);
+        void configure(std::string name, mappi::shared_ptr<costmap_2d::Costmap2DROS>&);
 
-        bool getPlan(nano_mppic::objects::Odometry2d odom, 
-                    nano_mppic::objects::Path& goals,
-                    nano_mppic::objects::Path& out_plan);
+        bool getPlan(mappi::objects::Odometry2d odom, 
+                    mappi::objects::Path& goals,
+                    mappi::objects::Path& out_plan);
 
         bool makePlan(const geometry_msgs::PoseStamped& start, 
                         const geometry_msgs::PoseStamped& goal, 
@@ -46,9 +46,9 @@ class NavFnWrapper {
         bool validPointPotential(const geometry_msgs::Point& world_point, double tolerance);
   
     protected:
-        nano_mppic::shared_ptr<costmap_2d::Costmap2DROS> costmap_ros_ptr_;
+        mappi::shared_ptr<costmap_2d::Costmap2DROS> costmap_ros_ptr_;
         costmap_2d::Costmap2D * costmap_{nullptr};
-        nano_mppic::shared_ptr<navfn::NavFn> planner_;
+        mappi::shared_ptr<navfn::NavFn> planner_;
 
         bool allow_unknown_;
 
@@ -59,7 +59,7 @@ class NavFnWrapper {
             return dx*dx +dy*dy;
         }
 
-        geometry_msgs::PoseStamped chooseGoal(nano_mppic::objects::Path&);
+        geometry_msgs::PoseStamped chooseGoal(mappi::objects::Path&);
         void mapToWorld(double mx, double my, double& wx, double& wy);
         void clearRobotCell(const geometry_msgs::PoseStamped& global_pose, unsigned int mx, unsigned int my);
 
@@ -72,7 +72,7 @@ class NavFnWrapper {
 NavFnWrapper::NavFnWrapper() 
         : allow_unknown_(true) {}
 
-NavFnWrapper::NavFnWrapper(std::string name, nano_mppic::shared_ptr<costmap_2d::Costmap2DROS>& costmap_ros)
+NavFnWrapper::NavFnWrapper(std::string name, mappi::shared_ptr<costmap_2d::Costmap2DROS>& costmap_ros)
     : allow_unknown_(true) 
     {
     configure(name, costmap_ros);
@@ -80,12 +80,12 @@ NavFnWrapper::NavFnWrapper(std::string name, nano_mppic::shared_ptr<costmap_2d::
 
 NavFnWrapper::~NavFnWrapper() { delete costmap_; }
 
-void NavFnWrapper::configure(std::string name, nano_mppic::shared_ptr<costmap_2d::Costmap2DROS>& costmap_ros)
+void NavFnWrapper::configure(std::string name, mappi::shared_ptr<costmap_2d::Costmap2DROS>& costmap_ros)
 {
     costmap_ros_ptr_ = costmap_ros;
     costmap_ = costmap_ros->getCostmap();
     global_frame_ = costmap_ros->getGlobalFrameID();
-    planner_ = nano_mppic::shared_ptr
+    planner_ = mappi::shared_ptr
                         <navfn::NavFn>(new navfn::NavFn(costmap_->getSizeInCellsX(), costmap_->getSizeInCellsY()) );
 
     ros::NodeHandle private_nh("~/" + name);
@@ -94,9 +94,9 @@ void NavFnWrapper::configure(std::string name, nano_mppic::shared_ptr<costmap_2d
     private_nh.param<double>("default_tolerance", default_tolerance_, 0.0);
 }
 
-bool NavFnWrapper::getPlan(nano_mppic::objects::Odometry2d odom, 
-                            nano_mppic::objects::Path& goals,
-                            nano_mppic::objects::Path& out_plan
+bool NavFnWrapper::getPlan(mappi::objects::Odometry2d odom, 
+                            mappi::objects::Path& goals,
+                            mappi::objects::Path& out_plan
                             )
 {
     geometry_msgs::PoseStamped start;
@@ -109,7 +109,7 @@ bool NavFnWrapper::getPlan(nano_mppic::objects::Odometry2d odom,
 
     std::vector<geometry_msgs::PoseStamped> plan_ros;
     if(this->makePlan(start, goal, plan_ros)){
-        nano_mppic::ros_utils::ros2mppic(plan_ros, out_plan);
+        mappi::ros_utils::ros2mppic(plan_ros, out_plan);
         return true;
     }
     else
@@ -120,7 +120,7 @@ bool NavFnWrapper::getPlan(nano_mppic::objects::Odometry2d odom,
     
 }
 
-geometry_msgs::PoseStamped NavFnWrapper::chooseGoal(nano_mppic::objects::Path& goals)
+geometry_msgs::PoseStamped NavFnWrapper::chooseGoal(mappi::objects::Path& goals)
 {
     geometry_msgs::PoseStamped chosen_goal;
     chosen_goal.header.frame_id = global_frame_;

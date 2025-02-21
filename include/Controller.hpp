@@ -1,5 +1,5 @@
-#ifndef __NANO_MPPIC_ROS_HPP__
-#define __NANO_MPPIC_ROS_HPP__
+#ifndef __MAPPI_ROS_HPP__
+#define __MAPPI_ROS_HPP__
 
 #include <chrono>
 #include <cmath>
@@ -10,7 +10,7 @@
 #include "Visualizer.hpp"
 
 #include <dynamic_reconfigure/server.h>
-#include <nano_mppic/MPPIPlannerROSConfig.h>
+#include <mappi/MPPIPlannerROSConfig.h>
 
 #include <nav_core/base_local_planner.h>
 
@@ -25,7 +25,7 @@
 #include <geometry_msgs/TransformStamped.h>
 #include <std_srvs/Empty.h>
 
-namespace nano_mppic {
+namespace mappi {
 
 class MPPIcROS : public nav_core::BaseLocalPlanner {
 
@@ -39,7 +39,7 @@ class MPPIcROS : public nav_core::BaseLocalPlanner {
         shared_ptr<costmap_2d::Costmap2DROS> costmap_ros_ptr_;
         ros::ServiceClient costmap_client_;
 
-        MPPIc nano_mppic_;
+        MPPIc mappi_;
         std::unique_ptr<Visualizer> visualizer_ptr_;
 
         #ifdef HAS_NAVFN
@@ -58,7 +58,7 @@ class MPPIcROS : public nav_core::BaseLocalPlanner {
         ros::Publisher global_pub_;
         ros::Publisher local_pub_;
 
-        dynamic_reconfigure::Server<nano_mppic::MPPIPlannerROSConfig> *dyn_srv_;
+        dynamic_reconfigure::Server<mappi::MPPIPlannerROSConfig> *dyn_srv_;
 
     // FUNCTIONS
 
@@ -85,10 +85,10 @@ class MPPIcROS : public nav_core::BaseLocalPlanner {
 
         void odom_callback(const nav_msgs::Odometry::ConstPtr& msg);
 
-        void reconfigure_callback(nano_mppic::MPPIPlannerROSConfig &dyn_cfg, uint32_t level);
+        void reconfigure_callback(mappi::MPPIPlannerROSConfig &dyn_cfg, uint32_t level);
 
 };
 
-} // namespace nano_mppic
+} // namespace mappi
 
 #endif

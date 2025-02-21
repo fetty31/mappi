@@ -3,7 +3,7 @@
 #include <pluginlib/class_list_macros.h>
 // #include <base_local_planner/goal_functions.h>
 
-namespace nano_mppic {
+namespace mappi {
 
 MPPIcROS::MPPIcROS() : tf_(NULL), initialized_(false)
 {
@@ -20,7 +20,7 @@ MPPIcROS::MPPIcROS(std::string name,
 
 MPPIcROS::~MPPIcROS()
 {
-    nano_mppic_.shutdown();
+    mappi_.shutdown();
 }
 
 void MPPIcROS::initialize(std::string name, 
@@ -28,7 +28,7 @@ void MPPIcROS::initialize(std::string name,
                             costmap_2d::Costmap2DROS* costmap_ros)
 {
 
-    ROS_INFO("NANO_MPPIC:: Initializing...");
+    ROS_INFO("mappi:: Initializing...");
 
     // Set up private ROS handlers (tf, costmap, node)
     ros::NodeHandle nh("~/" + name);
@@ -159,10 +159,10 @@ void MPPIcROS::initialize(std::string name,
     config.print_out(); // print out config (debug)
 
     // Initialize MPPI controller
-    nano_mppic_.configure(config, costmap_ros_ptr_);
+    mappi_.configure(config, costmap_ros_ptr_);
 
     // Set up Visualizer instance
-    visualizer_ptr_ = std::make_unique<Visualizer>(&nano_mppic_, &nh);
+    visualizer_ptr_ = std::make_unique<Visualizer>(&mappi_, &nh);
 
     // Set up NavFn Wrapper (if available)
     #ifdef HAS_NAVFN
@@ -170,15 +170,15 @@ void MPPIcROS::initialize(std::string name,
     #endif
 
     // Set up dynamic reconfigure server
-    dyn_srv_ = new dynamic_reconfigure::Server<nano_mppic::MPPIPlannerROSConfig>(nh);
+    dyn_srv_ = new dynamic_reconfigure::Server<mappi::MPPIPlannerROSConfig>(nh);
     dynamic_reconfigure::Server
-        <nano_mppic::MPPIPlannerROSConfig>
+        <mappi::MPPIPlannerROSConfig>
             ::CallbackType callback = boost::bind(&MPPIcROS::reconfigure_callback, this, _1, _2);
     dyn_srv_->setCallback(callback);
 
     initialized_ = true;
 
-    ROS_INFO("NANO_MPPIC:: Finished initializing");
+    ROS_INFO("mappi:: Finished initializing");
 }
 
 bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
@@ -187,7 +187,7 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 
     static geometry_msgs::PoseStamped current_pose;
     if(not costmap_ros_ptr_->getRobotPose(current_pose)){
-        ROS_ERROR("NANO_MPPIC could not get robot pose!");
+        ROS_ERROR("mappi:: Could not get robot pose!");
         cmd_vel.linear.x = 0.0;
         cmd_vel.linear.y = 0.0;
         cmd_vel.angular.z = 0.0;
@@ -200,9 +200,9 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
     // Cut down global plan horizon (TO-DO)
 
     // float dist = 15.0f;
-    // size_t index = nano_mppic::aux::getIdxFromDistance(local_plan_, dist);
+    // size_t index = mappi::aux::getIdxFromDistance(local_plan_, dist);
 
-    objects::Control cmd = nano_mppic_.getControl(current_odom_, local_plan_);
+    objects::Control cmd = mappi_.getControl(current_odom_, local_plan_);
     cmd_vel.linear.x  = cmd.vx;
     cmd_vel.linear.y  = cmd.vy;
     cmd_vel.angular.z  = cmd.wz;
@@ -211,14 +211,14 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
     static std::chrono::duration<double> elapsed_time;
     elapsed_time = end_time - start_time;
 
-    ROS_INFO("NANO_MPPIC::elapsed time: %f ms", elapsed_time.count()*1000.0);
+    ROS_INFO("mappi:: Elapsed time: %f ms", elapsed_time.count()*1000.0);
 
     // Publish generated trajectories
     visualizer_ptr_->publish();
 
     // Publish interpolated plan
     static nav_msgs::Path path_msg;
-    ros_utils::mppic2ros(nano_mppic_.getCurrentPlan(), path_msg);
+    ros_utils::mppic2ros(mappi_.getCurrentPlan(), path_msg);
     path_msg.header.frame_id = local_frame_;
     path_msg.header.stamp = ros::Time::now();
 
@@ -230,11 +230,11 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_plan)
 {
     if(not is_initialized()){
-        ROS_ERROR("NANO_MPPIC: this planner/controller has not been initialized, please call initialize() before using this planner");
+        ROS_ERROR("mappi: This planner/controller has not been initialized, please call initialize() before using this planner");
         return false;
     }
 
-    ROS_INFO_ONCE("NANO_MPPIC:: setting new global plan");
+    ROS_INFO_ONCE("mappi:: Setting new global plan");
 
     geometry_msgs::TransformStamped transformStamped;
     try{
@@ -244,8 +244,8 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
     }
     catch (tf2::TransformException &ex) {
         ros_utils::ros2mppic(global_plan, global_plan_);
-        ROS_ERROR("NANO_MPPIC::\n %s",ex.what());
-        ROS_ERROR("NANO_MPPIC::\t assuming global and local frame are the same!");
+        ROS_ERROR("mappi::\n %s",ex.what());
+        ROS_ERROR("mappi::\t Assuming global and local frame are the same!");
     }
 
     local_plan_ = global_plan_;
@@ -253,16 +253,16 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
         navfn_wrapper_.getPlan(current_odom_, global_plan_, local_plan_);
     #endif
 
-    // nano_mppic_.resetControls(); // reset mppi control commands
+    // mappi_.resetControls(); // reset mppi control commands
 
     static std_srvs::Empty srv;
     if (costmap_client_.call(srv))
     {
-        ROS_INFO("NANO_MPPIC:: Resetting costmaps");
+        ROS_INFO("mappi:: Resetting costmaps");
     }
     else
     {
-        ROS_ERROR("NANO_MPPIC:: Failed to call service ~clear_costmaps");
+        ROS_ERROR("mappi:: Failed to call service ~clear_costmaps");
     }
 
     static nav_msgs::Path path_msg;
@@ -278,13 +278,13 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
 bool MPPIcROS::isGoalReached()
 {
     if (not is_initialized()) {
-        ROS_ERROR("NANO_MPPIC: this planner/controller has not been initialized, please call initialize() before using this planner");
+        ROS_ERROR("mappi: This planner/controller has not been initialized, please call initialize() before using this planner");
         return false;
     }
 
     if(aux::robotNearGoal(this->goal_tolerance_, current_odom_, global_plan_))
     {
-        ROS_WARN("NANO_MPPIC: Goal reached!");
+        ROS_WARN("mappi: Goal reached!");
         return true;
     }
     else
@@ -296,10 +296,10 @@ bool MPPIcROS::is_initialized()
     return initialized_;
 }
 
-void MPPIcROS::reconfigure_callback(nano_mppic::MPPIPlannerROSConfig &dyn_cfg, uint32_t level)
+void MPPIcROS::reconfigure_callback(mappi::MPPIPlannerROSConfig &dyn_cfg, uint32_t level)
 {
 
-    ROS_WARN("NANO_MPPIC: Dynamic reconfigure called");
+    ROS_WARN("mappi: Dynamic reconfigure called");
 
     if(not is_initialized())
         return;
@@ -395,14 +395,14 @@ void MPPIcROS::reconfigure_callback(nano_mppic::MPPIPlannerROSConfig &dyn_cfg, u
     config.print_out(); // print out config (debug)
 
     // Reconfigure MPPI controller
-    nano_mppic_.setConfig(config);
+    mappi_.setConfig(config);
 
     } catch (...) {
-        ROS_ERROR("NANO_MPPIC:: Dynamic Reconfigure parameters could not be read!");
+        ROS_ERROR("mappi:: Dynamic Reconfigure parameters could not be read!");
     }
 }
 
-} // namespace nano_mppic
+} // namespace mappi
 
 //register this planner as a BaseLocalPlanner plugin
-PLUGINLIB_EXPORT_CLASS(nano_mppic::MPPIcROS, nav_core::BaseLocalPlanner)
+PLUGINLIB_EXPORT_CLASS(mappi::MPPIcROS, nav_core::BaseLocalPlanner)

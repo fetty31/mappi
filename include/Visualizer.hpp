@@ -1,5 +1,5 @@
-#ifndef __NANO_MPPIC_VISUALIZER_HPP__
-#define __NANO_MPPIC_VISUALIZER_HPP__
+#ifndef __MAPPI_VISUALIZER_HPP__
+#define __MAPPI_VISUALIZER_HPP__
 
 #include <memory>
 #include <string>
@@ -15,7 +15,7 @@
 #include <sensor_msgs/PointField.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 
-namespace nano_mppic {
+namespace mappi {
 
 class Visualizer {
 
@@ -141,7 +141,7 @@ void Visualizer::publish()
 
 void Visualizer::publishThread()
 {
-    ROS_INFO_ONCE("NANO_MPPIC::Visualizer publish thread started!");
+    ROS_INFO_ONCE("mappi::Visualizer publish thread started!");
 
     while(ros::ok()){
 
@@ -301,7 +301,7 @@ void Visualizer::fillPointCloudmsg(const objects::Trajectory& trajectories,
     }
 }
 
-} // namespace nano_mppic
+} // namespace mappi
 
 
 #endif
