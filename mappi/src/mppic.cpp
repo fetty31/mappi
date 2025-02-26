@@ -204,6 +204,9 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
     float vy = 0.0;
     if(isHolonomic()) vy = ctrl_seq_.vy(cfg_.settings.offset);
 
+    // Filter wz with low pass filter
+    wz = aux::lowPassFilter(wz);
+
     output.vx = vx;
     output.vy = vy;
     output.wz = wz;
