@@ -3,7 +3,7 @@
 
 #include "Models/Ackermann.hpp"
 #include "Models/Holonomic.hpp"
-#include "Models/SteeringBased.hpp"
+#include "Models/BicycleKin.hpp"
 
 #include "Critics/Obstacles.hpp"
 #include "Critics/Goal.hpp"
@@ -51,7 +51,7 @@ class MPPIc {
         objects::Trajectory trajectory_;
         objects::Path plan_;
 
-        std::array<objects::Control,2> ctrl_history_;
+        std::array<objects::Control,4> ctrl_history_;
 
         // To-Do: define critics manager 
         critics::Obstacles obs_critic_; 

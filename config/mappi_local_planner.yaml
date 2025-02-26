@@ -24,10 +24,10 @@ MPPIPlannerROS:
     max_vy: 1.0         # [m/s]
     min_vy: -1.0        # [m/s]
 
-    max_wz: 3.0         # [rad/s] (or [rad] if SteeringBased model is chosen)
-    min_wz: -3.0        # [rad/s] (or [rad] if SteeringBased model is chosen)
+    max_wz: 3.0         # [rad/s] (or [rad] if BicycleKin model is chosen)
+    min_wz: -3.0        # [rad/s] (or [rad] if BicycleKin model is chosen)
 
-  MotionModel: "SteeringBased" # ["Ackermann", "SteeringBased", "Holonomic"]
+  MotionModel: "BicycleKin" # ["Ackermann", "BicycleKin", "Holonomic"]
 
   Ackermann: 
     min_radius: 3.0     # [m]
@@ -38,7 +38,7 @@ MPPIPlannerROS:
   NoiseGeneration:
     std_vx: 0.3         # [m/s]
     std_vy: 0.3         # [m/s]
-    std_wz: 0.1         # [rad/s] (or [rad] if SteeringBased model is chosen)
+    std_wz: 0.1         # [rad/s] (or [rad] if BicycleKin model is chosen)
 
   Critics:
     Goal:

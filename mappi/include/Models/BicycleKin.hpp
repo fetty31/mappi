@@ -1,28 +1,28 @@
-#ifndef __MAPPI_STEERINGBASED_MODEL_HPP__
-#define __MAPPI_STEERINGBASED_MODEL_HPP__
+#ifndef __MAPPI_BICYCLEKIN_MODEL_HPP__
+#define __MAPPI_BICYCLEKIN_MODEL_HPP__
 
 #include "Models/MotionModel.hpp"
 #include "Objects/Config.hpp"
 
 namespace mappi::models {
 
-class SteeringBased : public MotionModel {
+class BicycleKin : public MotionModel {
 
     // VARIABLES
 
     private:    
-        mappi::config::SteeringBasedModel cfg_;
+        mappi::config::BicycleKinModel cfg_;
 
     // FUNCTIONS
 
     public:
-        explicit SteeringBased(mappi::config::SteeringBasedModel& config, 
+        explicit BicycleKin(mappi::config::BicycleKinModel& config, 
                             float dt) : MotionModel(dt) 
         {
             cfg_ = config;
         }
 
-        void setConfig(mappi::config::SteeringBasedModel& config, float dt)
+        void setConfig(mappi::config::BicycleKinModel& config, float dt)
         {
             MotionModel::setConfig(dt);
             cfg_ = config;
