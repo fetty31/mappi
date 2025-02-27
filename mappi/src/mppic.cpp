@@ -173,7 +173,7 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
     // Update current robot state
     state_.odom = odom; 
 
-    // Interpolate global plan (optional)
+    // (optional) Interpolate received plan 
     spline::BSpline spline(plan);
     std::vector<float> u = aux::linspace<float>(0.0f, 0.99f, 100);
 
@@ -196,7 +196,7 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
     } while (fallback(has_failed));
 
     // Filter control sequence (smooth out)
-    aux::savitskyGolayFilter(ctrl_seq_, ctrl_history_);
+    filters::savitskyGolayFilter(ctrl_seq_, ctrl_history_);
 
     // Get control from sequence
     float vx = ctrl_seq_.vx(cfg_.settings.offset);
@@ -204,8 +204,8 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
     float vy = 0.0;
     if(isHolonomic()) vy = ctrl_seq_.vy(cfg_.settings.offset);
 
-    // Filter wz with low pass filter
-    wz = aux::lowPassFilter(wz);
+    // (optional) Filter wz with low pass filter 
+    wz = filters::lowPassFilter(wz);
 
     output.vx = vx;
     output.vy = vy;

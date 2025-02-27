@@ -20,6 +20,7 @@
 
 #include "Utils/NoiseGenerator.hpp"
 #include "Utils/Auxiliar.hpp"
+#include "Utils/Filters.hpp"
 #include "Utils/SplineAdaptor.hpp"
 
 #include <memory>

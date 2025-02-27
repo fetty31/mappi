@@ -197,10 +197,9 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 
     auto start_time = std::chrono::system_clock::now();
 
-    // Cut down global plan horizon (TO-DO)
-
-    // float dist = 15.0f;
-    // size_t index = mappi::aux::getIdxFromDistance(local_plan_, dist);
+    // (optional) Shift local plan to avoid planning inside the robot's footprint 
+    float dist = 1.5f;
+    aux::shiftPlan(local_plan_, dist);
 
     objects::Control cmd = mappi_.getControl(current_odom_, local_plan_);
     cmd_vel.linear.x  = cmd.vx;

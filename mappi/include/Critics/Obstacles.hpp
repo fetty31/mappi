@@ -109,6 +109,7 @@ void Obstacles::score(mappi::objects::State& states,
 float Obstacles::dist2obstacle(unsigned char cost){
     const float scale_factor = cfg_.inflation_scale_factor;
     const float min_radius = costmap_ros_ptr_->getLayeredCostmap()->getInscribedRadius();
+    // const float min_radius = costmap_ros_ptr_->getLayeredCostmap()->getCircumscribedRadius();
     float dist_to_obs = (scale_factor * min_radius - log(static_cast<float>(cost)) + log(253.0f)) / scale_factor;
 
     return dist_to_obs;
