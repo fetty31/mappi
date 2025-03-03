@@ -105,6 +105,32 @@ void mppic2ros(const mappi::objects::Path& in_path,
     }
 }
 
+void mppic2ros(const mappi::objects::Path& in_path, 
+                nav_msgs::Path& out_path,
+                std::string frame_id)
+{
+    out_path.poses.clear();
+    out_path.poses.reserve(in_path.x.size());
+
+    for (size_t i=0; i < in_path.x.size(); ++i) {
+        static geometry_msgs::PoseStamped pose_msg;
+        pose_msg.pose.position.x = in_path.x(i);
+        pose_msg.pose.position.y = in_path.y(i);
+
+        tf2::Quaternion q;
+        q.setRPY( 0, 0, in_path.yaw(i) ); 
+        pose_msg.pose.orientation = tf2::toMsg(q);
+
+        pose_msg.header.stamp = ros::Time::now();
+        pose_msg.header.frame_id = frame_id;
+
+        out_path.poses.push_back(pose_msg);
+    }
+
+    out_path.header.frame_id = frame_id;
+    out_path.header.stamp = ros::Time::now();
+}
+
 inline geometry_msgs::Pose createPose(double x, double y, double z)
 {
     geometry_msgs::Pose pose;

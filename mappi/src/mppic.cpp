@@ -174,11 +174,13 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
     state_.odom = odom; 
 
     // (optional) Interpolate received plan 
-    spline::BSpline spline(plan);
-    std::vector<float> u = aux::linspace<float>(0.0f, 0.99f, 100);
+    // spline::BSpline spline(plan);
+    // std::vector<float> u = aux::linspace<float>(0.0f, 0.99f, 100);
 
-    objects::Path interp_plan = spline.interpolate(u, 0);
-    plan_ = interp_plan;
+    // objects::Path interp_plan = spline.interpolate(u, 0);
+    // plan_ = interp_plan;
+    
+    plan_ = plan;
 
     // Compute free space in received plan
     setPlanFreeSpace();

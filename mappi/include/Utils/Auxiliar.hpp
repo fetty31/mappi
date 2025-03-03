@@ -114,10 +114,26 @@ size_t getIdxFromDistance(mappi::objects::Path& path, float dist)
 void shiftPlan(mappi::objects::Path& path, float dist)
 {
   size_t index = aux::getIdxFromDistance(path, dist);
-  path.x    = xt::roll(path.x,    -index);
-  path.y    = xt::roll(path.y,    -index);
-  path.yaw  = xt::roll(path.yaw,  -index);
-  path.free = xt::roll(path.free, -index);
+  
+  if(index > path.x.size()-5)
+    return;
+
+  mappi::objects::Path path_cpy = path;
+
+  // shift path
+  path_cpy.x    = xt::roll(path_cpy.x,    -index);
+  path_cpy.y    = xt::roll(path_cpy.y,    -index);
+  path_cpy.yaw  = xt::roll(path_cpy.yaw,  -index);
+  path_cpy.free = xt::roll(path_cpy.free, -index);
+
+  // reset path shape
+  path.reset(path_cpy.x.size()-index);
+
+  // copy shifted path 
+  xt::view(path.x,    xt::all() ) = xt::view(path_cpy.x,    xt::range(xt::placeholders::_, path.x.size()));
+  xt::view(path.y,    xt::all() ) = xt::view(path_cpy.y,    xt::range(xt::placeholders::_, path.y.size()));
+  xt::view(path.yaw,  xt::all() ) = xt::view(path_cpy.yaw,  xt::range(xt::placeholders::_, path.yaw.size()));
+  xt::view(path.free, xt::all() ) = xt::view(path_cpy.free, xt::range(xt::placeholders::_, path.free.size()));
 }
 
 } // namespace mappi::aux

@@ -46,6 +46,8 @@ void MPPIcROS::initialize(std::string name,
 
     // Set up ROS wrapper params
     nh.param<float>("GeneralSettings/goal_tolerance", goal_tolerance_, 0.1f);
+    nh.param<float>("GeneralSettings/plan_shift", dist_shift_, 1.0f);
+
     nh.param<std::string>("GeneralSettings/global_frame", global_frame_, ""); 
     nh.param<std::string>("GeneralSettings/local_frame", local_frame_, ""); 
     if(local_frame_ == "")
@@ -185,6 +187,8 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 {
     if(not is_initialized()) return false;
 
+    ROS_INFO("mappi:: computing velocity commands...");
+
     static geometry_msgs::PoseStamped current_pose;
     if(not costmap_ros_ptr_->getRobotPose(current_pose)){
         ROS_ERROR("mappi:: Could not get robot pose!");
@@ -196,10 +200,6 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
     ros_utils::ros2mppic(current_pose, current_odom_);
 
     auto start_time = std::chrono::system_clock::now();
-
-    // (optional) Shift local plan to avoid planning inside the robot's footprint 
-    float dist = 1.5f;
-    aux::shiftPlan(local_plan_, dist);
 
     objects::Control cmd = mappi_.getControl(current_odom_, local_plan_);
     cmd_vel.linear.x  = cmd.vx;
@@ -217,10 +217,7 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 
     // Publish interpolated plan
     static nav_msgs::Path path_msg;
-    ros_utils::mppic2ros(mappi_.getCurrentPlan(), path_msg);
-    path_msg.header.frame_id = local_frame_;
-    path_msg.header.stamp = ros::Time::now();
-
+    ros_utils::mppic2ros(mappi_.getCurrentPlan(), path_msg, local_frame_);
     local_pub_.publish(path_msg);
 
     return true;
@@ -233,7 +230,7 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
         return false;
     }
 
-    ROS_INFO_ONCE("mappi:: Setting new global plan");
+    ROS_INFO("mappi:: Setting new global plan");
 
     geometry_msgs::TransformStamped transformStamped;
     try{
@@ -256,6 +253,9 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
             navfn_wrapper_.getPlan(current_odom_, global_plan_, local_plan_);
     #endif
 
+    // (optional) Shift local plan to avoid planning inside the robot's footprint 
+    aux::shiftPlan(local_plan_, dist_shift_);
+
     // mappi_.resetControls(); // reset mppi control commands
 
     static std_srvs::Empty srv;
@@ -268,11 +268,9 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
         ROS_ERROR("mappi:: Failed to call service ~clear_costmaps");
     }
 
+    // Publish received global plan
     static nav_msgs::Path path_msg;
-    ros_utils::mppic2ros(global_plan_, path_msg);
-    path_msg.header.frame_id = global_frame_; 
-    path_msg.header.stamp = ros::Time::now();
-
+    ros_utils::mppic2ros(global_plan_, path_msg, global_frame_);
     global_pub_.publish(path_msg);
 
     return true;
@@ -280,6 +278,8 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
 
 bool MPPIcROS::isGoalReached()
 {
+    ROS_INFO("mappi:: is goal reached?");
+
     if (not is_initialized()) {
         ROS_ERROR("mappi: This planner/controller has not been initialized, please call initialize() before using this planner");
         return false;

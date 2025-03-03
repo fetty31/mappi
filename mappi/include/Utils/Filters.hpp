@@ -261,12 +261,11 @@ template<typename T>
 T lowPassFilter(T input)
 {
   static T iCutOffFrequency = 5.0;  // [Hz]
-  static T iDeltaTime = 0.1;        // [s]
+  static T iDeltaTime = 0.03;        // [s]
   static T ePow = 1 - exp(-iDeltaTime * 2 * M_PI * iCutOffFrequency);
   static T output = 0.0f;
 
   return output += (input-output)*ePow;
-  
 }
 
 } // namespace mappi::filters

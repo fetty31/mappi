@@ -54,6 +54,7 @@ class MPPIcROS : public nav_core::BaseLocalPlanner {
         bool initialized_;
 
         float goal_tolerance_;
+        float dist_shift_;
 
         ros::Publisher global_pub_;
         ros::Publisher local_pub_;

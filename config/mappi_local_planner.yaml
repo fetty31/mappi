@@ -12,10 +12,11 @@ MPPIPlannerROS:
     control_offset: 1   # offset to choose the control commands to send
 
     goal_tolerance: 0.2   # [m] tolerance for considering we have reached the goal 
+    plan_shift: 1.0       # [m] meters to shift plan to avoid planning inside the robot's footprint 
 
     model_dt: 0.05        # [s] integration delta time 
     temperature: 0.3      # Path Integral parameter
-    gamma: 0.015          # Path Integral parameter
+    gamma: 0.05           # Path Integral parameter
 
   Constraints:
     max_vx: 2.0         # [m/s]
