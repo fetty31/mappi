@@ -229,10 +229,16 @@ void Visualizer::fillMarkermsg(const objects::Trajectory& trajectories,
             float blue_component = 1.0f - j_flt / shape_1;
             float green_component = j_flt / shape_1;
 
-            auto pose = ros_utils::createPose(trajectories.x(i, j), trajectories.y(i, j), default_z_);
-            auto scale = ros_utils::createScale(scale_, scale_, scale_);
             auto color = ros_utils::createColor(0, green_component, blue_component, 1);
-            auto marker = ros_utils::createMarker(marker_id_++, pose, scale, color, frame_id_);
+
+            auto pose = (shape[0] > 1) ? ros_utils::createPose(trajectories.x(i, j), trajectories.y(i, j), default_z_) :
+                                         ros_utils::createPose(trajectories.x(i, j), trajectories.y(i, j), default_z_, trajectories.yaw(i, j));
+
+            auto scale  = (shape[0] > 1) ? ros_utils::createScale(scale_, scale_, scale_) :
+                                           ros_utils::createScale(scale_, scale_/3.0f, scale_/3.0f);
+
+            auto marker = (shape[0] > 1) ? ros_utils::createMarker(marker_id_++, pose, scale, color, frame_id_) :
+                                           ros_utils::createArrowMarker(marker_id_++, pose, scale, color, frame_id_);
 
             msg->markers.push_back(marker);
         }

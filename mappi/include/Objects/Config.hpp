@@ -77,6 +77,7 @@ struct MPPIc
         unsigned int num_iters;
         unsigned int num_retry;
         unsigned int offset;
+        bool use_splines;
         std::string motion_model;
     } settings;
 
@@ -111,6 +112,7 @@ void MPPIc::print_out(){
     std::cout << "  - model_dt: " << model_dt << std::endl;
     std::cout << "  - temperature: " << temperature  << std::endl;
     std::cout << "  - gamma: " << gamma << std::endl;
+    std::cout << "  - use_splines: " << settings.use_splines << std::endl;
 
     std::cout << "MotionModel: " << settings.motion_model << std::endl;
     if (settings.motion_model=="Ackermann")

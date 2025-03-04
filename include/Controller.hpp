@@ -52,6 +52,7 @@ class MPPIcROS : public nav_core::BaseLocalPlanner {
         objects::Odometry2d current_odom_;
 
         bool initialized_;
+        bool use_local_planner_;
 
         float goal_tolerance_;
         float dist_shift_;

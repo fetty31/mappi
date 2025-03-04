@@ -1,3 +1,4 @@
 navfn_wrapper:
-  allow_unknown: true
-  default_tolerance: 0.5
+  allow_unknown: true       # allow planning in unknown regions of the local costmap
+  default_tolerance: 0.0    # [m] start & goal tolerance
+  start_shift: 1.5          # [m] meters to move the start position w.r.t. the robot's x axis (base_link) in order to avoid planning from the CoG

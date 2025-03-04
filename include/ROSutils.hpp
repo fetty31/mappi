@@ -5,6 +5,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <geometry_msgs/Pose.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <std_msgs/ColorRGBA.h>
 
@@ -144,6 +145,22 @@ inline geometry_msgs::Pose createPose(double x, double y, double z)
     return pose;
 }
 
+inline geometry_msgs::Pose createPose(double x, double y, double z, double yaw)
+{
+    geometry_msgs::Pose pose;
+    pose.position.x = x;
+    pose.position.y = y;
+    pose.position.z = z;
+
+    tf2::Quaternion q;
+    q.setRPY( 0, 0, yaw );
+    q.normalize();
+
+    tf2::convert(pose.orientation , q);
+    
+    return pose;
+}
+
 inline geometry_msgs::Vector3 createScale(double x, double y, double z)
 {
     geometry_msgs::Vector3 scale;
@@ -174,6 +191,25 @@ inline visualization_msgs::Marker createMarker(
     marker.ns = "mppic_traj";
     marker.id = id;
     marker.type = Marker::SPHERE;
+    marker.action = Marker::ADD;
+
+    marker.pose = pose;
+    marker.scale = scale;
+    marker.color = color;
+    return marker;
+}
+
+inline visualization_msgs::Marker createArrowMarker( 
+    int id, const geometry_msgs::Pose & pose, const geometry_msgs::Vector3 & scale,
+    const std_msgs::ColorRGBA & color, const std::string & frame_id)
+{
+    using visualization_msgs::Marker;
+    Marker marker;
+    marker.header.frame_id = frame_id;
+    marker.header.stamp = ros::Time::now();
+    marker.ns = "mppic_traj";
+    marker.id = id;
+    marker.type = Marker::ARROW;
     marker.action = Marker::ADD;
 
     marker.pose = pose;

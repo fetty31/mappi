@@ -47,6 +47,7 @@ void MPPIcROS::initialize(std::string name,
     // Set up ROS wrapper params
     nh.param<float>("GeneralSettings/goal_tolerance", goal_tolerance_, 0.1f);
     nh.param<float>("GeneralSettings/plan_shift", dist_shift_, 1.0f);
+    nh.param<bool>("GeneralSettings/use_local_planner", use_local_planner_, true);
 
     nh.param<std::string>("GeneralSettings/global_frame", global_frame_, ""); 
     nh.param<std::string>("GeneralSettings/local_frame", local_frame_, ""); 
@@ -64,6 +65,8 @@ void MPPIcROS::initialize(std::string name,
     nh.param<int>("GeneralSettings/time_steps",  time_steps,  40);
     nh.param<int>("GeneralSettings/num_retry",   num_retry,   2);
     nh.param<int>("GeneralSettings/offset",      offset,      1);
+
+    nh.param<bool>("GeneralSettings/use_splines", config.settings.use_splines, false);
 
     config.settings.num_iters  = static_cast<unsigned int>(num_iters);
     config.settings.num_retry   = static_cast<unsigned int>(num_retry);
@@ -249,6 +252,7 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
         if(not aux::robotNearGoal(goal_tolerance_+static_cast<float>(navfn_wrapper_.getTolerance()), 
                                     current_odom_, 
                                     global_plan_ ) 
+            && use_local_planner_
             )
             navfn_wrapper_.getPlan(current_odom_, global_plan_, local_plan_);
     #endif
@@ -310,11 +314,15 @@ void MPPIcROS::reconfigure_callback(mappi::MPPIPlannerROSConfig &dyn_cfg, uint32
     try {
 
     goal_tolerance_ = static_cast<float>(dyn_cfg.goal_tolerance);
+    dist_shift_     = static_cast<float>(dyn_cfg.plan_shift);
+    use_local_planner_ = dyn_cfg.use_local_planner;
 
     config::MPPIc config;
     config.settings.num_iters  = static_cast<unsigned int>(dyn_cfg.num_iterations);
     config.settings.num_retry   = static_cast<unsigned int>(dyn_cfg.num_retry);
     config.settings.offset      = static_cast<unsigned int>(dyn_cfg.control_offset);
+
+    config.settings.use_splines = dyn_cfg.use_splines;
     
     config.noise.batch_size = static_cast<unsigned int>(dyn_cfg.batch_size);
     config.noise.time_steps = static_cast<unsigned int>(dyn_cfg.time_steps);

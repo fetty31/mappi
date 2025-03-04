@@ -11,19 +11,22 @@ MPPIPlannerROS:
     num_retry: 4        # number of retries when the solution fails (all generated trajectories collide)
     control_offset: 1   # offset to choose the control commands to send
 
-    goal_tolerance: 0.2   # [m] tolerance for considering we have reached the goal 
-    plan_shift: 1.0       # [m] meters to shift plan to avoid planning inside the robot's footprint 
+    goal_tolerance: 0.5   # [m] tolerance for considering we have reached the goal 
+    plan_shift: 1.5       # [m] meters to shift plan to avoid planning inside the robot's footprint 
+
+    use_splines: false        # whether to interpolate the received global plan with splines
+    use_local_planner: true  # whether to use an extra layer of planning (local planner navfn)
 
     model_dt: 0.05        # [s] integration delta time 
-    temperature: 0.3      # Path Integral parameter
-    gamma: 0.05           # Path Integral parameter
+    temperature: 0.3      # Path Integral parameter: Selectiveness of trajectories by their costs (closer to 0, "more" we take into consideration controls with less cost | high values lead to just taking the mean of all trajectories)
+    gamma: 0.05           # Path Integral parameter: A trade-off between smoothness (high) and low energy (low).
 
   Constraints:
-    max_vx: 2.0         # [m/s]
-    min_vx: -2.0        # [m/s]
+    max_vx: 0.75         # [m/s]
+    min_vx: -0.75        # [m/s]
 
-    max_vy: 1.0         # [m/s]
-    min_vy: -1.0        # [m/s]
+    max_vy: 0.5         # [m/s]
+    min_vy: -0.5        # [m/s]
 
     max_wz: 3.0         # [rad/s] (or [rad] if BicycleKin model is chosen)
     min_wz: -3.0        # [rad/s] (or [rad] if BicycleKin model is chosen)

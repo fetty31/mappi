@@ -174,13 +174,14 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
     state_.odom = odom; 
 
     // (optional) Interpolate received plan 
-    // spline::BSpline spline(plan);
-    // std::vector<float> u = aux::linspace<float>(0.0f, 0.99f, 100);
+    if(cfg_.settings.use_splines){
+        spline::BSpline spline(plan);
+        std::vector<float> u = aux::linspace<float>(0.0f, 0.99f, 100);
 
-    // objects::Path interp_plan = spline.interpolate(u, 0);
-    // plan_ = interp_plan;
-    
-    plan_ = plan;
+        objects::Path interp_plan = spline.interpolate(u, 0);
+        plan_ = interp_plan;
+    }else
+        plan_ = plan;
 
     // Compute free space in received plan
     setPlanFreeSpace();
@@ -258,7 +259,7 @@ bool MPPIc::fallback(bool &failed)
 
     if(++count > cfg_.settings.num_retry){
         count = 0;
-        throw std::runtime_error("mappi::MPPIc Error: failed to compute any path");
+        throw std::runtime_error("mappi::MPPIc ERROR: failed to compute any path");
         return false;
     }
 

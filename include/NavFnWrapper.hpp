@@ -62,10 +62,12 @@ class NavFnWrapper {
         }
 
         geometry_msgs::PoseStamped chooseGoal(mappi::objects::Path&);
+        geometry_msgs::PoseStamped chooseStart(mappi::objects::Odometry2d&);
         void mapToWorld(double mx, double my, double& wx, double& wy);
         void clearRobotCell(const geometry_msgs::PoseStamped& global_pose, unsigned int mx, unsigned int my);
 
         double default_tolerance_;
+        double start_shift_;
         std::mutex mutex_;
 
         std::string global_frame_;
@@ -94,6 +96,7 @@ void NavFnWrapper::configure(std::string name, mappi::shared_ptr<costmap_2d::Cos
 
     private_nh.param<bool>("allow_unknown", allow_unknown_, true);
     private_nh.param<double>("default_tolerance", default_tolerance_, 0.0);
+    private_nh.param<double>("start_shift", start_shift_, 0.0);
 }
 
 bool NavFnWrapper::getPlan(mappi::objects::Odometry2d odom, 
@@ -102,9 +105,7 @@ bool NavFnWrapper::getPlan(mappi::objects::Odometry2d odom,
                             )
 {
     geometry_msgs::PoseStamped start;
-    start.header.frame_id = global_frame_;
-    start.pose.position.x = odom.x;
-    start.pose.position.y = odom.y;
+    start = chooseStart(odom);
 
     geometry_msgs::PoseStamped goal;
     goal = chooseGoal(goals);
@@ -142,7 +143,24 @@ geometry_msgs::PoseStamped NavFnWrapper::chooseGoal(mappi::objects::Path& goals)
 
     return chosen_goal;
 }
-  
+
+geometry_msgs::PoseStamped NavFnWrapper::chooseStart(mappi::objects::Odometry2d& odom)
+{
+    geometry_msgs::PoseStamped chosen_start;
+    chosen_start.header.frame_id = global_frame_;
+    chosen_start.pose.position.x = odom.x;
+    chosen_start.pose.position.y = odom.y;
+    
+    float x, y; // point to start in base_link
+    x = static_cast<float>(start_shift_); 
+    y = 0.0f; 
+
+    chosen_start.pose.position.x += x*cos(odom.yaw) + y*sin(odom.yaw);
+    chosen_start.pose.position.y += -x*sin(odom.yaw) + y*cos(odom.yaw);
+
+    return chosen_start;
+}
+
 bool NavFnWrapper::validPointPotential(const geometry_msgs::Point& world_point)
 {
     return validPointPotential(world_point, default_tolerance_);
