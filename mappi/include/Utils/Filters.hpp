@@ -10,6 +10,7 @@
 #include "Objects/ControlSequence.hpp"
 
 #include <cmath>
+#include <chrono>
 
 namespace mappi::filters {
 
@@ -261,8 +262,25 @@ template<typename T>
 T lowPassFilter(T input)
 {
   static T iCutOffFrequency = 5.0;  // [Hz]
-  static T iDeltaTime = 0.03;        // [s]
-  static T ePow = 1 - exp(-iDeltaTime * 2 * M_PI * iCutOffFrequency);
+  static T iDeltaTime = 0.03;       // [s]
+
+  static auto start_time = std::chrono::system_clock::now();
+  auto end_time = std::chrono::system_clock::now();
+
+  static std::chrono::duration<double> elapsed_time;
+  elapsed_time = end_time - start_time;
+
+  start_time = end_time; // keep counting
+
+  std::cout << "MAPPI:: elapsed time LPF: " << elapsed_time.count() << std::endl;
+
+  if( (elapsed_time.count() < 0.01) || 
+      (elapsed_time.count() > 0.1) )
+    iDeltaTime = 0.05;
+  else
+    iDeltaTime = elapsed_time.count();
+
+  T ePow = 1 - exp(-iDeltaTime * 2 * M_PI * iCutOffFrequency);
   static T output = 0.0f;
 
   return output += (input-output)*ePow;

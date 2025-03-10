@@ -19,7 +19,7 @@ MPPIPlannerROS:
 
     model_dt: 0.05        # [s] integration delta time 
     temperature: 0.3      # Path Integral parameter: Selectiveness of trajectories by their costs (closer to 0, "more" we take into consideration controls with less cost | high values lead to just taking the mean of all trajectories)
-    gamma: 0.05           # Path Integral parameter: A trade-off between smoothness (high) and low energy (low).
+    gamma: 0.05           # Path Integral parameter: A trade-off between smoothness (high) and roughness (low).
 
   Constraints:
     max_vx: 0.75         # [m/s]

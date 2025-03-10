@@ -62,7 +62,7 @@ class NavFnWrapper {
         }
 
         geometry_msgs::PoseStamped chooseGoal(mappi::objects::Path&);
-        geometry_msgs::PoseStamped chooseStart(mappi::objects::Odometry2d&);
+        geometry_msgs::PoseStamped chooseStart(mappi::objects::Odometry2d&, int mode=0);
         void mapToWorld(double mx, double my, double& wx, double& wy);
         void clearRobotCell(const geometry_msgs::PoseStamped& global_pose, unsigned int mx, unsigned int my);
 
@@ -105,13 +105,23 @@ bool NavFnWrapper::getPlan(mappi::objects::Odometry2d odom,
                             )
 {
     geometry_msgs::PoseStamped start;
-    start = chooseStart(odom);
+    start = chooseStart(odom, 1); // mode=1 (shift start point along positive x-axis)
 
     geometry_msgs::PoseStamped goal;
     goal = chooseGoal(goals);
 
     std::vector<geometry_msgs::PoseStamped> plan_ros;
     if(this->makePlan(start, goal, plan_ros)){
+        mappi::ros_utils::ros2mppic(plan_ros, out_plan);
+        return true;
+    }
+    else if(this->makePlan(chooseStart(odom, 2), goal, plan_ros)){ // mode=2 (shift start point along negative x-axis)
+        ROS_WARN("NAVFN_WRAPPER:: path found with start point shifting along negative x-axis!");
+        mappi::ros_utils::ros2mppic(plan_ros, out_plan);
+        return true;
+    }
+    else if(this->makePlan(chooseStart(odom), goal, plan_ros)){ // mode=0 (do not shift start point)
+        ROS_WARN("NAVFN_WRAPPER:: path found with no start point shifting!");
         mappi::ros_utils::ros2mppic(plan_ros, out_plan);
         return true;
     }
@@ -144,7 +154,7 @@ geometry_msgs::PoseStamped NavFnWrapper::chooseGoal(mappi::objects::Path& goals)
     return chosen_goal;
 }
 
-geometry_msgs::PoseStamped NavFnWrapper::chooseStart(mappi::objects::Odometry2d& odom)
+geometry_msgs::PoseStamped NavFnWrapper::chooseStart(mappi::objects::Odometry2d& odom, int mode)
 {
     geometry_msgs::PoseStamped chosen_start;
     chosen_start.header.frame_id = global_frame_;
@@ -152,8 +162,14 @@ geometry_msgs::PoseStamped NavFnWrapper::chooseStart(mappi::objects::Odometry2d&
     chosen_start.pose.position.y = odom.y;
     
     float x, y; // point to start in base_link
-    x = static_cast<float>(start_shift_); 
     y = 0.0f; 
+
+    if(mode == 1)       // shift start point along positive x-axis
+        x = static_cast<float>(start_shift_); 
+    else if(mode == 2)  // shift start point along negative x-axis
+        x = -static_cast<float>(start_shift_); 
+    else                // no shifting
+        x = 0.0f;
 
     chosen_start.pose.position.x += x*cos(odom.yaw) + y*sin(odom.yaw);
     chosen_start.pose.position.y += -x*sin(odom.yaw) + y*cos(odom.yaw);

@@ -156,10 +156,10 @@ void MPPIcROS::initialize(std::string name,
 
     nh_upper.param<float>("local_costmap/inflation_layer/inflation_radius",    
                             config.obs_crtc.inflation_radius, 
-                            0.55f);
+                            0.0f);
     nh_upper.param<float>("local_costmap/inflation_layer/cost_scaling_factor", 
                             config.obs_crtc.inflation_scale_factor, 
-                            10.0f);
+                            0.0f);
 
     config.print_out(); // print out config (debug)
 
@@ -398,10 +398,10 @@ void MPPIcROS::reconfigure_callback(mappi::MPPIPlannerROSConfig &dyn_cfg, uint32
     ros::NodeHandle nh_upper("~/");
     nh_upper.param<float>("local_costmap/inflation_layer/inflation_radius",    
                             config.obs_crtc.inflation_radius, 
-                            0.55f);
+                            0.0f);
     nh_upper.param<float>("local_costmap/inflation_layer/cost_scaling_factor", 
                             config.obs_crtc.inflation_scale_factor, 
-                            10.0f);
+                            0.0f);
 
     config.print_out(); // print out config (debug)
 

@@ -156,8 +156,11 @@ inline geometry_msgs::Pose createPose(double x, double y, double z, double yaw)
     q.setRPY( 0, 0, yaw );
     q.normalize();
 
-    tf2::convert(pose.orientation , q);
-    
+    pose.orientation.w = q.w();
+    pose.orientation.x = q.x();
+    pose.orientation.y = q.y();
+    pose.orientation.z = q.z();
+
     return pose;
 }
 

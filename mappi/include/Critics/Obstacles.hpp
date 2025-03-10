@@ -91,9 +91,9 @@ void Obstacles::score(mappi::objects::State& states,
             const float dist2obs = dist2obstacle(cost_c);
 
             if( dist2obs < cfg_.collision_margin_dist )
-                cost += std::fabs(cfg_.collision_margin_dist - dist2obs);
+                cost += cfg_.collision_margin_dist - dist2obs;
             else if(not near_goal)
-                repulsive_cost[i] += std::fabs(cfg_.inflation_radius - dist2obs);
+                repulsive_cost[i] += cfg_.inflation_radius - dist2obs;
         }
 
         if(not collision) all_collide = false;
@@ -109,8 +109,13 @@ void Obstacles::score(mappi::objects::State& states,
 float Obstacles::dist2obstacle(unsigned char cost){
     const float scale_factor = cfg_.inflation_scale_factor;
     const float min_radius = costmap_ros_ptr_->getLayeredCostmap()->getInscribedRadius();
-    // const float min_radius = costmap_ros_ptr_->getLayeredCostmap()->getCircumscribedRadius();
-    float dist_to_obs = (scale_factor * min_radius - log(static_cast<float>(cost)) + log(253.0f)) / scale_factor;
+
+    // NOTE: cost = exp(-scale_factor * (dist2obs - radius))*(INSCRIBED_INFLATED_OBSTACLE-1)
+    //   (where INSCRIBED_INFLATED_OBSTACLE == 254) 
+
+    // so in order to retrieve the distance:
+    float dist_to_obs = (log(253.0f) - log(static_cast<float>(cost))) / scale_factor + min_radius;
+    dist_to_obs -= min_radius; // remove inscribed radius (because we are not doing any footprint check)
 
     return dist_to_obs;
 }
