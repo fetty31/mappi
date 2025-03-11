@@ -60,18 +60,19 @@ include_directories(
   include
   mappi/include
   ${catkin_INCLUDE_DIRS}
-  ${xtensor_INLCUDE_DIRS}
+  ${xtensor_INCLUDE_DIRS}
 )
 
 if(navfn_FOUND)
 include_directories(
-  ${navfn_INLCUDE_DIRS}
+  ${navfn_INCLUDE_DIRS}
 )
 endif()
 
 if(hybrid_astar_FOUND)
 include_directories(
-  ${hybrid_astar_INLCUDE_DIRS}
+  ${hybrid_astar_INCLUDE_DIRS}
+  ${hybrid_astar_HEADERS}
 )
 endif()
 
@@ -108,8 +109,10 @@ if(navfn_FOUND)
 endif()
 
 if(hybrid_astar_FOUND)
-  add_dependencies(${PROJECT_NAME}_local_planner ${hybrid_astar_EXPORTED_TARGETS})
+  # add_dependencies(${PROJECT_NAME}_local_planner ${hybrid_astar_EXPORTED_TARGETS})
+  target_include_directories(${PROJECT_NAME}_local_planner PUBLIC ${hybrid_astar_HEADERS} ${hybrid_astar_INCLUDE_DIRS})
   target_link_libraries( ${PROJECT_NAME}_local_planner ${hybrid_astar_LIBRARIES} )
+  # target_link_libraries( ${PROJECT_NAME}_local_planner hybrid_astar_shared )
 endif()
 
 # Binaries

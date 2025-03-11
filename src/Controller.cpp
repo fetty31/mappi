@@ -175,9 +175,9 @@ void MPPIcROS::initialize(std::string name,
     #endif
 
     // Set up Hybrid A* Wrapper (if available)
-    // #ifdef HAS_HYBRID_ASTAR
-    //     hybrid_astar_wrapper_.configure("hybrid_astar_wrapper", costmap_ros_ptr_);
-    // #endif
+    #ifdef HAS_HYBRID_ASTAR
+        hybrid_astar_wrapper_.configure("hybrid_astar_wrapper", costmap_ros_ptr_);
+    #endif
 
     // Set up dynamic reconfigure server
     dyn_srv_ = new dynamic_reconfigure::Server<mappi::MPPIPlannerROSConfig>(nh);
@@ -253,32 +253,32 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
     }
 
     local_plan_ = global_plan_;
-    #ifdef HAS_NAVFN
-        if(not aux::robotNearGoal(goal_tolerance_+static_cast<float>(navfn_wrapper_.getTolerance()), 
-                                    current_odom_, 
-                                    global_plan_ ) 
-            && use_local_planner_
-            )
-            navfn_wrapper_.getPlan(current_odom_, global_plan_, local_plan_);
-    #endif
-
-    // #ifdef HAS_HYBRID_ASTAR
-    //     if(not aux::robotNearGoal(goal_tolerance_, 
-    //                                 current_odom_, 
-    //                                 global_plan_ ) 
-    //         && use_local_planner_
-    //         )
-    //         hybrid_astar_wrapper_.getPlan(current_odom_, global_plan_, local_plan_);
-    // #else
-    //     #ifdef HAS_NAVFN
+    // #ifdef HAS_NAVFN
     //     if(not aux::robotNearGoal(goal_tolerance_+static_cast<float>(navfn_wrapper_.getTolerance()), 
     //                                 current_odom_, 
     //                                 global_plan_ ) 
     //         && use_local_planner_
     //         )
     //         navfn_wrapper_.getPlan(current_odom_, global_plan_, local_plan_);
-    //     #endif
     // #endif
+
+    #ifdef HAS_HYBRID_ASTAR
+        if(not aux::robotNearGoal(goal_tolerance_, 
+                                    current_odom_, 
+                                    global_plan_ ) 
+            && use_local_planner_
+            )
+            hybrid_astar_wrapper_.getPlan(current_odom_, global_plan_, local_plan_);
+    #else
+        #ifdef HAS_NAVFN
+        if(not aux::robotNearGoal(goal_tolerance_+static_cast<float>(navfn_wrapper_.getTolerance()), 
+                                    current_odom_, 
+                                    global_plan_ ) 
+            && use_local_planner_
+            )
+            navfn_wrapper_.getPlan(current_odom_, global_plan_, local_plan_);
+        #endif
+    #endif
 
     // (optional) Shift local plan to avoid planning inside the robot's footprint 
     aux::shiftPlan(local_plan_, dist_shift_);
