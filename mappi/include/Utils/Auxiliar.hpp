@@ -114,6 +114,8 @@ size_t getIdxFromDistance(mappi::objects::Path& path, float dist)
 void shiftPlan(mappi::objects::Path& path, float dist)
 {
   size_t index = aux::getIdxFromDistance(path, dist);
+
+  std::cout << "MAPPI::shiftPlan index: " << index << std::endl;
   
   if(index > path.x.size()-5)
     return;
