@@ -35,16 +35,6 @@ else(navfn_FOUND)
   message("ERROR: navfn planner could not be found.")
 endif()
 
-# Check for Hybrid A* planner
-find_package(hybrid_astar)
-if(hybrid_astar_FOUND)
-  add_compile_definitions(HAS_HYBRID_ASTAR)
-  message("INFO: hybrid A* planner found!")
-else(hybrid_astar_FOUND)
-  message("ERROR: hybrid A* planner could not be found.")
-endif()
-
-
 generate_dynamic_reconfigure_options(
   cfg/MaPPI.cfg
 )
@@ -68,14 +58,6 @@ include_directories(
   ${navfn_INCLUDE_DIRS}
 )
 endif()
-
-if(hybrid_astar_FOUND)
-include_directories(
-  ${hybrid_astar_INCLUDE_DIRS}
-  ${hybrid_astar_HEADERS}
-)
-endif()
-
 
 # Not all machines have <cpuid.h> available
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
@@ -106,13 +88,6 @@ target_link_libraries(${PROJECT_NAME}_local_planner ${PROJECT_NAME} ${catkin_LIB
 if(navfn_FOUND)
   add_dependencies(${PROJECT_NAME}_local_planner ${navfn_EXPORTED_TARGETS})
   target_link_libraries( ${PROJECT_NAME}_local_planner ${navfn_LIBRARIES} )
-endif()
-
-if(hybrid_astar_FOUND)
-  # add_dependencies(${PROJECT_NAME}_local_planner ${hybrid_astar_EXPORTED_TARGETS})
-  target_include_directories(${PROJECT_NAME}_local_planner PUBLIC ${hybrid_astar_HEADERS} ${hybrid_astar_INCLUDE_DIRS})
-  target_link_libraries( ${PROJECT_NAME}_local_planner ${hybrid_astar_LIBRARIES} )
-  # target_link_libraries( ${PROJECT_NAME}_local_planner hybrid_astar_shared )
 endif()
 
 # Binaries

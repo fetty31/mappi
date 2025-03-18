@@ -18,10 +18,6 @@
     #include "NavFnWrapper.hpp"
 #endif
 
-#ifdef HAS_HYBRID_ASTAR
-    #include "HybridAStarWrapper.hpp"
-#endif
-
 #include <ros/ros.h>
 #include <tf2_ros/buffer.h>
 #include <costmap_2d/costmap_2d_ros.h>
@@ -48,10 +44,6 @@ class MPPIcROS : public nav_core::BaseLocalPlanner {
 
         #ifdef HAS_NAVFN
             NavFnWrapper navfn_wrapper_;
-        #endif
-
-        #ifdef HAS_HYBRID_ASTAR
-            HybridAStarWrapper hybrid_astar_wrapper_;
         #endif
 
         objects::Path global_plan_;
