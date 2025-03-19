@@ -207,12 +207,13 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
     float vy = 0.0;
     if(isHolonomic()) vy = ctrl_seq_.vy(cfg_.settings.offset);
 
-    // (optional) Filter wz with low pass filter 
-    wz = filters::lowPassFilter(wz);
+    // (optional) Low pass filter 
+    // wz = filters::lowPassFilter<float>(wz);
 
-    output.vx = vx;
-    output.vy = vy;
-    output.wz = wz;
+    filters::lowPassFilter<float>(vx, vy, wz, 
+                                output.vx, 
+                                output.vy, 
+                                output.wz );
 
     // Shift control 
     shiftControlSeq();

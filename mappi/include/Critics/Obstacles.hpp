@@ -91,7 +91,7 @@ void Obstacles::score(mappi::objects::State& states,
             const float dist2obs = dist2obstacle(cost_c);
 
             if( dist2obs < cfg_.collision_margin_dist )
-                cost += cfg_.collision_margin_dist - dist2obs;
+                cost += std::fabs(cfg_.collision_margin_dist - dist2obs);
             else if(not near_goal)
                 repulsive_cost[i] += cfg_.inflation_radius - dist2obs;
         }

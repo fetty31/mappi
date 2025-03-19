@@ -91,7 +91,7 @@ bool robotNearGoal(float pose_tolerance,
 
   auto dist_sq = dx*dx + dy*dy;
 
-  if(dist_sq < pose_tolerance)
+  if(dist_sq < tolerance_sq)
     return true;
   else
     return false;

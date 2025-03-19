@@ -3,8 +3,11 @@
 
 #include <navfn/navfn.h>
 #include <navfn/potarr_point.h>
+
 #include <costmap_2d/costmap_2d.h>
 #include <costmap_2d/costmap_2d_ros.h>
+
+#include <costmap_2d/costmap_2d_publisher.h>
 
 #include "mppic.hpp"
 #include "ROSutils.hpp"
@@ -59,6 +62,8 @@ class NavFnWrapper {
 
         std::vector<geometry_msgs::PoseStamped> plan_ros_;
         geometry_msgs::PoseStamped last_goal_;
+
+        costmap_2d::Costmap2DPublisher* costmap_pub_;
 
     private:
         inline double sq_distance(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2){
@@ -115,6 +120,10 @@ void NavFnWrapper::configure(std::string name, mappi::shared_ptr<costmap_2d::Cos
     private_nh.param<bool>("allow_unknown", allow_unknown_, true);
     private_nh.param<double>("default_tolerance", default_tolerance_, 0.0);
     private_nh.param<double>("start_shift", start_shift_, 0.0);
+
+    costmap_pub_ = new costmap_2d::Costmap2DPublisher(&private_nh, costmap_, global_frame_,
+                                                        "navfn_costmap", true);
+
 }
 
 bool NavFnWrapper::getPlan(mappi::objects::Odometry2d odom, 
@@ -134,6 +143,7 @@ bool NavFnWrapper::getPlan(mappi::objects::Odometry2d odom,
     // Decide if we really need to re-compute trajectory
     if(not timeToPlan(plan_ros_, goal)){
         mappi::ros_utils::ros2mppic(plan_ros_, out_plan);
+        ROS_WARN("NAVFN_WRAPPER:: reusing last plan");
         return true; // sending last computed plan
     }
     last_goal_ = goal;
@@ -209,9 +219,6 @@ geometry_msgs::PoseStamped NavFnWrapper::chooseStart(mappi::objects::Odometry2d&
         x = -static_cast<float>(start_shift_); 
     else                // no shifting
         x = 0.0f;
-
-    // chosen_start.pose.position.x += x*cos(odom.yaw) + y*sin(odom.yaw);
-    // chosen_start.pose.position.y += -x*sin(odom.yaw) + y*cos(odom.yaw);
 
     chosen_start.pose.position.x += x*cos(odom.yaw) - y*sin(odom.yaw);
     chosen_start.pose.position.y += x*sin(odom.yaw) + y*cos(odom.yaw);
@@ -479,13 +486,15 @@ void NavFnWrapper::fillRobotFootprint(mappi::objects::Odometry2d& odom)
         return;
     }
 
+    ROS_INFO("NAVFN_WRAPPER:: filling virtual costs");
+
     // fill robot's laterals with virtual costs
     unsigned int mx, my;
-    double dx = costmap_->getResolution();
+    double dx = costmap_->getResolution()/2.0;
     double x, y;
 
     // get number of cells on the laterals
-    int n_cells = std::ceil( (std::fabs(footprint[0].x) + std::fabs(footprint[2].x))/costmap_->getResolution() );
+    int n_cells = std::ceil( (std::fabs(footprint[0].x) + std::fabs(footprint[2].x))/dx );
 
     // left side
     y = footprint[0].y; // FrontLeft y coord
@@ -495,9 +504,8 @@ void NavFnWrapper::fillRobotFootprint(mappi::objects::Odometry2d& odom)
         double x_odom = odom.x + x*cos(odom.yaw) + y*sin(odom.yaw);
         double y_odom = odom.y + -x*sin(odom.yaw) + y*cos(odom.yaw);
 
-        costmap_->worldToMap(x_odom, y_odom, mx, my);
-
-        fillRobotCell(mx, my);
+        if(costmap_->worldToMap(x_odom, y_odom, mx, my))
+            fillRobotCell(mx, my);
     }
 
     // right side
@@ -508,9 +516,8 @@ void NavFnWrapper::fillRobotFootprint(mappi::objects::Odometry2d& odom)
         double x_odom = odom.x + x*cos(odom.yaw) + y*sin(odom.yaw);
         double y_odom = odom.y + -x*sin(odom.yaw) + y*cos(odom.yaw);
 
-        costmap_->worldToMap(x_odom, y_odom, mx, my);
-
-        fillRobotCell(mx, my);
+        if(costmap_->worldToMap(x_odom, y_odom, mx, my))
+            fillRobotCell(mx, my);
     }
 
 }
@@ -554,9 +561,11 @@ bool NavFnWrapper::timeToPlan(std::vector<geometry_msgs::PoseStamped>& plan,
     if(plan.size() < 1)
         return true;
 
-    if( (goal.pose.position.x != last_goal_.pose.position.x) ||
-        (goal.pose.position.y != last_goal_.pose.position.y) )
+    if( sqrt(sq_distance(goal, last_goal_)) >  0.1 )
+    {
+        ROS_ERROR("NAVFN_WRAPPER:: new goal received");
         return true;
+    }
 
     unsigned int mx, my;
     for(auto point : plan){
