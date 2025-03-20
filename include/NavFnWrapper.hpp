@@ -73,6 +73,7 @@ class NavFnWrapper {
         }
 
         geometry_msgs::PoseStamped chooseGoal(mappi::objects::Path&);
+        geometry_msgs::PoseStamped chooseGoalByDistance(mappi::objects::Path&);
 
         geometry_msgs::PoseStamped chooseStart(mappi::objects::Odometry2d&, int mode=0);
 
@@ -88,6 +89,7 @@ class NavFnWrapper {
 
         double default_tolerance_;
         double start_shift_;
+        float lookahead_dist_;
         std::mutex mutex_;
 
         std::string global_frame_;
@@ -120,6 +122,7 @@ void NavFnWrapper::configure(std::string name, mappi::shared_ptr<costmap_2d::Cos
     private_nh.param<bool>("allow_unknown", allow_unknown_, true);
     private_nh.param<double>("default_tolerance", default_tolerance_, 0.0);
     private_nh.param<double>("start_shift", start_shift_, 0.0);
+    private_nh.param<float>("lookahead_dist", lookahead_dist_, 0.0f);
 
     costmap_pub_ = new costmap_2d::Costmap2DPublisher(&private_nh, costmap_, global_frame_,
                                                         "navfn_costmap", true);
@@ -138,7 +141,7 @@ bool NavFnWrapper::getPlan(mappi::objects::Odometry2d odom,
     start = chooseStart(odom, 1); // mode=1 (shift start point along positive x-axis)
 
     geometry_msgs::PoseStamped goal;
-    goal = chooseGoal(goals);
+    goal = (lookahead_dist_ > 0) ? chooseGoalByDistance(goals) : chooseGoal(goals);
 
     // Decide if we really need to re-compute trajectory
     if(not timeToPlan(plan_ros_, goal)){
@@ -192,9 +195,38 @@ geometry_msgs::PoseStamped NavFnWrapper::chooseGoal(mappi::objects::Path& goals)
 
     // Search goals vector until the chosen goal is inside the local costmap
     while( (N > 0) && 
-        (not costmap_ros_ptr_->getCostmap()->worldToMap(goals.x(N), goals.y(N), mx, my)) 
+        (not costmap_->worldToMap(goals.x(N), goals.y(N), mx, my)) 
     ){
         N--;
+    }
+
+    chosen_goal.pose.position.x = goals.x(N);
+    chosen_goal.pose.position.y = goals.y(N);
+
+    return chosen_goal;
+}
+
+geometry_msgs::PoseStamped NavFnWrapper::chooseGoalByDistance(mappi::objects::Path& goals)
+{
+    geometry_msgs::PoseStamped chosen_goal;
+    chosen_goal.header.frame_id = global_frame_;
+    
+    size_t N = mappi::aux::getIdxFromDistance(goals, lookahead_dist_);
+    unsigned int mx, my;
+
+    // Search goals vector until the chosen goal is inside the local costmap
+    while( (N > 0) && 
+        (not costmap_->worldToMap(goals.x(N), goals.y(N), mx, my)) 
+    ){
+        N--;
+    }
+
+    // Search goals vector until the chosen goal is at free space
+    while( (N > 0) && 
+        (isInCollision(costmap_->getCost(mx, my))) 
+    ){
+        N--;
+        costmap_->worldToMap(goals.x(N), goals.y(N), mx, my);
     }
 
     chosen_goal.pose.position.x = goals.x(N);

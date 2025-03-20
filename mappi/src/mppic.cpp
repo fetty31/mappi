@@ -170,6 +170,11 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
         return objects::Control();
     }
 
+    if(plan.x.size() < 1){
+        std::cout << "mappi::MPPIc ERROR: calling getControl() with a null plan\n";
+        return objects::Control();
+    }
+
     // Update current robot state
     state_.odom = odom; 
 

@@ -205,6 +205,8 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
     auto start_time = std::chrono::system_clock::now();
 
     objects::Control cmd = mappi_.getControl(current_odom_, local_plan_);
+    // NOTE: if no control is found, cmd variable will be returned filled with 0s
+    
     cmd_vel.linear.x  = cmd.vx;
     cmd_vel.linear.y  = cmd.vy;
     cmd_vel.angular.z  = cmd.wz;
@@ -252,9 +254,13 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
         if(not aux::robotNearGoal(goal_tolerance_+static_cast<float>(navfn_wrapper_.getTolerance()), 
                                     current_odom_, 
                                     global_plan_ ) 
-            && use_local_planner_
-            )
-            navfn_wrapper_.getPlan(current_odom_, global_plan_, local_plan_);
+            && use_local_planner_ )
+        {
+            if( not navfn_wrapper_.getPlan(current_odom_, global_plan_, local_plan_) ){
+                local_plan_.reset(0); // set local_plan_ to null
+            }
+        }
+
     #endif
 
     // (optional) Shift local plan to avoid planning inside the robot's footprint 
