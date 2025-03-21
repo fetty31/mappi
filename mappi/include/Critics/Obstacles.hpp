@@ -101,8 +101,10 @@ void Obstacles::score(mappi::objects::State& states,
     }
 
     costs += xt::pow( 
-        (cfg_.common.weight * raw_cost) + 
-        (cfg_.repulsive_weight * repulsive_cost / n_traj), cfg_.common.power);
+        cfg_.common.weight * raw_cost, cfg_.common.power);
+    costs += xt::pow( 
+        cfg_.repulsive_weight * repulsive_cost / n_traj, cfg_.common.power);
+        
     fail_flag = all_collide;
 }
 

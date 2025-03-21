@@ -185,13 +185,13 @@ inline std_msgs::ColorRGBA createColor(float r, float g, float b, float a)
 
 inline visualization_msgs::Marker createMarker( 
     int id, const geometry_msgs::Pose & pose, const geometry_msgs::Vector3 & scale,
-    const std_msgs::ColorRGBA & color, const std::string & frame_id)
+    const std_msgs::ColorRGBA & color, const std::string & frame_id, const std::string ns="mappi_traj")
 {
     using visualization_msgs::Marker;
     Marker marker;
     marker.header.frame_id = frame_id;
     marker.header.stamp = ros::Time::now();
-    marker.ns = "mppic_traj";
+    marker.ns = ns;
     marker.id = id;
     marker.type = Marker::SPHERE;
     marker.action = Marker::ADD;
@@ -204,13 +204,13 @@ inline visualization_msgs::Marker createMarker(
 
 inline visualization_msgs::Marker createArrowMarker( 
     int id, const geometry_msgs::Pose & pose, const geometry_msgs::Vector3 & scale,
-    const std_msgs::ColorRGBA & color, const std::string & frame_id)
+    const std_msgs::ColorRGBA & color, const std::string & frame_id, const std::string ns="mappi_traj")
 {
     using visualization_msgs::Marker;
     Marker marker;
     marker.header.frame_id = frame_id;
     marker.header.stamp = ros::Time::now();
-    marker.ns = "mppic_traj";
+    marker.ns = ns;
     marker.id = id;
     marker.type = Marker::ARROW;
     marker.action = Marker::ADD;

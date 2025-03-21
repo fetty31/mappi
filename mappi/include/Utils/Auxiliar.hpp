@@ -100,6 +100,9 @@ bool robotNearGoal(float pose_tolerance,
 
 size_t getIdxFromDistance(mappi::objects::Path& path, float dist)
 {
+  if(path.x.size() < 1)
+    return size_t(0);
+
   float cumdist = 0.0f;
   for(size_t i=0; i < path.x.size()-1; i++){
       cumdist += std::sqrt( std::pow(path.x(i+1)-path.x(i),2) + 
@@ -114,9 +117,16 @@ size_t getIdxFromDistance(mappi::objects::Path& path, float dist)
 void shiftPlan(mappi::objects::Path& path, float dist)
 {
   size_t index = aux::getIdxFromDistance(path, dist);
+
+  std::cout << "shiftPlan index: " << index << std::endl;
   
   if(index > path.x.size()-5)
     return;
+
+  if(index < 1)
+    return;
+
+  std::cout << "shiftPlan shifting...\n";
 
   mappi::objects::Path path_cpy = path;
 

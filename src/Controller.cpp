@@ -204,6 +204,8 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 
     auto start_time = std::chrono::system_clock::now();
 
+    ROS_INFO("mappi:: calling MPPI controller...");
+
     objects::Control cmd = mappi_.getControl(current_odom_, local_plan_);
     // NOTE: if no control is found, cmd variable will be returned filled with 0s
     
@@ -220,10 +222,14 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
     // Publish generated trajectories
     visualizer_ptr_->publish();
 
+    ROS_INFO("mappi:: published trajectories");
+
     // Publish interpolated plan
     static nav_msgs::Path path_msg;
     ros_utils::mppic2ros(mappi_.getCurrentPlan(), path_msg, local_frame_);
     local_pub_.publish(path_msg);
+
+    ROS_INFO("mappi:: published local plan");
 
     return true;
 }
@@ -249,6 +255,8 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
         ROS_ERROR("mappi::\t Assuming global and local frame are the same!");
     }
 
+    ROS_INFO("mappi:: Setting local plan");
+
     local_plan_ = global_plan_;
     #ifdef HAS_NAVFN
         if(not aux::robotNearGoal(goal_tolerance_+static_cast<float>(navfn_wrapper_.getTolerance()), 
@@ -257,11 +265,13 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
             && use_local_planner_ )
         {
             if( not navfn_wrapper_.getPlan(current_odom_, global_plan_, local_plan_) ){
-                local_plan_.reset(0); // set local_plan_ to null
+                // local_plan_.reset(0); // set local_plan_ to null
             }
         }
 
     #endif
+
+    ROS_INFO("mappi:: shifting local plan");
 
     // (optional) Shift local plan to avoid planning inside the robot's footprint 
     aux::shiftPlan(local_plan_, dist_shift_);

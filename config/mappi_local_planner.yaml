@@ -5,7 +5,7 @@ MPPIPlannerROS:
     global_frame: ""  # if left null it will be the same as global_costmap frame
     local_frame: ""   # if left null it will be the same as local_costmap frame
 
-    num_iterations: 4   # number of iterations solving the Path Integral problem 
+    num_iterations: 1   # number of iterations solving the Path Integral problem 
     batch_size: 1000    # number of propagated trajectories
     time_steps: 60      # horizon length of the propagation ( prediction_time = model_dt*time_steps )
     num_retry: 4        # number of retries when the solution fails (all generated trajectories collide)
@@ -15,7 +15,7 @@ MPPIPlannerROS:
     plan_shift: 1.5       # [m] meters to shift plan to avoid planning inside the robot's footprint 
 
     use_splines: false        # whether to interpolate the received global plan with splines
-    use_local_planner: true  # whether to use an extra layer of planning (local planner navfn)
+    use_local_planner: true   # whether to use an extra layer of planning (local planner navfn)
 
     model_dt: 0.05        # [s] integration delta time 
     temperature: 0.3      # Path Integral parameter: Selectiveness of trajectories by their costs (closer to 0, "more" we take into consideration controls with less cost | high values lead to just taking the mean of all trajectories)
@@ -87,11 +87,11 @@ MPPIPlannerROS:
     Obstacles:
       active: true
       power: 1
-      weight: 20.0
+      weight: 50.0
       threshold: 1.0
-      repulsive_weight: 200.0
+      repulsive_weight: 0.0
       collision_cost: 100000.0
-      collision_margin_dist: 0.6
+      collision_margin_dist: 1.0
 
   Visualization:
     batch_stride: 100   # stride for visualizing less trajectories (rendering all trajectories can lead to too much overhead)

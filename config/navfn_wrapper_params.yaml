@@ -1,5 +1,5 @@
 navfn_wrapper:
   allow_unknown: true       # allow planning in unknown regions of the local costmap
-  default_tolerance: 0.0    # [m] start & goal tolerance
-  start_shift: 1.5          # [m] distance to move the start position w.r.t. the robot's x axis (base_link) in order to avoid planning from the CoG
-  lookahead_dist: 10.0      # [m] maximum distance along the received global path to choose the goal (if <= 0.0 then the chosen goal will be the furthest one that lies inside the local costmap)
+  default_tolerance: 0.25   # [m] start & goal tolerance
+  start_shift: 0.0         # [m] distance to move the start position w.r.t. the robot's x axis (base_link) in order to avoid planning from the CoG
+  lookahead_dist: 0.0      # [m] maximum distance along the received global path to choose the goal (if <= 0.0 then the chosen goal will be the furthest one that lies inside the local costmap)

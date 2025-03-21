@@ -65,6 +65,9 @@ class NavFnWrapper {
 
         costmap_2d::Costmap2DPublisher* costmap_pub_;
 
+        ros::Publisher goal_pub_;
+        ros::Publisher start_pub_;
+
     private:
         inline double sq_distance(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2){
             double dx = p1.pose.position.x - p2.pose.position.x;
@@ -86,6 +89,8 @@ class NavFnWrapper {
         void fillRobotCell(unsigned int mx, unsigned int my);
 
         bool isInCollision(unsigned char cost);
+
+        void publishStartAndGoal(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal);
 
         double default_tolerance_;
         double start_shift_;
@@ -125,7 +130,10 @@ void NavFnWrapper::configure(std::string name, mappi::shared_ptr<costmap_2d::Cos
     private_nh.param<float>("lookahead_dist", lookahead_dist_, 0.0f);
 
     costmap_pub_ = new costmap_2d::Costmap2DPublisher(&private_nh, costmap_, global_frame_,
-                                                        "navfn_costmap", true);
+                                                        "costmap", true);
+
+    goal_pub_ = private_nh.advertise<visualization_msgs::Marker>("goal", 1);
+    start_pub_ = private_nh.advertise<visualization_msgs::Marker>("start", 1);
 
 }
 
@@ -134,6 +142,8 @@ bool NavFnWrapper::getPlan(mappi::objects::Odometry2d odom,
                             mappi::objects::Path& out_plan
                             )
 {
+    std::cout << "NAVFN_WRAPPER:: computing new plan...\n";
+
     costmap_2d::Costmap2D costmap_cpy = *costmap_ros_ptr_->getCostmap(); // define cpy of costmap (because we'll fill some cells before planning)
     *costmap_ = costmap_cpy;
 
@@ -142,6 +152,9 @@ bool NavFnWrapper::getPlan(mappi::objects::Odometry2d odom,
 
     geometry_msgs::PoseStamped goal;
     goal = (lookahead_dist_ > 0) ? chooseGoalByDistance(goals) : chooseGoal(goals);
+
+    // Publish chosen start & goal (debug)
+    this->publishStartAndGoal(start, goal);
 
     // Decide if we really need to re-compute trajectory
     if(not timeToPlan(plan_ros_, goal)){
@@ -153,7 +166,7 @@ bool NavFnWrapper::getPlan(mappi::objects::Odometry2d odom,
 
     unsigned int mx, my;
     if(!costmap_->worldToMap(start.pose.position.x, start.pose.position.y, mx, my)){
-        ROS_WARN_THROTTLE(1.0, "The robot's start position is off the global costmap. Planning will always fail, are you sure the robot has been properly localized?");
+        ROS_WARN("The robot's start position is off the global costmap. Planning will always fail, are you sure the robot has been properly localized?");
         return false;
     }
 
@@ -221,13 +234,7 @@ geometry_msgs::PoseStamped NavFnWrapper::chooseGoalByDistance(mappi::objects::Pa
         N--;
     }
 
-    // Search goals vector until the chosen goal is at free space
-    while( (N > 0) && 
-        (isInCollision(costmap_->getCost(mx, my))) 
-    ){
-        N--;
-        costmap_->worldToMap(goals.x(N), goals.y(N), mx, my);
-    }
+    std::cout << "NAVFN_WRAPPER:: goal chosen: " << N << std::endl;
 
     chosen_goal.pose.position.x = goals.x(N);
     chosen_goal.pose.position.y = goals.y(N);
@@ -311,7 +318,7 @@ bool NavFnWrapper::makePlan(const geometry_msgs::PoseStamped& start,
 
     if(!costmap_->worldToMap(wx, wy, mx, my)){
         if(tolerance <= 0.0){
-            ROS_WARN_THROTTLE(1.0, "The goal sent to the navfn planner is off the global costmap. Planning will always fail to this goal.");
+            ROS_WARN("The goal sent to the navfn planner is off the global costmap. Planning will always fail to this goal.");
             return false;
         }
         mx = 0;
@@ -391,7 +398,7 @@ bool NavFnWrapper::getPlanFromPotential(const geometry_msgs::PoseStamped& goal, 
     //the potential has already been computed, so we won't update our copy of the costmap
     unsigned int mx, my;
     if(!costmap_->worldToMap(wx, wy, mx, my)){
-        ROS_WARN_THROTTLE(1.0, "The goal sent to the navfn planner is off the global costmap. Planning will always fail to this goal.");
+        ROS_WARN("The goal sent to the navfn planner is off the global costmap. Planning will always fail to this goal.");
         return false;
     }
 
@@ -627,6 +634,23 @@ bool NavFnWrapper::isInCollision(unsigned char cost)
         default:
             return false;
     }
+}
+
+void NavFnWrapper::publishStartAndGoal(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal)
+{
+    auto goal_pose  = mappi::ros_utils::createPose(goal.pose.position.x, goal.pose.position.y, 0.1);
+    auto start_pose = mappi::ros_utils::createPose(start.pose.position.x, start.pose.position.y, 0.1);
+
+    auto scale = mappi::ros_utils::createScale(0.5, 0.5, 0.5);
+
+    auto goal_color  = mappi::ros_utils::createColor(1, 0, 0, 1);   // red
+    auto start_color = mappi::ros_utils::createColor(0, 0, 1, 1);  // blue
+
+    auto goal_m  = mappi::ros_utils::createMarker(0, goal_pose, scale, goal_color, global_frame_, "navfn");
+    auto start_m = mappi::ros_utils::createMarker(1, start_pose, scale, start_color, global_frame_, "navfn");
+
+    goal_pub_.publish(goal_m);
+    start_pub_.publish(start_m);
 }
 
 #endif

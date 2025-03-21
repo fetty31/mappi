@@ -163,15 +163,19 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
 {
     loop_mtx.lock(); // lock main control loop
 
+    std::cout << "mappi::MPPIc getControl()\n";
+
     static objects::Control output;
 
     if(not is_configured_){
         std::cout << "mappi::MPPIc ERROR: calling getControl() without MPPIc being configured\n";
+        loop_mtx.unlock();
         return objects::Control();
     }
 
     if(plan.x.size() < 1){
         std::cout << "mappi::MPPIc ERROR: calling getControl() with a null plan\n";
+        loop_mtx.unlock();
         return objects::Control();
     }
 
