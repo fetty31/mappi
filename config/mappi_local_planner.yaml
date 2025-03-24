@@ -91,7 +91,7 @@ MPPIPlannerROS:
       threshold: 1.0
       repulsive_weight: 0.0
       collision_cost: 100000.0
-      collision_margin_dist: 1.0
+      collision_margin_dist: 0.5
 
   Visualization:
     batch_stride: 100   # stride for visualizing less trajectories (rendering all trajectories can lead to too much overhead)

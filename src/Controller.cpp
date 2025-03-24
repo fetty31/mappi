@@ -265,7 +265,7 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
             && use_local_planner_ )
         {
             if( not navfn_wrapper_.getPlan(current_odom_, global_plan_, local_plan_) ){
-                // local_plan_.reset(0); // set local_plan_ to null
+                local_plan_.reset(0); // set local_plan_ to null
             }
         }
 
