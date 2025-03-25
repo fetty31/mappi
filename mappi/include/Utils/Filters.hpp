@@ -272,8 +272,6 @@ T lowPassFilter(T input)
 
   start_time = end_time; // keep counting
 
-  std::cout << "MAPPI:: elapsed time LPF: " << elapsed_time.count() << std::endl;
-
   if( (elapsed_time.count() < 0.01) || 
       (elapsed_time.count() > 0.1) )
     iDeltaTime = 0.05;
@@ -300,8 +298,6 @@ void lowPassFilter(T input_0, T input_1, T input_2,
   elapsed_time = end_time - start_time;
 
   start_time = end_time; // keep counting
-
-  std::cout << "MAPPI:: elapsed time LPF: " << elapsed_time.count() << std::endl;
 
   if( (elapsed_time.count() < 0.01) || 
       (elapsed_time.count() > 0.1) )

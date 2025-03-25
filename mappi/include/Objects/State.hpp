@@ -9,11 +9,12 @@ struct Odometry2d
 {
     float x, y, yaw;
     float vx, vy, wz;
+    float steering;
     float stamp;
 
     Odometry2d() : x(0.0), y(0.0), yaw(0.0),
                     vx(0.0), vy(0.0), wz(0.0), 
-                    stamp(0.0) {}
+                    steering(0.0), stamp(0.0) {}
 };
 
 struct State

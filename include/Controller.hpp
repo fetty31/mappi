@@ -8,6 +8,7 @@
 
 #include "ROSutils.hpp"
 #include "Visualizer.hpp"
+#include "OdomHelper.hpp"
 
 #include <dynamic_reconfigure/server.h>
 #include <mappi/MPPIPlannerROSConfig.h>
@@ -36,11 +37,12 @@ class MPPIcROS : public nav_core::BaseLocalPlanner {
         tf2_ros::Buffer* tf_;
         std::string local_frame_, global_frame_;
 
-        shared_ptr<costmap_2d::Costmap2DROS> costmap_ros_ptr_;
+        mappi::shared_ptr<costmap_2d::Costmap2DROS> costmap_ros_ptr_;
         ros::ServiceClient costmap_client_;
 
         MPPIc mappi_;
         std::unique_ptr<Visualizer> visualizer_ptr_;
+        std::unique_ptr<OdomHelper> odom_helper_ptr_;
 
         #ifdef HAS_NAVFN
             NavFnWrapper navfn_wrapper_;
@@ -59,6 +61,7 @@ class MPPIcROS : public nav_core::BaseLocalPlanner {
 
         ros::Publisher global_pub_;
         ros::Publisher local_pub_;
+
 
         dynamic_reconfigure::Server<mappi::MPPIPlannerROSConfig> *dyn_srv_;
 

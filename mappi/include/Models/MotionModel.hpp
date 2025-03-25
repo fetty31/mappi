@@ -31,7 +31,7 @@ class MotionModel {
         virtual void integrate(mappi::objects::State& st, 
                             mappi::objects::Trajectory& traj)
         {
-            const double initial_yaw = st.odom.yaw;
+            const float initial_yaw = st.odom.yaw;
 
             xt::noalias(traj.yaw) =
                 aux::normalize_angles(xt::cumsum(st.wz * model_dt, 1) + initial_yaw);

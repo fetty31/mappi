@@ -1,5 +1,9 @@
 MPPIPlannerROS:
 
+  Odometry:
+    steering_topic: "/ona2/ackermann_feedback"
+    odom_topic: "/ona2/fast_limo/state"
+
   GeneralSettings:
 
     global_frame: ""  # if left null it will be the same as global_costmap frame
@@ -28,8 +32,8 @@ MPPIPlannerROS:
     max_vy: 0.5         # [m/s]
     min_vy: -0.5        # [m/s]
 
-    max_wz: 3.0         # [rad/s] (or [rad] if BicycleKin model is chosen)
-    min_wz: -3.0        # [rad/s] (or [rad] if BicycleKin model is chosen)
+    max_wz: 3.0         # [rad/s] 
+    min_wz: -3.0        # [rad/s] 
 
   MotionModel: "BicycleKin" # ["Ackermann", "BicycleKin", "Holonomic"]
 
@@ -42,7 +46,7 @@ MPPIPlannerROS:
   NoiseGeneration:
     std_vx: 0.3         # [m/s]
     std_vy: 0.3         # [m/s]
-    std_wz: 0.1         # [rad/s] (or [rad] if BicycleKin model is chosen)
+    std_wz: 0.1         # [rad/s] 
 
   Critics:
     Goal:

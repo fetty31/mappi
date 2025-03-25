@@ -33,9 +33,13 @@ class BicycleKin : public MotionModel {
         void integrate(mappi::objects::State& st, 
                     mappi::objects::Trajectory& traj) override 
         {
-            const double initial_yaw = st.odom.yaw;
+            const float initial_yaw = st.odom.yaw;
+            const float initial_steering = st.odom.steering;
 
-            auto steer = xt::view(st.wz, xt::all(), xt::all());
+            auto && steer = xt::xtensor<float, 2>::from_shape(st.wz.shape()); // abuse of notation, here wz == steering rate
+            xt::noalias(steer) = (xt::cumsum(st.wz * model_dt, 1) + initial_steering);
+
+            // auto steer = xt::view(st.wz, xt::all(), xt::all()); 
 
             /* Kinematic Bicycle model:
             inputs: [steer, vx]

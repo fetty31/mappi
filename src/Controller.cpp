@@ -35,7 +35,7 @@ void MPPIcROS::initialize(std::string name,
     ros::NodeHandle nh_upper("~/");
 
     tf_ = tf;
-    costmap_ros_ptr_ = shared_ptr<costmap_2d::Costmap2DROS>(costmap_ros);
+    costmap_ros_ptr_ = mappi::shared_ptr<costmap_2d::Costmap2DROS>(costmap_ros);
 
         // Publishers
     global_pub_ = nh.advertise<nav_msgs::Path>("global_plan", 1);
@@ -169,6 +169,9 @@ void MPPIcROS::initialize(std::string name,
     // Set up Visualizer instance
     visualizer_ptr_ = std::make_unique<Visualizer>(&mappi_, &nh);
 
+    // Set up Odometry Helper instance
+    odom_helper_ptr_ = std::make_unique<OdomHelper>(name);
+
     // Set up NavFn Wrapper (if available)
     #ifdef HAS_NAVFN
         navfn_wrapper_.configure("navfn_wrapper", costmap_ros_ptr_);
@@ -200,7 +203,10 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
         cmd_vel.angular.z = 0.0;
         return false;
     }
-    ros_utils::ros2mppic(current_pose, current_odom_);
+    ros_utils::ros2mppic(current_pose, current_odom_); // get current pose (from move_base)
+
+    // odom_helper_ptr_->fillTwistAndSteering(current_odom_); // get current velocity & steering
+    odom_helper_ptr_->fillTwist(current_odom_); // get current velocity
 
     auto start_time = std::chrono::system_clock::now();
 
@@ -256,6 +262,7 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
     }
 
     ROS_INFO("mappi:: Setting local plan");
+    auto start_time = std::chrono::system_clock::now();
 
     local_plan_ = global_plan_;
     #ifdef HAS_NAVFN
@@ -271,22 +278,26 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
 
     #endif
 
+    auto end_time = std::chrono::system_clock::now();
+    static std::chrono::duration<double> elapsed_time;
+    elapsed_time = end_time - start_time;
+
+    ROS_INFO("mappi:: Local plan elapsed time: %f ms", elapsed_time.count()*1000.0);
+
     ROS_INFO("mappi:: shifting local plan");
 
     // (optional) Shift local plan to avoid planning inside the robot's footprint 
     aux::shiftPlan(local_plan_, dist_shift_);
 
-    // mappi_.resetControls(); // reset mppi control commands
-
-    static std_srvs::Empty srv;
-    if (costmap_client_.call(srv))
-    {
-        ROS_INFO("mappi:: Resetting costmaps");
-    }
-    else
-    {
-        ROS_ERROR("mappi:: Failed to call service ~clear_costmaps");
-    }
+    // static std_srvs::Empty srv;
+    // if (costmap_client_.call(srv))
+    // {
+    //     ROS_INFO("mappi:: Resetting costmaps");
+    // }
+    // else
+    // {
+    //     ROS_ERROR("mappi:: Failed to call service ~clear_costmaps");
+    // }
 
     // Publish received global plan
     static nav_msgs::Path path_msg;

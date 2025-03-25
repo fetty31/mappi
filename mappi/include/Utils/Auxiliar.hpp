@@ -118,15 +118,11 @@ void shiftPlan(mappi::objects::Path& path, float dist)
 {
   size_t index = aux::getIdxFromDistance(path, dist);
 
-  std::cout << "shiftPlan index: " << index << std::endl;
-  
   if(index > path.x.size()-5)
     return;
 
   if(index < 1)
     return;
-
-  std::cout << "shiftPlan shifting...\n";
 
   mappi::objects::Path path_cpy = path;
 
