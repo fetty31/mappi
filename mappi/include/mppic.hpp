@@ -97,6 +97,7 @@ class MPPIc {
         objects::Trajectory getCandidateTrajectories();
         objects::Trajectory getOptimalTrajectory();
         objects::Path       getCurrentPlan();
+        objects::Odometry2d getOdometry();
 
     private:
 

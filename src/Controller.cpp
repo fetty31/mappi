@@ -203,10 +203,11 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
         cmd_vel.angular.z = 0.0;
         return false;
     }
-    ros_utils::ros2mppic(current_pose, current_odom_); // get current pose (from move_base)
+    ros_utils::ros2mppic(current_pose, current_odom_); // get current pose (from costmap_2d)
 
-    // odom_helper_ptr_->fillTwistAndSteering(current_odom_); // get current velocity & steering
-    odom_helper_ptr_->fillTwist(current_odom_); // get current velocity
+    odom_helper_ptr_->fillTwistAndSteering(current_odom_); // get current velocity & steering
+    // odom_helper_ptr_->fillTwist(current_odom_); // get current velocity
+    // odom_helper_ptr_->fillSteering(current_odom_); // get current steering
 
     auto start_time = std::chrono::system_clock::now();
 

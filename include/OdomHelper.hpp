@@ -17,18 +17,16 @@ namespace mappi {
 class OdomHelper {
     public:
         OdomHelper(const std::string& name){
-            ros::NodeHandle nh("~"+name);
+            ros::NodeHandle nh_upper;
 
-            std::string steer_topic, odom_topic;
-            nh.param<std::string>("Odometry/steering_topic", steer_topic, "");
-            nh.param<std::string>("Odometry/odom_topic", odom_topic, "");
-            
-            if(steer_topic != "")
-                steering_sub = nh.subscribe<ackermann_msgs::AckermannDriveStamped>(steer_topic, 1, 
-                                    boost::bind( &mappi::OdomHelper::steering_callback, this, _1 ));
-            if(odom_topic != "")
-                odom_sub     = nh.subscribe<nav_msgs::Odometry>(odom_topic, 1,  
-                                    boost::bind( &mappi::OdomHelper::odom_callback, this, _1 ));
+            steering_sub = nh_upper.subscribe<ackermann_msgs::AckermannDriveStamped>("steering_feedback", 1, 
+                                        boost::bind( &mappi::OdomHelper::steering_callback, this, _1 ));
+            ROS_INFO("mappi::ODOM_HELPER: subscribed to steering topic: %s", steering_sub.getTopic().c_str());
+
+            odom_sub     = nh_upper.subscribe<nav_msgs::Odometry>("odom", 1,  
+                                        boost::bind( &mappi::OdomHelper::odom_callback, this, _1 ));
+
+            ROS_INFO("mappi::ODOM_HELPER: subscribed to odom topic: %s", odom_sub.getTopic().c_str());
         }
 
         void steering_callback(const ackermann_msgs::AckermannDriveStamped::ConstPtr& msg)
@@ -41,6 +39,8 @@ class OdomHelper {
                 when using BicycleKin model we abuse notation so that wz is in fact the steering rate
                 instead of the angular velocity of the robot
             */
+
+            ROS_INFO_ONCE("mappi::ODOM_HELPER: steering callback");
         }
 
         void odom_callback(const nav_msgs::Odometry::ConstPtr& msg)
@@ -57,6 +57,8 @@ class OdomHelper {
             /*NOTE:
                 if using Ackermann/Holonomic motion models, comment out the line above
             */
+
+            ROS_INFO_ONCE("mappi::ODOM_HELPER: odometry callback");
         }
 
         mappi::objects::Odometry2d getOdometry(){
@@ -75,14 +77,19 @@ class OdomHelper {
             odom.yaw = odometry_.yaw;
         }
 
+        void fillSteering(mappi::objects::Odometry2d& odom){
+            odom.steering = odometry_.steering;
+            odom.wz = odometry_.wz; // only in case BycicleKin model is active
+        }
+
         void fillTwistAndSteering(mappi::objects::Odometry2d& odom){
             fillTwist(odom);
-            odom.steering = odometry_.steering;
+            fillSteering(odom);
         }
 
         void fillPoseAndSteering(mappi::objects::Odometry2d& odom){
             fillPose(odom);
-            odom.steering = odometry_.steering;
+            fillSteering(odom);
         }
 
         void fillOdometry(mappi::objects::Odometry2d& odom){

@@ -68,6 +68,18 @@ class BicycleKin : public MotionModel {
             xt::noalias(traj.x) = st.odom.x + xt::cumsum(dx * model_dt, 1);
             xt::noalias(traj.y) = st.odom.y + xt::cumsum(dy * model_dt, 1);
         }
+
+        void constrainMotion(mappi::objects::ControlSequence& ctrl_seq) override {
+            auto & wz = ctrl_seq.wz;
+            float steer_max = 0.26;
+
+            auto wz_max = xt::sign(wz) * steer_max;
+
+            auto mask = xt::fabs(wz) > steer_max;
+
+            // Apply the result only where the mask is true
+            wz = xt::where(mask, wz_max, wz);
+        }
 };
 
 } // namespace mappi::models

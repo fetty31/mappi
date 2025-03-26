@@ -136,6 +136,15 @@ objects::Path MPPIc::getCurrentPlan()
     return std::move(plan_cpy);
 }
 
+objects::Odometry2d MPPIc::getOdometry()
+{
+    reset_mtx.lock(); // avoid access while being reset
+        objects::Odometry2d odom_cpy(state_.odom);
+    reset_mtx.unlock(); 
+
+    return std::move(odom_cpy);
+}
+
 objects::Trajectory MPPIc::getOptimalTrajectory()
 {
     reset_mtx.lock(); // avoid access while being reset
