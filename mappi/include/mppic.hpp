@@ -12,6 +12,7 @@
 #include "Critics/PathAngle.hpp"
 #include "Critics/PathDist.hpp"
 #include "Critics/GoalAngle.hpp"
+#include "Critics/Forward.hpp"
 
 #include "Objects/State.hpp"
 #include "Objects/Trajectory.hpp"
@@ -62,6 +63,7 @@ class MPPIc {
         critics::GoalAngle goalangle_critic_; 
         critics::PathDist pathdist_critic_; 
         critics::Twirling twir_critic_; 
+        critics::Forward forward_critic_; 
 
         std::unique_ptr<models::MotionModel> motion_mdl_ptr_;
 

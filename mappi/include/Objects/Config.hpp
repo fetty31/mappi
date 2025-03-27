@@ -91,6 +91,7 @@ struct MPPIc
     GenericCritic goal_crtc;
     PathDistCritic pathdist_crtc;
     GenericCritic twir_crtc;
+    GenericCritic forward_crtc;
     GenericCritic goalangle_crtc;
     ObstaclesCritic obs_crtc;
 

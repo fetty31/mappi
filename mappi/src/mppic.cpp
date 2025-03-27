@@ -28,6 +28,7 @@ void MPPIc::configure(config::MPPIc& cfg,
     pathdist_critic_.configure("pathdist_critic", cfg.pathdist_crtc, costmap);
     goalangle_critic_.configure("goalangle_critic", cfg.goalangle_crtc, costmap);
     twir_critic_.configure("twir_critic", cfg.twir_crtc, costmap);
+    forward_critic_.configure("forward_critic", cfg.forward_crtc, costmap);
 
     this->reset(); // quick set up of obj dimensions
 
@@ -112,6 +113,7 @@ void MPPIc::setConfig(config::MPPIc& cfg)
     pathdist_critic_.setConfig(cfg.pathdist_crtc);
     goalangle_critic_.setConfig(cfg.goalangle_crtc);
     twir_critic_.setConfig(cfg.twir_crtc);
+    forward_critic_.setConfig(cfg.forward_crtc);
 
     loop_mtx.unlock(); // unlock control loop
 
@@ -305,6 +307,7 @@ void MPPIc::evalTrajectories(bool &failed)
     goalangle_critic_.score(state_, trajectory_, plan_, costs_, failed);
     pathdist_critic_.score(state_, trajectory_, plan_, costs_, failed); // too much overhead
     twir_critic_.score(state_, trajectory_, plan_, costs_, failed);
+    forward_critic_.score(state_, trajectory_, plan_, costs_, failed);
 }
 
 void MPPIc::optimizeControlSeq()

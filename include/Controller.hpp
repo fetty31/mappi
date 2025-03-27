@@ -38,7 +38,6 @@ class MPPIcROS : public nav_core::BaseLocalPlanner {
         std::string local_frame_, global_frame_;
 
         mappi::shared_ptr<costmap_2d::Costmap2DROS> costmap_ros_ptr_;
-        ros::ServiceClient costmap_client_;
 
         MPPIc mappi_;
         std::unique_ptr<Visualizer> visualizer_ptr_;

@@ -68,6 +68,11 @@ MPPIPlannerROS:
       active: false
       power: 1
       weight: 10.0
+
+    Forward:
+      active: false
+      power: 1
+      weight: 10.0
     
     PathFollow:
       active: true

@@ -41,9 +41,6 @@ void MPPIcROS::initialize(std::string name,
     global_pub_ = nh.advertise<nav_msgs::Path>("global_plan", 1);
     local_pub_  = nh.advertise<nav_msgs::Path>("strided_plan", 1);
 
-        // Srv client
-    costmap_client_ = nh_upper.serviceClient<std_srvs::Empty>("clear_costmaps");
-
     // Set up ROS wrapper params
     nh.param<float>("GeneralSettings/goal_tolerance", goal_tolerance_, 0.1f);
     nh.param<float>("GeneralSettings/plan_shift", dist_shift_, 1.0f);
@@ -123,6 +120,12 @@ void MPPIcROS::initialize(std::string name,
     config.twir_crtc.common.power = static_cast<unsigned int>(power);
     nh.param<bool>("Critics/Twirling/active",   config.twir_crtc.common.active, true);
     nh.param<float>("Critics/Twirling/weight",  config.twir_crtc.common.weight, 10.0f);
+
+        // Forward critic config
+    nh.param<int>("Critics/Forward/power", power, 1);
+    config.forward_crtc.common.power = static_cast<unsigned int>(power);
+    nh.param<bool>("Critics/Forward/active",   config.forward_crtc.common.active, true);
+    nh.param<float>("Critics/Forward/weight",  config.forward_crtc.common.weight, 10.0f);
 
         // PathFollow critic config
     nh.param<int>("Critics/PathFollow/power", power, 1);
@@ -290,16 +293,6 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
     // (optional) Shift local plan to avoid planning inside the robot's footprint 
     aux::shiftPlan(local_plan_, dist_shift_);
 
-    // static std_srvs::Empty srv;
-    // if (costmap_client_.call(srv))
-    // {
-    //     ROS_INFO("mappi:: Resetting costmaps");
-    // }
-    // else
-    // {
-    //     ROS_ERROR("mappi:: Failed to call service ~clear_costmaps");
-    // }
-
     // Publish received global plan
     static nav_msgs::Path path_msg;
     ros_utils::mppic2ros(global_plan_, path_msg, global_frame_);
@@ -391,6 +384,11 @@ void MPPIcROS::reconfigure_callback(mappi::MPPIPlannerROSConfig &dyn_cfg, uint32
     config.twir_crtc.common.power = static_cast<unsigned int>(dyn_cfg.twir_power);
     config.twir_crtc.common.active = static_cast<unsigned int>(dyn_cfg.twir_active);
     config.twir_crtc.common.weight = static_cast<float>(dyn_cfg.twir_weight);
+
+    // Forward critic config
+    config.forward_crtc.common.power = static_cast<unsigned int>(dyn_cfg.frwd_power);
+    config.forward_crtc.common.active = static_cast<unsigned int>(dyn_cfg.frwd_active);
+    config.forward_crtc.common.weight = static_cast<float>(dyn_cfg.frwd_weight);
 
     // PathDist critic config
     config.pathdist_crtc.common.power = static_cast<unsigned int>(dyn_cfg.pathdist_power);

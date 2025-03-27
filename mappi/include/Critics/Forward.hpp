@@ -1,11 +1,11 @@
-#ifndef __MAPPI_TWIRLING_CRITIC_HPP__
-#define __MAPPI_TWIRLING_CRITIC_HPP__
+#ifndef __MAPPI_FORWARD_CRITIC_HPP__
+#define __MAPPI_FORWARD_CRITIC_HPP__
 
 #include "Critics/Critic.hpp"
 
 namespace mappi::critics {
 
-class Twirling : public Critic {
+class Forward : public Critic {
 
     // VARIABLES
 
@@ -15,7 +15,7 @@ class Twirling : public Critic {
     // FUNCTIONS
 
     public:
-        Twirling();
+        Forward();
         
         void configure(std::string name, 
                         mappi::config::
@@ -32,9 +32,9 @@ class Twirling : public Critic {
         void setConfig(mappi::config::GenericCritic&);
 };
 
-Twirling::Twirling() { }
+Forward::Forward() { }
 
-void Twirling::configure(std::string name, 
+void Forward::configure(std::string name, 
                     mappi::config::
                         GenericCritic& config,
                     mappi::shared_ptr
@@ -44,7 +44,7 @@ void Twirling::configure(std::string name,
     cfg_ = config;
 }
 
-void Twirling::score(mappi::objects::State& states,
+void Forward::score(mappi::objects::State& states,
                     mappi::objects::Trajectory& trajectories,
                     mappi::objects::Path& plan,
                     xt::xtensor<float,1>& costs,
@@ -55,17 +55,19 @@ void Twirling::score(mappi::objects::State& states,
         return;
     }
 
+    if(not mappi::aux::robotNearGoal(cfg_.common.threshold, states.odom, plan))
+        return;
+
     using xt::evaluation_strategy::immediate;
+    auto backward_motion = xt::maximum(-states.vx, 0);
+    costs += xt::pow(
+        xt::sum(
+            std::move(backward_motion), {1}, immediate
+            ) * cfg_.common.weight, cfg_.common.power);
 
-    // xt::stddev possibly introduces overhead (https://github.com/xtensor-stack/xtensor/issues/1826)
-
-    costs += xt::pow( xt::variance(states.wz, {1}, 0/*ddof*/, immediate) * cfg_.common.weight, cfg_.common.power);
-    
-    // const auto wz = xt::abs(states.wz);
-    // costs += xt::pow(xt::mean(wz, {1}, immediate) * cfg_.common.weight, cfg_.common.power);
 }
 
-void Twirling::setConfig(mappi::config::GenericCritic& config)
+void Forward::setConfig(mappi::config::GenericCritic& config)
 {
     cfg_ = config;
 }
