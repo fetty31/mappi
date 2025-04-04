@@ -7,12 +7,12 @@ MPPIPlannerROS:
 
     num_iterations: 1   # number of iterations solving the Path Integral problem 
     batch_size: 1000    # number of propagated trajectories
-    time_steps: 60      # horizon length of the propagation ( prediction_time = model_dt*time_steps )
+    time_steps: 100     # horizon length of the propagation ( prediction_time = model_dt*time_steps )
     num_retry: 4        # number of retries when the solution fails (all generated trajectories collide)
     control_offset: 1   # offset to choose the control commands to send
 
     goal_tolerance: 0.5   # [m] tolerance for considering we have reached the goal 
-    plan_shift: 1.5       # [m] meters to shift plan to avoid planning inside the robot's footprint 
+    plan_shift: 1.0       # [m] meters to shift plan to avoid planning inside the robot's footprint 
 
     use_splines: false        # whether to interpolate the received global plan with splines
     use_local_planner: true   # whether to use an extra layer of planning (local planner navfn)
@@ -28,16 +28,17 @@ MPPIPlannerROS:
     max_vy: 0.5         # [m/s]
     min_vy: -0.5        # [m/s]
 
-    max_wz: 0.1         # [rad/s] 
-    min_wz: -0.1        # [rad/s] 
+    max_wz: 0.5         # [rad/s] 
+    min_wz: -0.5        # [rad/s] 
 
   MotionModel: "BicycleKin" # ["Ackermann", "BicycleKin", "Holonomic"]
 
   Ackermann: 
     min_radius: 3.0     # [m]
 
-  SteeringModel: 
-    length: 1.0         # [m]
+  BicycleKin: 
+    length: 0.5         # [m] This should be equal to the robot's length, because the kinematic model is derived w.r.t the furthest rear point. In practice, higher values result in higher turning radius (less maneuverability)
+    max_steer: 0.3      # [rad] Steering angle limit (assuming symmetric steering)
 
   NoiseGeneration:
     std_vx: 0.3         # [m/s]
@@ -82,12 +83,12 @@ MPPIPlannerROS:
       offset_from_furthest: 3
 
     PathAngle:
-      active: true
+      active: false
       power: 1
       weight: 25.0
       threshold: 1.0
       offset_from_furthest: 3
-      angle_threshold: 150.0
+      angle_threshold: 90.0
 
     Obstacles:
       active: true
@@ -96,7 +97,7 @@ MPPIPlannerROS:
       threshold: 1.0
       repulsive_weight: 0.0
       collision_cost: 100000.0
-      collision_margin_dist: 0.5
+      collision_margin_dist: 0.2
 
   Visualization:
     batch_stride: 100   # stride for visualizing less trajectories (rendering all trajectories can lead to too much overhead)

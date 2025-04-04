@@ -15,7 +15,7 @@ void MPPIc::configure(config::MPPIc& cfg,
     if(cfg.settings.motion_model == "Ackermann")
         motion_mdl_ptr_ = std::make_unique<models::Ackermann>(cfg.ackermann, cfg.model_dt);
     else if(cfg.settings.motion_model == "BicycleKin")
-        motion_mdl_ptr_ = std::make_unique<models::BicycleKin>(cfg.steering, cfg.model_dt);
+        motion_mdl_ptr_ = std::make_unique<models::BicycleKin>(cfg.bicycleKin, cfg.model_dt);
     else
         motion_mdl_ptr_ = std::make_unique<models::Holonomic>(cfg.model_dt);
 
@@ -80,7 +80,7 @@ void MPPIc::setConfig(config::MPPIc& cfg)
     if(cfg.settings.motion_model == "Ackermann")
         motion_mdl_ptr_ = std::make_unique<models::Ackermann>(cfg.ackermann, cfg.model_dt);
     else if(cfg.settings.motion_model == "BicycleKin")
-        motion_mdl_ptr_ = std::make_unique<models::BicycleKin>(cfg.steering, cfg.model_dt);
+        motion_mdl_ptr_ = std::make_unique<models::BicycleKin>(cfg.bicycleKin, cfg.model_dt);
     else
         motion_mdl_ptr_ = std::make_unique<models::Holonomic>(cfg.model_dt);
 

@@ -59,10 +59,10 @@ void Twirling::score(mappi::objects::State& states,
 
     // xt::stddev possibly introduces overhead (https://github.com/xtensor-stack/xtensor/issues/1826)
 
-    costs += xt::pow( xt::variance(states.wz, {1}, 0/*ddof*/, immediate) * cfg_.common.weight, cfg_.common.power);
+    // costs += xt::pow( xt::variance(states.wz, {1}, 0/*ddof*/, immediate) * cfg_.common.weight, cfg_.common.power);
     
-    // const auto wz = xt::abs(states.wz);
-    // costs += xt::pow(xt::mean(wz, {1}, immediate) * cfg_.common.weight, cfg_.common.power);
+    const auto wz = xt::abs(states.wz);
+    costs += xt::pow(xt::mean(wz, {1}, immediate) * cfg_.common.weight, cfg_.common.power);
 }
 
 void Twirling::setConfig(mappi::config::GenericCritic& config)

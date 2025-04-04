@@ -21,6 +21,7 @@ struct AckermannModel
 struct BicycleKinModel 
 {
     float length;
+    float max_steer;
 };
 
 struct Constraints 
@@ -82,7 +83,7 @@ struct MPPIc
     } settings;
 
     AckermannModel ackermann;
-    BicycleKinModel steering;
+    BicycleKinModel bicycleKin;
     Noise noise;
     Constraints bounds;
 
@@ -118,8 +119,10 @@ void MPPIc::print_out(){
     std::cout << "MotionModel: " << settings.motion_model << std::endl;
     if (settings.motion_model=="Ackermann")
         std::cout << "  - min_radius: " << ackermann.min_r << std::endl;
-    else if (settings.motion_model=="BicycleKin")
-        std::cout << "  - length: " << steering.length << std::endl;
+    else if (settings.motion_model=="BicycleKin"){
+        std::cout << "  - length: " << bicycleKin.length << std::endl;
+        std::cout << "  - max steering: " << bicycleKin.max_steer << std::endl;
+    }
 
     std::cout << "Noise Settings: " << std::endl;
     std::cout << "  - noise.std_vx: " << noise.std_vx << std::endl;

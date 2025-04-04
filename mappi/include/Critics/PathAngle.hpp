@@ -67,7 +67,7 @@ void PathAngle::score(mappi::objects::State& states,
     const auto path_x = plan.x(offseted_idx);
     const auto path_y = plan.y(offseted_idx);
 
-    if ( std::fabs(mappi::aux::poseToPointAngle(states.odom, path_x, path_y)) > cfg_.angle_threshold ) 
+    if ( std::fabs(mappi::aux::poseToPointAngle(states.odom, path_x, path_y)) < cfg_.angle_threshold ) 
         return;
 
     const auto yaws_between_points = xt::atan2(

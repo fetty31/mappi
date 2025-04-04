@@ -57,11 +57,11 @@ void MPPIcROS::initialize(std::string name,
     config::MPPIc config;
 
     int batch_size, num_iters, time_steps, num_retry, offset;
-    nh.param<int>("GeneralSettings/batch_size",  batch_size,  1000);
-    nh.param<int>("GeneralSettings/num_iters",   num_iters,   4);
-    nh.param<int>("GeneralSettings/time_steps",  time_steps,  40);
-    nh.param<int>("GeneralSettings/num_retry",   num_retry,   2);
-    nh.param<int>("GeneralSettings/offset",      offset,      1);
+    nh.param<int>("GeneralSettings/batch_size",        batch_size,  1000);
+    nh.param<int>("GeneralSettings/num_iterations",    num_iters,   4);
+    nh.param<int>("GeneralSettings/time_steps",        time_steps,  40);
+    nh.param<int>("GeneralSettings/num_retry",         num_retry,   2);
+    nh.param<int>("GeneralSettings/control_offset",    offset,      1);
 
     nh.param<bool>("GeneralSettings/use_splines", config.settings.use_splines, false);
 
@@ -77,9 +77,10 @@ void MPPIcROS::initialize(std::string name,
     nh.param<float>("GeneralSettings/gamma",        config.gamma,       1.0f);
 
     nh.param<float>("Ackermann/min_radius",  config.ackermann.min_r,  3.0f);
-    nh.param<float>("SteeringModel/length",  config.steering.length,  1.0f);
+    nh.param<float>("BicycleKin/length",     config.bicycleKin.length,  1.0f);
+    nh.param<float>("BicycleKin/max_steer",  config.bicycleKin.max_steer,  0.3f);
 
-    nh.param<std::string>("MotionModel", config.settings.motion_model, "Ackermann");
+    nh.param<std::string>("MotionModel", config.settings.motion_model, "BicycleKin");
 
     nh.param<float>("NoiseGeneration/std_vx", config.noise.std_vx, 0.01f);
     nh.param<float>("NoiseGeneration/std_vy", config.noise.std_vy, 0.01f);
@@ -89,8 +90,8 @@ void MPPIcROS::initialize(std::string name,
     nh.param<float>("Constraints/min_vx", config.bounds.min_vx, -1.0f);
     nh.param<float>("Constraints/max_vy", config.bounds.max_vy, 1.0f);
     nh.param<float>("Constraints/min_vy", config.bounds.min_vy, -1.0f);
-    nh.param<float>("Constraints/max_wz", config.bounds.max_wz, 0.7f);
-    nh.param<float>("Constraints/min_wz", config.bounds.min_wz, -0.7f);
+    nh.param<float>("Constraints/max_wz", config.bounds.max_wz, 0.3f);
+    nh.param<float>("Constraints/min_wz", config.bounds.min_wz, -0.3f);
     
         // Goal critic config
     int power;
@@ -208,7 +209,7 @@ bool MPPIcROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
     }
     ros_utils::ros2mppic(current_pose, current_odom_); // get current pose (from costmap_2d)
 
-    odom_helper_ptr_->fillTwistAndSteering(current_odom_); // get current velocity & steering
+    // odom_helper_ptr_->fillTwistAndSteering(current_odom_); // get current velocity & steering
     // odom_helper_ptr_->fillTwist(current_odom_); // get current velocity
     // odom_helper_ptr_->fillSteering(current_odom_); // get current steering
 
@@ -353,7 +354,8 @@ void MPPIcROS::reconfigure_callback(mappi::MPPIPlannerROSConfig &dyn_cfg, uint32
     config.gamma = static_cast<float>(dyn_cfg.gamma);
 
     config.ackermann.min_r = static_cast<float>(dyn_cfg.min_radius);
-    config.steering.length = static_cast<float>(dyn_cfg.length);
+    config.bicycleKin.length = static_cast<float>(dyn_cfg.length);
+    config.bicycleKin.max_steer = static_cast<float>(dyn_cfg.max_steer);
 
     config.settings.motion_model = dyn_cfg.MotionModel;
 

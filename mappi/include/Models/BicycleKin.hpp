@@ -39,7 +39,10 @@ class BicycleKin : public MotionModel {
             auto && steer = xt::xtensor<float, 2>::from_shape(st.wz.shape()); // abuse of notation, here wz == steering rate
             xt::noalias(steer) = (xt::cumsum(st.wz * model_dt, 1) + initial_steering);
 
-            // auto steer = xt::view(st.wz, xt::all(), xt::all()); 
+            // Limit steering angle
+            auto steer_limit = xt::sign(steer) * cfg_.max_steer;
+            auto mask = xt::fabs(steer) > cfg_.max_steer;
+            steer = xt::where(mask, steer_limit, steer);
 
             /* Kinematic Bicycle model:
             inputs: [steer, vx]
@@ -69,17 +72,6 @@ class BicycleKin : public MotionModel {
             xt::noalias(traj.y) = st.odom.y + xt::cumsum(dy * model_dt, 1);
         }
 
-        void constrainMotion(mappi::objects::ControlSequence& ctrl_seq) override {
-            auto & wz = ctrl_seq.wz;
-            float steer_max = 0.26;
-
-            auto wz_max = xt::sign(wz) * steer_max;
-
-            auto mask = xt::fabs(wz) > steer_max;
-
-            // Apply the result only where the mask is true
-            wz = xt::where(mask, wz_max, wz);
-        }
 };
 
 } // namespace mappi::models

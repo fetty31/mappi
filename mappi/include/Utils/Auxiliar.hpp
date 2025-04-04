@@ -28,6 +28,15 @@ auto shortest_angular_dist(const F& from, const T& to)
   return normalize_angles(to - from);
 }
 
+template<typename T>
+T l2_norm(const std::vector<T>& p1, const std::vector<T>& p2)
+{
+  if( (p1.size() < 2) || (p2.size() < 2) )
+    return static_cast<T>(0.0);
+
+  return std::sqrt( std::pow(p1[0]-p2[0],2) + std::pow(p1[1]-p2[1],2) );
+}
+
 template <typename T>
 std::vector<T> linspace(T a, T b, size_t N) {
     T h = (b - a) / static_cast<T>(N-1);

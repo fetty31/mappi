@@ -75,7 +75,7 @@ void PathDist::score(mappi::objects::State& states,
     for (size_t t = 0; t < batch_size; ++t) {
         float summed_dist = 0;
         for (size_t p = trajectory_point_step_; p < time_steps; p += trajectory_point_step_) {
-            double min_dist_sq = std::numeric_limits<float>::max();
+            float min_dist_sq = std::numeric_limits<float>::max();
             size_t min_s = 0;
 
             // Find closest path segment to the trajectory point

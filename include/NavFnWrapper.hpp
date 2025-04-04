@@ -573,12 +573,14 @@ void NavFnWrapper::fillRobotFootprint(mappi::objects::Odometry2d& odom)
     double dx = costmap_->getResolution()/2.0;
     double x, y;
 
+    double extra_space = 1.2;
+
     // get number of cells on the laterals
-    int n_cells = std::ceil( (std::fabs(footprint[0].x) + std::fabs(footprint[2].x))/dx );
+    int n_cells = std::ceil( (std::fabs(footprint[0].x) + std::fabs(footprint[2].x) + 2*extra_space)/dx );
 
     // left side
     y = footprint[0].y; // FrontLeft y coord
-    x = footprint[0].x; // FrontLeft x coord
+    x = footprint[0].x + extra_space; // FrontLeft x coord
     for(int i=0; i < n_cells; i++){
         x -= dx;
         double x_odom = odom.x + x*cos(odom.yaw) - y*sin(odom.yaw);
@@ -590,7 +592,7 @@ void NavFnWrapper::fillRobotFootprint(mappi::objects::Odometry2d& odom)
 
     // right side
     y = footprint[1].y; // FrontRight y coord
-    x = footprint[1].x; // FrontRight x coord
+    x = footprint[1].x + extra_space; // FrontRight x coord
     for(int i=0; i < n_cells; i++){
         x -= dx;
         double x_odom = odom.x + x*cos(odom.yaw) - y*sin(odom.yaw);

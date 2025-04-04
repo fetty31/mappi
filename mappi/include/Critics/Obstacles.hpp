@@ -76,6 +76,7 @@ void Obstacles::score(mappi::objects::State& states,
         
         for(size_t j=0; j < n_traj; j++){
             unsigned char cost_c = this->costAtPose(trajectories.x(i,j), trajectories.y(i,j));
+            // unsigned char cost_c = this->costAtPose(trajectories.x(i,j), trajectories.y(i,j), trajectories.yaw(i,j));
 
             if(cost_c < 1) // free space
                 continue; 
