@@ -16,6 +16,9 @@ namespace mappi::critics {
 
 class Critic {
 
+    typedef boost::recursive_mutex mutex_t;
+    typedef boost::unique_lock<mutex_t> unique_lock;
+
     // VARIABLES
 
     protected:
@@ -45,6 +48,9 @@ class Critic {
         std::string getName(){ return name_; }
     
         unsigned char costAtPose(float x, float y){
+            
+            unique_lock lock(*(costmap_ptr_->getMutex()));
+
             unsigned int x_i, y_i;
             if(not costmap_ptr_->worldToMap(x, y, x_i, y_i)) // this point lies outside the costmap
                 return 0;
@@ -53,6 +59,9 @@ class Critic {
         }
 
         unsigned char costAtPose(float x, float y, float theta){
+
+            unique_lock lock(*(costmap_ptr_->getMutex()));
+
             unsigned int x_i, y_i;
             if(not costmap_ptr_->worldToMap(x, y, x_i, y_i)) // this point lies outside the costmap
                 return 0;

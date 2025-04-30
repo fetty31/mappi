@@ -41,6 +41,9 @@ void MPPIcROS::initialize(std::string name,
     global_pub_ = nh.advertise<nav_msgs::Path>("global_plan", 1);
     local_pub_  = nh.advertise<nav_msgs::Path>("strided_plan", 1);
 
+    // Srv client
+    costmap_client_ = nh_upper.serviceClient<std_srvs::Empty>("clear_costmaps");
+
     // Set up ROS wrapper params
     nh.param<float>("GeneralSettings/goal_tolerance", goal_tolerance_, 0.1f);
     nh.param<float>("GeneralSettings/plan_shift", dist_shift_, 1.0f);
@@ -293,6 +296,19 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
 
     // (optional) Shift local plan to avoid planning inside the robot's footprint 
     aux::shiftPlan(local_plan_, dist_shift_);
+    
+    // (optional) Clear costmaps
+
+    // static std_srvs::Empty srv;
+    // if (costmap_client_.call(srv))
+    // {
+    //     ROS_INFO("NANO_MPPIC:: Resetting costmaps");
+    // }
+    // else
+    // {
+    //     ROS_ERROR("NANO_MPPIC:: Failed to call service ~clear_costmaps");
+    // }
+
 
     // Publish received global plan
     static nav_msgs::Path path_msg;

@@ -61,6 +61,7 @@ class MPPIcROS : public nav_core::BaseLocalPlanner {
         ros::Publisher global_pub_;
         ros::Publisher local_pub_;
 
+        ros::ServiceClient costmap_client_;
 
         dynamic_reconfigure::Server<mappi::MPPIPlannerROSConfig> *dyn_srv_;
 
