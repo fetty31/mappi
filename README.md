@@ -30,7 +30,7 @@ MaPPI is a lightweight **Model Predictive Path Integral (MPPI)** controller for 
 ---
 
 ## **Disclaimer**
-_This project is based on the [nav2](https://docs.nav2.org/) MPPI controller, developed by [Alex](https://github.com/artofnothingness) in [mppic](https://github.com/artofnothingness/mppic). If you plan to use `MaPPI` please make sure to give some love to [nav2](https://github.com/ros-navigation/navigation2) and [mppic](https://github.com/artofnothingness/mppic) projects, which greatly influenced this work._
+_This project is based on the [nav2](https://docs.nav2.org/) MPPI controller, originally developed by [Alex](https://github.com/artofnothingness) in [mppic](https://github.com/artofnothingness/mppic) and adapted by [Steve Macenski](https://github.com/SteveMacenski) for [nav2](https://docs.nav2.org/). If you plan to use `MaPPI` please make sure to give some love to [nav2](https://github.com/ros-navigation/navigation2) and [mppic](https://github.com/artofnothingness/mppic) projects, which greatly influenced this work._
 
 ## **Installation**  
 
