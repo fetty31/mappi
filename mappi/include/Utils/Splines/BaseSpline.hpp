@@ -12,21 +12,84 @@ class BaseSpline {
         size_t degree_;
         std::vector<std::vector<T>> control_points_;
 
+        /**
+         * @brief Initializing function
+         * 
+         */
         virtual void initialize() = 0;
 
     public:
+        /**
+        * @brief Construct a new Base Spline object
+        * 
+        */
         BaseSpline();
+
+        /**
+         * @brief Destroy the Base Spline object
+         * 
+         */
         ~BaseSpline() = default;
+
+        /**
+         * @brief Construct a new Base Spline object
+         * 
+         * @param control_points Control points of the B-spline
+         */
         BaseSpline(const std::vector<std::vector<T>>& control_points);
 
+        /**
+         * @brief Evaluate spline 
+         * 
+         * @param u Point where to eval
+         * @param d_order Derivative order
+         * @return const std::vector<T> 
+         */
         virtual const std::vector<T> evaluate(const T u, const size_t d_order) = 0;
+
+        /**
+         * @brief Evaluate spline at multiple points
+         * 
+         * @param u_vec Points where to eval
+         * @param d_order Derivative order
+         * @return const std::vector<std::vector<T>> 
+         */
         virtual const std::vector<std::vector<T>> evaluate(const std::vector<T> u_vec, const size_t d_order) = 0;
+
+        /**
+         * @brief Compute curvature of spline
+         * 
+         * @param u Point where to eval
+         * @return const T 
+         */
         virtual const T curvature(const T u);
 
+        /**
+         * @brief Set the control points
+         * 
+         * @param control_points 
+         */
         void setControlPoints(const std::vector<std::vector<T>>& control_points);
+
+        /**
+         * @brief Get the control points
+         * 
+         * @return const std::vector<std::vector<T>>& 
+         */
         const std::vector<std::vector<T>>& getControlPoints();
 
+        /**
+         * @brief Get spline size
+         * 
+         * @return const size_t 
+         */
         const size_t size();
+
+        /**
+         * @brief Get spline degree
+         * 
+         * @return const size_t& 
+         */
         const size_t& degree();
 };
 

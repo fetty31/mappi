@@ -14,6 +14,13 @@
 
 namespace mappi::aux {
 
+/**
+  * @brief Normalize an angular distance
+  * 
+  * @tparam T 
+  * @param angles Angular distance [rad]
+  * @return auto 
+  */
 template<typename T>
 auto normalize_angles(const T & angles)
 {
@@ -22,12 +29,29 @@ auto normalize_angles(const T & angles)
   return xt::eval(xt::where(theta > M_PI, theta - 2.0*M_PI, theta));
 }
 
+/**
+ * @brief Computes the shortes angular distance
+ * 
+ * @tparam F 
+ * @tparam T 
+ * @param from First angle
+ * @param to Second angle
+ * @return auto 
+ */
 template<typename F, typename T>
 auto shortest_angular_dist(const F& from, const T& to)
 {
   return normalize_angles(to - from);
 }
 
+/**
+ * @brief Computes L2 (Euclidean) norm
+ * 
+ * @tparam T 
+ * @param p1 
+ * @param p2 
+ * @return T 
+ */
 template<typename T>
 T l2_norm(const std::vector<T>& p1, const std::vector<T>& p2)
 {
@@ -37,6 +61,15 @@ T l2_norm(const std::vector<T>& p1, const std::vector<T>& p2)
   return std::sqrt( std::pow(p1[0]-p2[0],2) + std::pow(p1[1]-p2[1],2) );
 }
 
+/**
+ * @brief Computes linspace (as in MATLAB)
+ * 
+ * @tparam T 
+ * @param a Start
+ * @param b End
+ * @param N Number of equally spaced points
+ * @return std::vector<T> 
+ */
 template <typename T>
 std::vector<T> linspace(T a, T b, size_t N) {
     T h = (b - a) / static_cast<T>(N-1);
@@ -48,6 +81,14 @@ std::vector<T> linspace(T a, T b, size_t N) {
     return xs;
 }
 
+/**
+ * @brief Computes the angle between a pose and a point
+ * 
+ * @param odom 2D Pose
+ * @param x Point x coordinate
+ * @param y Point y coordinate
+ * @return float 
+ */
 inline float poseToPointAngle(mappi::objects::Odometry2d& odom, float x, float y)
 {
   float diff_yaw = odom.yaw - std::atan2(y - odom.y, x - odom.x);
@@ -56,6 +97,14 @@ inline float poseToPointAngle(mappi::objects::Odometry2d& odom, float x, float y
   return (norm_yaw > M_PI) ? norm_yaw - 2.0*M_PI : norm_yaw;
 }
 
+/**
+ * @brief Finds the index of the furthest point along all the trajectories that is closer to the given path.
+ * 
+ * @param trajectories Predicted trajectories
+ * @param plan Path to follow (plan)
+ * @param time_step Point of the horizon length from where to start
+ * @return size_t 
+ */
 size_t findPathMinDistPoint(const mappi::objects::Trajectory& trajectories,
                             const mappi::objects::Path& plan,
                             const int time_step = -1 )
@@ -85,6 +134,15 @@ size_t findPathMinDistPoint(const mappi::objects::Trajectory& trajectories,
   return max_id_by_trajectories;
 }
 
+/**
+ * @brief Computes whether the robot is near the goal. The goal is assumed to be the last point of the given plan.
+ * 
+ * @param pose_tolerance Tolerance to consider [m]
+ * @param robot_pose Robot's position
+ * @param plan Path to follow
+ * @return true 
+ * @return false 
+ */
 bool robotNearGoal(float pose_tolerance, 
                     const mappi::objects::Odometry2d& robot_pose,
                     const mappi::objects::Path& plan)
@@ -107,6 +165,13 @@ bool robotNearGoal(float pose_tolerance,
 
 }
 
+/**
+ * @brief Looks for the index of first the point that is at a given distance from the starting point of a path 
+ * 
+ * @param path Path where to look
+ * @param dist Distance
+ * @return size_t 
+ */
 size_t getIdxFromDistance(mappi::objects::Path& path, float dist)
 {
   if(path.x.size() < 1)
@@ -123,6 +188,12 @@ size_t getIdxFromDistance(mappi::objects::Path& path, float dist)
   return path.x.size();
 }
 
+/**
+ * @brief Shift a given path by some distance
+ * 
+ * @param path Path to shift
+ * @param dist Distance to shift
+ */
 void shiftPlan(mappi::objects::Path& path, float dist)
 {
   size_t index = aux::getIdxFromDistance(path, dist);

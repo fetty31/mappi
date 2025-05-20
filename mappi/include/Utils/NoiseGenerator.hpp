@@ -33,21 +33,55 @@ class NoiseGenerator {
     // FUNCTIONS
 
     public:
+        /**
+         * @brief Construct a new Noise Generator object
+         * 
+         */
         NoiseGenerator();
 
+        /**
+         * @brief Configure the Noise Generator
+         * 
+         * @param cfg Configuration struct
+         * @param is_holonomic Whether the used motion model is holonomic. 
+         */
         void configure(mappi::config::Noise& cfg, bool is_holonomic);
 
+        /**
+         * @brief Stop the noise generating thread
+         * 
+         */
         void shutdown();
 
+        /**
+         * @brief Reset the Noise Generator
+         * 
+         * @param cfg New configuration struct
+         * @param is_holonomic New holonomic flag
+         */
         void reset(mappi::config::Noise cfg, bool is_holonomic);
 
+        /**
+         * @brief Get the newly computed controls
+         * 
+         * @param state Current state
+         * @param ctrl_seq Control sequence
+         */
         void getControls(mappi::objects::State& state, 
                         mappi::objects::ControlSequence& ctrl_seq);
 
     private:
-
+        
+        /**
+         * @brief Start the noise generating thread
+         * 
+         */
         void noiseThread();
-
+        
+        /**
+         * @brief Generate control noise
+         * 
+         */
         void generateNoise();
 
 };

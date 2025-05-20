@@ -11,17 +11,72 @@ class CubicBSpline : public BaseSpline<T> {
     private:
         std::vector<T> knotVector_;
 
+        /**
+         * @brief Initializing function
+         * 
+         */
         void initialize() override;
 
+        /**
+         * @brief Find knot span
+         * 
+         * @param n 
+         * @param u 
+         * @return const size_t 
+         */
         const size_t findKnotSpan(const size_t n, const T u);
+
+        /**
+         * @brief B-spline basis function
+         * 
+         * @param i 
+         * @param p 
+         * @param u 
+         * @return const T 
+         */
         const T basisFunction(const size_t i, const size_t p, const T u);
+        
+        /**
+         * @brief B-spline derivative basis function
+         * 
+         * @param i 
+         * @param p 
+         * @param u 
+         * @param d_order 
+         * @return const T 
+         */
         const T basisFunctionDerivative(const size_t i, const size_t p, const T u, const size_t d_order);
 
     public:
+        /**
+         * @brief Construct a new Cubic B Spline object
+         * 
+         */
         CubicBSpline();
+
+        /**
+         * @brief Construct a new Cubic B Spline object
+         * 
+         * @param control_points 
+         */
         CubicBSpline(const std::vector<std::vector<T>>& control_points);
 
+         /**
+         * @brief Evaluate spline 
+         * 
+         * @param u Point where to eval
+         * @param d_order Derivative order
+         * @return const std::vector<T> 
+         */
         const std::vector<T> evaluate(const T u, const size_t d_order) override;
+
+        /**
+         * @brief Evaluate spline at multiple points
+         * 
+         * @param u_vec Points where to eval
+         * @param d_order Derivative order
+         * @return const std::vector<std::vector<T>> 
+         */
         const std::vector<std::vector<T>> evaluate(const std::vector<T> u_vec, const size_t d_order) override;
 };
 

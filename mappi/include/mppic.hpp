@@ -32,14 +32,14 @@ namespace mappi {
 class MPPIc {
 
     /* Description:
-        - should be responsible for:
+        - is responsible for:
             . Compute noise trajectories (from random controls -> integrate states)
             . Evaluate costs for each trajectory --> choose optimal
             . Return "optimal" control sequence
-        - should own:
-            . critics manager
+        - owns:
+            . critics manager (To-Do)
             . physical model obj
-        - should have acces to:
+        - has acces to:
             . costmap (to pass to obstacle critic, at least)
     */
 
@@ -79,47 +79,170 @@ class MPPIc {
     // FUNCTIONS
 
     public:
+        /**
+         * @brief Construct a new Model Predictive Path Integral controller (MPPIc) object
+         * 
+         */
         MPPIc();
         
+        /**
+         * @brief Configure MPPIc object. 
+         * 
+         * @param cfg Configuration struct
+         * @param costmap Pointer to costmap object
+         */
         void configure(config::MPPIc&,
                         mappi::shared_ptr<costmap_2d::Costmap2DROS>&);
-
+        
+        /**
+         * @brief Shutdown MPPIc. 
+         *
+         * Shuts down the noise generation object
+         * 
+         */
         void shutdown();
-
+        
+        /**
+         * @brief Set the config object
+         * 
+         */
         void setConfig(config::MPPIc&);
-
+        
+        /**
+         * @brief Reset MPPIc
+         * 
+         * Resets all time-dependant objects/variables. That is resetting
+         * the current state, the computed trajectory, the last control sequence,
+         * the noise generator object, the computed costs and the control sequence buffer.
+         * 
+         */
         void reset();
-        void resetControls();
 
+        /**
+         * @brief Reset control variables
+         *
+         * Resets only the control variables. That is resetting 
+         * the last control sequence as well as the control sequence buffer.
+         * 
+         */
+        void resetControls();
+        
+        /**
+         * @brief Get the output control commands
+         * 
+         * @param odom Current robot odometry
+         * @param plan Planned trajectory
+         * @return objects::Control 
+         */
         objects::Control getControl(const objects::Odometry2d& odom, 
                                     const objects::Path& plan);
         
+        /**
+         * @brief Whether the MPPIc motion model is holonomic or not
+         * 
+         * @return true 
+         * @return false 
+         */
         bool isHolonomic();
-
+        
+        /**
+         * @brief Get the candidate trajectories
+         * 
+         * @return objects::Trajectory 
+         */
         objects::Trajectory getCandidateTrajectories();
+
+        /**
+         * @brief Get the optimal trajectory
+         * 
+         * @return objects::Trajectory 
+         */
         objects::Trajectory getOptimalTrajectory();
+
+        /**
+         * @brief Get the current plan object
+         * 
+         * @return objects::Path 
+         */
         objects::Path       getCurrentPlan();
+
+        /**
+         * @brief Get the current odometry
+         * 
+         * @return objects::Odometry2d 
+         */
         objects::Odometry2d getOdometry();
 
     private:
-
+        
+        /**
+         * @brief Predict the next trajectories.
+         *
+         * Performs all iterations of the MPPI algorithm calling:
+         *      1. MPPIc::generateNoisedTrajectories()
+         *      2. MPPIc::evalTrajectories()
+         *      3. MPPIc::optimizeControlSeq()
+         * 
+         * @param failed Result of the MPPI algorithm (true: optimal found / false: all trajectories failed)
+         */
         void predict(bool &failed);
 
+        /**
+         * @brief Performs fallback strategy when MPPIc::predict() has failed
+         * 
+         * @param failed Result of the last MPPI step
+         * @return true 
+         * @return false 
+         */
         bool fallback(bool &failed);
-
+        
+        /**
+         * @brief Integrate new trajectories with newly computed control inputs from the noise generator
+         * 
+         */
         void generateNoisedTrajectories();
-
+        
+        /**
+         * @brief Compute the new trajectories score based on the active critics
+         * 
+         * @param failed Whether all trajectories collide with some object
+         */
         void evalTrajectories(bool &failed);
 
+        /**
+         * @brief Compute optimal control sequence (Path Integral optimal equation) 
+         * 
+         */
         void optimizeControlSeq();
 
+        /**
+         * @brief Shifts the last computed control sequence by one 
+         * 
+         */
         void shiftControlSeq();
-
+        
+        /**
+         * @brief Integrate new state inputs through the motion model
+         * 
+         * @param st Updated state with newly computed control inputs
+         * @param traj Output trajectories
+         */
         void updateState(objects::State&,
                         objects::Trajectory&);
-
+        
+        /**
+         * @brief Apply control variables max/min boundaries and motion constraints (if any)
+         * 
+         */
         void applyControlConstraints(objects::ControlSequence&);
-
+        
+        /**
+         * @brief Set the plan free space
+         * 
+         * Checks the costmap value of each point of the current plan and fills the free variable.
+         * (This is only used by PathFollow and PathDist critics)
+         * 
+         */
         void setPlanFreeSpace();
 
 };

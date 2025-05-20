@@ -14,6 +14,12 @@
 
 namespace mappi::filters {
 
+/**
+* @brief Performs one step of the Quadratic Savitzky-Golay filter with window size of 5
+* 
+* @param ctrl_seq Control sequence to filter
+* @param ctrl_history Buffer of former controls
+*/
 void savitskyGolayFilter( mappi::objects::ControlSequence& ctrl_seq,
                           std::array<mappi::objects::Control, 2> & ctrl_history)
 {
@@ -98,6 +104,12 @@ void savitskyGolayFilter( mappi::objects::ControlSequence& ctrl_seq,
 
 }
 
+/**
+ * @brief Performs one step of the Quadratic Savitzky-Golay filter with window size of 9
+ * 
+ * @param ctrl_seq Control sequence to filter
+ * @param ctrl_history Buffer of former controls
+ */
 void savitskyGolayFilter( mappi::objects::ControlSequence& ctrl_seq,
                           std::array<mappi::objects::Control, 4> & ctrl_history)
 {
@@ -258,6 +270,13 @@ void savitskyGolayFilter( mappi::objects::ControlSequence& ctrl_seq,
 
 }
 
+/**
+ * @brief Computes one step of low pass filter
+ * 
+ * @tparam T 
+ * @param input 
+ * @return T 
+ */
 template<typename T>
 T lowPassFilter(T input)
 {
@@ -284,6 +303,17 @@ T lowPassFilter(T input)
   return output += (input-output)*ePow;
 }
 
+/**
+ * @brief Computes one step of low pass filter on 3D signal
+ * 
+ * @tparam T 
+ * @param input_0 
+ * @param input_1 
+ * @param input_2 
+ * @param output_0 
+ * @param output_1 
+ * @param output_2 
+ */
 template<typename T>
 void lowPassFilter(T input_0, T input_1, T input_2,
                   T& output_0, T& output_1, T& output_2)
