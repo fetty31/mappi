@@ -298,17 +298,16 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
     aux::shiftPlan(local_plan_, dist_shift_);
     
     // (optional) Clear costmaps
-
-    // static std_srvs::Empty srv;
-    // if (costmap_client_.call(srv))
-    // {
-    //     ROS_INFO("NANO_MPPIC:: Resetting costmaps");
-    // }
-    // else
-    // {
-    //     ROS_ERROR("NANO_MPPIC:: Failed to call service ~clear_costmaps");
-    // }
-
+    static std_srvs::Empty srv;
+    if (costmap_client_.call(srv))
+    {
+        ROS_INFO("NANO_MPPIC:: Resetting costmaps");
+        ros::Duration(0.1).sleep(); // wait until costmap is reset (avoid checking costmap pointer when is empty)
+    }
+    else
+    {
+        ROS_ERROR("NANO_MPPIC:: Failed to call service ~clear_costmaps");
+    }
 
     // Publish received global plan
     static nav_msgs::Path path_msg;
