@@ -438,10 +438,49 @@ geometry_msgs::PoseStamped NavFnWrapper::chooseGoalByDistance(mappi::objects::Pa
         N--;
     }
 
-    std::cout << "NAVFN_WRAPPER:: goal chosen: " << N << std::endl;
+    // Check if chosen goal is in free space
+    if(not this->isInCollision(costmap_->getCost(mx, my))){
+        chosen_goal.pose.position.x = goals.x(N);
+        chosen_goal.pose.position.y = goals.y(N);
+        return chosen_goal;
+    }
 
-    chosen_goal.pose.position.x = goals.x(N);
-    chosen_goal.pose.position.y = goals.y(N);
+    // If goal is in collision, create perpendicular virtual goals
+    std::vector<float> p_points = mappi::aux::linspace(0.0f, 4.0f, 15); // points to check (perpendicular to the path)
+
+    float yaw = std::atan2( goals.y(N)-goals.y(N-1), goals.x(N)-goals.x(N-1) );
+    float xN = goals.x(N);
+    float yN = goals.y(N);
+
+    float x,y;
+    bool found = false;
+    for(int i=0; i < p_points.size(); i++){
+        x = xN - p_points[i]*sin(yaw);
+        y = yN + p_points[i]*cos(yaw);
+        
+        costmap_->worldToMap(x, y, mx, my);
+        if(not this->isInCollision(costmap_->getCost(mx, my))){
+            found = true;
+            break;
+        }
+
+        x = xN + p_points[i]*sin(yaw);
+        y = yN - p_points[i]*cos(yaw);
+        
+        costmap_->worldToMap(x, y, mx, my);
+        if(not this->isInCollision(costmap_->getCost(mx, my))){
+            found = true;
+            break;
+        }
+    }
+
+    if(found){
+        chosen_goal.pose.position.x = x;
+        chosen_goal.pose.position.y = y;
+    }else{
+        chosen_goal.pose.position.x = goals.x(N);
+        chosen_goal.pose.position.y = goals.y(N);
+    }
 
     return chosen_goal;
 }

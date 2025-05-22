@@ -302,7 +302,7 @@ bool MPPIcROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& global_pla
     if (costmap_client_.call(srv))
     {
         ROS_INFO("NANO_MPPIC:: Resetting costmaps");
-        ros::Duration(0.1).sleep(); // wait until costmap is reset (avoid checking costmap pointer when is empty)
+        ros::Duration(0.05).sleep(); // wait until costmap is reset (avoid checking costmap pointer when is empty)
     }
     else
     {
