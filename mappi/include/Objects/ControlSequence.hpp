@@ -16,6 +16,11 @@ struct ControlSequence
   xt::xtensor<float, 1> vy;
   xt::xtensor<float, 1> wz;
 
+  /**
+   * @brief Resets the control sequence
+   * 
+   * @param time_steps New horizon length (prediction horizon)
+   */
   void reset(unsigned int time_steps)
   {
     vx = xt::zeros<float>({time_steps});

@@ -100,6 +100,10 @@ struct MPPIc
     float temperature;
     float gamma;
 
+    /**
+     * @brief Aux. function to print out all set parameters
+     * 
+     */
     void print_out();
 };
 

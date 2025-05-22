@@ -44,32 +44,112 @@ class Visualizer {
 
     public:
 
+        /**
+         * @brief Construct a new Visualizer object
+         * 
+         * @param mppic Pointer to MPPI controller
+         * @param nh_ptr Pointer to ROS node handle
+         */
         Visualizer(MPPIc* mppic, ros::NodeHandle* nh_ptr);
+
+        /**
+         * @brief Destroy the Visualizer object
+         * 
+         */
         ~Visualizer();
 
+        /**
+         * @brief Start visualizing thread
+         * 
+         */
         void startThread();
+
+        /**
+         * @brief Stop visualizing thread
+         * 
+         */
         void stopThread();
+
+        /**
+         * @brief Publish visualization topics
+         * 
+         */
         void publish();
 
     private:
 
+        /**
+         * @brief Publish thread
+         * 
+         */
         void publishThread();
 
+        /**
+         * @brief Fill ROS marker array msg from sampled trajectories
+         * 
+         * @param trajectories Sampled trajectories
+         * @param batch_stride Batch size stride for avoiding too much overhead
+         * @param time_stride Horizon length stride for avoiding too much overhead
+         * @param msg Output ROS message
+         */
         void fillMarkermsg(const objects::Trajectory& trajectories,
                             const int &batch_stride,
                             const int &time_stride,
                             visualization_msgs::MarkerArray* msg);
+
+        /**
+        * @brief Fill ROS point cloud msg from sampled trajectories
+        * 
+        * @param trajectories Sampled trajectories
+        * @param batch_stride Batch size stride for avoiding too much overhead
+        * @param time_stride Horizon length stride for avoiding too much overhead
+        * @param msg Output ROS message
+        */
         void fillPointCloudmsg(const objects::Trajectory& trajectories,
                                 const int &batch_stride,
                                 const int &time_stride,
                                 sensor_msgs::PointCloud2* msg);
-
+        
+        /**
+         * @brief Get the marker array msg
+         * 
+         * @param msg Output ROS message
+         * @return true 
+         * @return false 
+         */
         bool getMarkerTrajectories(visualization_msgs::MarkerArray* msg);
+
+        /**
+         * @brief Get the marker array msg filled only with the optimal trajectory
+         * 
+         * @param msg Output ROS message
+         * @return true 
+         * @return false 
+         */
         bool getMarkerOptimalTrajectory(visualization_msgs::MarkerArray* msg);
 
+        /**
+         * @brief Get the point cloud msg
+         * 
+         * @param msg Output ROS message
+         * @return true 
+         * @return false 
+         */
         bool getPointCloudTrajectories(sensor_msgs::PointCloud2* msg);
-        bool getPointCloudOptimalTrajectory(sensor_msgs::PointCloud2* msg);
 
+        /**
+         * @brief Get the point cloud msg filled only with the optimal trajectory
+         * 
+         * @param msg Output ROS message
+         * @return true 
+         * @return false 
+         */
+        bool getPointCloudOptimalTrajectory(sensor_msgs::PointCloud2* msg);
+        
+        /**
+         * @brief Reset visualizer object
+         * 
+         */
         void reset();
 
 };

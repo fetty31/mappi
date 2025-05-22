@@ -29,24 +29,59 @@ class Critic {
     // FUNCTIONS
 
     public:
+        /**
+         * @brief Construct a new Critic object
+         * 
+         */
         Critic() = default;
 
+        /**
+         * @brief Destroy the Critic object
+         * 
+         */
         virtual ~Critic() {delete costmap_ptr_;};
 
+        /**
+         * @brief Configure the Critic
+         * 
+         * @param name Name of the critic
+         * @param costmap_ros Costmap 2D object
+         */
         virtual void configure(std::string name, mappi::shared_ptr<costmap_2d::Costmap2DROS>& costmap_ros){
             name_ = name;
             costmap_ros_ptr_ = costmap_ros;
             costmap_ptr_ = costmap_ros->getCostmap();
         }
 
+        /**
+         * @brief Score the sampled trajectories
+         * 
+         * @param states Current states
+         * @param trajectories Sampled trajectories
+         * @param plan Reference path
+         * @param costs Output cost for each trajectory
+         * @param fail_flag Output fail flag. True if all trajectories collide (or are unfeasible) 
+         */
         virtual void score(mappi::objects::State&,
                             mappi::objects::Trajectory&,
                             mappi::objects::Path&,
                             xt::xtensor<float,1>&,
                             bool& ) = 0;
-
+        
+        /**
+         * @brief Get the name of the critic
+         * 
+         * @return std::string 
+         */
         std::string getName(){ return name_; }
-    
+        
+        /**
+         * @brief Get the costmap cost at specified point
+         * 
+         * @param x X coordinate [m]
+         * @param y Y coordinate [m]
+         * @return unsigned char 
+         */
         unsigned char costAtPose(float x, float y){
             
             unique_lock lock(*(costmap_ptr_->getMutex()));
@@ -58,6 +93,14 @@ class Critic {
             return costmap_ptr_->getCost(x_i, y_i);
         }
 
+        /**
+         * @brief Get the costmap cost at the specified 2D pose. Takes into account the robot's footprint.
+         * 
+         * @param x X coordinate [m]
+         * @param y Y coordinate [m]
+         * @param theta Yaw angle [rad]
+         * @return unsigned char 
+         */
         unsigned char costAtPose(float x, float y, float theta){
 
             unique_lock lock(*(costmap_ptr_->getMutex()));
@@ -138,6 +181,13 @@ class Critic {
             return output_cost;
         }
 
+        /**
+         * @brief Check if a cost value is in collision
+         * 
+         * @param cost Costmap cost [0-255]
+         * @return true 
+         * @return false 
+         */
         bool isInCollision(unsigned char cost){
             bool is_tracking_unkown = 
                 costmap_ros_ptr_->getLayeredCostmap()->isTrackingUnknown();

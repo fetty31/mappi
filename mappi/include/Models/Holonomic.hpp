@@ -10,9 +10,19 @@ class Holonomic : public MotionModel {
     // FUNCTIONS
 
     public:
-
+        /**
+         * @brief Construct a new Holonomic object
+         * 
+         * @param dt 
+         */
         Holonomic(float dt) : MotionModel(dt) {};
 
+        /**
+         * @brief Whether the motion model is holonomic or not
+         * 
+         * @return true 
+         * @return false 
+         */
         bool isHolonomic() override { return true; }
 
 };

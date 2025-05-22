@@ -16,20 +16,44 @@ class BicycleKin : public MotionModel {
     // FUNCTIONS
 
     public:
+        /**
+         * @brief Construct a new Bicycle Kin object
+         * 
+         * @param config 
+         * @param dt 
+         */
         explicit BicycleKin(mappi::config::BicycleKinModel& config, 
                             float dt) : MotionModel(dt) 
         {
             cfg_ = config;
         }
 
+        /**
+         * @brief Configure the Bicycle Kin model
+         * 
+         * @param config Configuration object
+         * @param dt Sampling time [s]
+         */
         void setConfig(mappi::config::BicycleKinModel& config, float dt)
         {
             MotionModel::setConfig(dt);
             cfg_ = config;
         }
 
+        /**
+         * @brief Whether the motion model is holonomic or not
+         * 
+         * @return true 
+         * @return false 
+         */
         bool isHolonomic() override { return false; }
 
+        /**
+         * @brief Integrate (predict) all sampled trajectories knowing the new computed states
+         * 
+         * @param st Current state
+         * @param traj Output trajectories 
+         */
         void integrate(mappi::objects::State& st, 
                     mappi::objects::Trajectory& traj) override 
         {

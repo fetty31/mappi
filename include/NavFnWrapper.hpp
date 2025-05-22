@@ -20,36 +20,135 @@
 class NavFnWrapper {
 
     public:
+        /**
+         * @brief Construct a new Nav Fn Wrapper object
+         * 
+         */
         NavFnWrapper();
+
+        /**
+         * @brief Construct a new Nav Fn Wrapper object
+         * 
+         * @param name 
+         * @param costmap_ros 
+         */
         NavFnWrapper(std::string name, mappi::shared_ptr<costmap_2d::Costmap2DROS>&);
+
+        /**
+         * @brief Destroy the Nav Fn Wrapper object
+         * 
+         */
         ~NavFnWrapper();
 
+        /**
+         * @brief Configure Nav Fn Wrapper object
+         * 
+         * @param name 
+         * @param costmap_ros 
+         */
         void configure(std::string name, mappi::shared_ptr<costmap_2d::Costmap2DROS>&);
 
+        /**
+         * @brief Get the output plan
+         * 
+         * @param odom Current robot odometry
+         * @param goals High level plan (global plan)
+         * @param out_plan Output plan
+         * @return true 
+         * @return false 
+         */
         bool getPlan(mappi::objects::Odometry2d odom, 
                     mappi::objects::Path& goals,
                     mappi::objects::Path& out_plan);
-
+        
+        /**
+         * @brief Compute new plan
+         * 
+         * @param start 
+         * @param goal 
+         * @param plan 
+         * @return true 
+         * @return false 
+         */
         bool makePlan(const geometry_msgs::PoseStamped& start, 
                         const geometry_msgs::PoseStamped& goal, 
                         std::vector<geometry_msgs::PoseStamped>& plan);
-
+        
+        /**
+         * @brief Compute new plan with given goal tolerance
+         * 
+         * @param start 
+         * @param goal 
+         * @param tolerance 
+         * @param plan 
+         * @return true 
+         * @return false 
+         */
         bool makePlan(const geometry_msgs::PoseStamped& start, 
                         const geometry_msgs::PoseStamped& goal, 
                         double tolerance, std::vector<geometry_msgs::PoseStamped>& plan);
-
+        
+        /**
+         * @brief Compute point potential
+         * 
+         * @param world_point 
+         * @return true 
+         * @return false 
+         */
         bool computePotential(const geometry_msgs::Point& world_point);
 
+        /**
+         * @brief Get the Plan From Potential object
+         * 
+         * @param goal 
+         * @param plan 
+         * @return true 
+         * @return false 
+         */
         bool getPlanFromPotential(const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan);
 
+        /**
+         * @brief Get the Point Potential object
+         * 
+         * @param world_point 
+         * @return double 
+         */
         double getPointPotential(const geometry_msgs::Point& world_point);
 
+        /**
+         * @brief Check if potential is valid
+         * 
+         * @param world_point 
+         * @return true 
+         * @return false 
+         */
         bool validPointPotential(const geometry_msgs::Point& world_point);
-
+        
+        /**
+         * @brief Check if potential is valid for given tolerance
+         * 
+         * @param world_point 
+         * @param tolerance 
+         * @return true 
+         * @return false 
+         */
         bool validPointPotential(const geometry_msgs::Point& world_point, double tolerance);
-
+        
+        /**
+         * @brief Get the current tolerance
+         * 
+         * @return double 
+         */
         double getTolerance();
-
+        
+        /**
+         * @brief Check if we should replan or not
+         * 
+         * @param plan 
+         * @param goal 
+         * @return true 
+         * @return false 
+         */
         bool timeToPlan(std::vector<geometry_msgs::PoseStamped>& plan,
                         geometry_msgs::PoseStamped& goal);
   
@@ -69,27 +168,91 @@ class NavFnWrapper {
         ros::Publisher start_pub_;
 
     private:
+        /**
+         * @brief Compute squared distance
+         * 
+         * @param p1 
+         * @param p2 
+         * @return double 
+         */
         inline double sq_distance(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2){
             double dx = p1.pose.position.x - p2.pose.position.x;
             double dy = p1.pose.position.y - p2.pose.position.y;
             return dx*dx +dy*dy;
         }
 
+        /**
+         * @brief Choose a goal from the global plan
+         * 
+         * @param goals Global plan
+         * @return geometry_msgs::PoseStamped 
+         */
         geometry_msgs::PoseStamped chooseGoal(mappi::objects::Path&);
+
+        /**
+         * @brief Choose a goal from the global plan by distance
+         * 
+         * @param goals Global plan
+         * @return geometry_msgs::PoseStamped 
+         */
         geometry_msgs::PoseStamped chooseGoalByDistance(mappi::objects::Path&);
 
+        /**
+         * @brief Choose starting point
+         * 
+         * @param mode 
+         * @return geometry_msgs::PoseStamped 
+         */
         geometry_msgs::PoseStamped chooseStart(mappi::objects::Odometry2d&, int mode=0);
 
+        /**
+         * @brief Fill robot's footprint
+         * 
+         * @param odom 
+         */
         void fillRobotFootprint(mappi::objects::Odometry2d& odom);
 
+        /**
+         * @brief Transform from costmap index to world coordinates
+         * 
+         * @param mx 
+         * @param my 
+         * @param wx 
+         * @param wy 
+         */
         void mapToWorld(double mx, double my, double& wx, double& wy);
 
+        /**
+         * @brief Clear robot cell from costmap
+         * 
+         * @param mx 
+         * @param my 
+         */
         void clearRobotCell(unsigned int mx, unsigned int my);
 
+        /**
+         * @brief Fill robot cell from costmap
+         * 
+         * @param mx 
+         * @param my 
+         */
         void fillRobotCell(unsigned int mx, unsigned int my);
 
+        /**
+         * @brief Check if given cost is in collision
+         * 
+         * @param cost 
+         * @return true 
+         * @return false 
+         */
         bool isInCollision(unsigned char cost);
 
+        /**
+         * @brief Publish start and goal points
+         * 
+         * @param start 
+         * @param goal 
+         */
         void publishStartAndGoal(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal);
 
         double default_tolerance_;

@@ -12,6 +12,10 @@ struct Odometry2d
     float steering;
     float stamp;
 
+    /**
+     * @brief Construct a new Odometry 2d object
+     * 
+     */
     Odometry2d() : x(0.0), y(0.0), yaw(0.0),
                     vx(0.0), vy(0.0), wz(0.0), 
                     steering(0.0), stamp(0.0) {}
@@ -29,6 +33,12 @@ struct State
 
   Odometry2d odom;
 
+  /**
+   * @brief Resets the state
+   * 
+   * @param batch_size New batch dimension
+   * @param time_steps New horizon length (prediction horizon)
+   */
   void reset(unsigned int batch_size, unsigned int time_steps)
   {
     vx = xt::zeros<float>({batch_size, time_steps});

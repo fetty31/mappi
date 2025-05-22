@@ -38,7 +38,7 @@ class MPPIc {
             . Return "optimal" control sequence
         - owns:
             . critics manager (To-Do)
-            . physical model obj
+            . motion model obj
         - has acces to:
             . costmap (to pass to obstacle critic, at least)
     */

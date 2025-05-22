@@ -11,6 +11,12 @@ struct Trajectory
     xt::xtensor<float, 2> y;
     xt::xtensor<float, 2> yaw;
 
+    /**
+     * @brief Resets trajectory
+     * 
+     * @param batch_size New batch dimension
+     * @param time_steps New horizon length (prediction horizon)
+     */
     void reset(unsigned int batch_size, unsigned int time_steps)
     {
         x = xt::zeros<float>({batch_size, time_steps});
@@ -27,6 +33,11 @@ struct Path
     xt::xtensor<float, 1> yaw;
     xt::xtensor<bool, 1> free;
 
+    /**
+     * @brief Resets path
+     * 
+     * @param size New path length
+     */
     void reset(unsigned int size)
     {
         x = xt::zeros<float>({size});

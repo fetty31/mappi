@@ -19,6 +19,12 @@
 
 namespace mappi::ros_utils {
 
+/**
+ * @brief Change type from ROS path to mappi path
+ * 
+ * @param in_path 
+ * @param out_path 
+ */
 void ros2mppic(const std::vector<geometry_msgs::PoseStamped>& in_path, 
                 mappi::objects::Path& out_path)
 {
@@ -31,6 +37,13 @@ void ros2mppic(const std::vector<geometry_msgs::PoseStamped>& in_path,
     }
 }
 
+/**
+ * @brief Change type from ROS path to mappi path performing some transformation (change of frame)
+ * 
+ * @param in_path 
+ * @param out_path 
+ * @param transform 
+ */
 void ros2mppic(const std::vector<geometry_msgs::PoseStamped>& in_path, 
                 mappi::objects::Path& out_path,
                 geometry_msgs::TransformStamped& transform)
@@ -46,6 +59,12 @@ void ros2mppic(const std::vector<geometry_msgs::PoseStamped>& in_path,
     }
 }
 
+/**
+ * @brief Change type from ROS pose to mappi odom2D
+ * 
+ * @param in_pose 
+ * @param out_pose 
+ */
 void ros2mppic(const geometry_msgs::PoseStamped& in_pose, 
                 mappi::objects::Odometry2d& out_pose)
 {
@@ -55,6 +74,12 @@ void ros2mppic(const geometry_msgs::PoseStamped& in_pose,
     out_pose.stamp = static_cast<float>(in_pose.header.stamp.toSec());
 }
 
+/**
+ * @brief Change type from ROS odometry to mappi odom2D
+ * 
+ * @param in_odom 
+ * @param out_odom 
+ */
 void ros2mppic(const nav_msgs::Odometry& in_odom,
                 mappi::objects::Odometry2d& out_odom)
 {
@@ -69,6 +94,12 @@ void ros2mppic(const nav_msgs::Odometry& in_odom,
     out_odom.stamp = static_cast<float>(in_odom.header.stamp.toSec());
 }
 
+/**
+ * @brief Change type from mappi path to vector of ROS poses
+ * 
+ * @param in_path 
+ * @param out_path 
+ */
 void mppic2ros(const mappi::objects::Path& in_path, 
                 std::vector<geometry_msgs::PoseStamped>& out_path)
 {
@@ -87,6 +118,12 @@ void mppic2ros(const mappi::objects::Path& in_path,
     }
 }
 
+/**
+ * @brief Change type from mappi path to ROS nav path
+ * 
+ * @param in_path 
+ * @param out_path 
+ */
 void mppic2ros(const mappi::objects::Path& in_path, 
                 nav_msgs::Path& out_path)
 {
@@ -106,6 +143,13 @@ void mppic2ros(const mappi::objects::Path& in_path,
     }
 }
 
+/**
+ * @brief Change type from mappi path to ROS nav path including frame_id arg
+ * 
+ * @param in_path 
+ * @param out_path 
+ * @param frame_id 
+ */
 void mppic2ros(const mappi::objects::Path& in_path, 
                 nav_msgs::Path& out_path,
                 std::string frame_id)
@@ -132,6 +176,14 @@ void mppic2ros(const mappi::objects::Path& in_path,
     out_path.header.stamp = ros::Time::now();
 }
 
+/**
+ * @brief Create a Pose object from 3D position
+ * 
+ * @param x 
+ * @param y 
+ * @param z 
+ * @return geometry_msgs::Pose 
+ */
 inline geometry_msgs::Pose createPose(double x, double y, double z)
 {
     geometry_msgs::Pose pose;
@@ -145,6 +197,15 @@ inline geometry_msgs::Pose createPose(double x, double y, double z)
     return pose;
 }
 
+/**
+ * @brief Create a Pose object from 3D position and 2D orientation
+ * 
+ * @param x 
+ * @param y 
+ * @param z 
+ * @param yaw 
+ * @return geometry_msgs::Pose 
+ */
 inline geometry_msgs::Pose createPose(double x, double y, double z, double yaw)
 {
     geometry_msgs::Pose pose;
@@ -164,6 +225,14 @@ inline geometry_msgs::Pose createPose(double x, double y, double z, double yaw)
     return pose;
 }
 
+/**
+ * @brief Create a Scale object
+ * 
+ * @param x 
+ * @param y 
+ * @param z 
+ * @return geometry_msgs::Vector3 
+ */
 inline geometry_msgs::Vector3 createScale(double x, double y, double z)
 {
     geometry_msgs::Vector3 scale;
@@ -173,6 +242,15 @@ inline geometry_msgs::Vector3 createScale(double x, double y, double z)
     return scale;
 }
 
+/**
+ * @brief Create a Color object
+ * 
+ * @param r 
+ * @param g 
+ * @param b 
+ * @param a 
+ * @return std_msgs::ColorRGBA 
+ */
 inline std_msgs::ColorRGBA createColor(float r, float g, float b, float a)
 {
     std_msgs::ColorRGBA color;
@@ -183,6 +261,17 @@ inline std_msgs::ColorRGBA createColor(float r, float g, float b, float a)
     return color;
 }
 
+/**
+ * @brief Create a Marker object
+ * 
+ * @param id 
+ * @param pose 
+ * @param scale 
+ * @param color 
+ * @param frame_id 
+ * @param ns 
+ * @return visualization_msgs::Marker 
+ */
 inline visualization_msgs::Marker createMarker( 
     int id, const geometry_msgs::Pose & pose, const geometry_msgs::Vector3 & scale,
     const std_msgs::ColorRGBA & color, const std::string & frame_id, const std::string ns="mappi_traj")
@@ -202,6 +291,17 @@ inline visualization_msgs::Marker createMarker(
     return marker;
 }
 
+/**
+ * @brief Create a Arrow Marker object
+ * 
+ * @param id 
+ * @param pose 
+ * @param scale 
+ * @param color 
+ * @param frame_id 
+ * @param ns 
+ * @return visualization_msgs::Marker 
+ */
 inline visualization_msgs::Marker createArrowMarker( 
     int id, const geometry_msgs::Pose & pose, const geometry_msgs::Vector3 & scale,
     const std_msgs::ColorRGBA & color, const std::string & frame_id, const std::string ns="mappi_traj")

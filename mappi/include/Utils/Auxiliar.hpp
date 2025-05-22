@@ -30,7 +30,7 @@ auto normalize_angles(const T & angles)
 }
 
 /**
- * @brief Computes the shortes angular distance
+ * @brief Computes the shortest angular distance
  * 
  * @tparam F 
  * @tparam T 

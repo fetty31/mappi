@@ -69,27 +69,87 @@ class MPPIcROS : public nav_core::BaseLocalPlanner {
 
     public:
 
+        /**
+         * @brief Construct a new MPPIcROS object
+         * 
+         */
         MPPIcROS();
+
+        /**
+         * @brief Construct a new MPPIcROS object
+         * 
+         * @param name 
+         * @param tf 
+         * @param costmap_ros 
+         */
         MPPIcROS(std::string name, 
                         tf2_ros::Buffer* tf,
                         costmap_2d::Costmap2DROS* costmap_ros);
         
+        /**
+         * @brief Destroy the MPPIcROS object
+         * 
+         */
         ~MPPIcROS();
-
+        
+        /**
+         * @brief Initialize MPPIcROS object
+         * 
+         * @param name 
+         * @param tf 
+         * @param costmap_ros 
+         */
         void initialize(std::string name, 
                         tf2_ros::Buffer* tf,
                         costmap_2d::Costmap2DROS* costmap_ros) override;
-
+        
+        /**
+         * @brief Compute velocity commands from MPPI controller
+         * 
+         * @param cmd_vel Output velocity commands
+         * @return true 
+         * @return false 
+         */
         bool computeVelocityCommands(geometry_msgs::Twist& cmd_vel) override;
-
+        
+        /**
+         * @brief Set the global plan object
+         * 
+         * @param global_plan 
+         * @return true 
+         * @return false 
+         */
         bool setPlan(const std::vector<geometry_msgs::PoseStamped>& global_plan) override;
-
+        
+        /**
+         * @brief Check if the goal is reached
+         * 
+         * @return true 
+         * @return false 
+         */
         bool isGoalReached() override;
-
+        
+        /**
+         * @brief Check if MPPIcROS is initialized
+         * 
+         * @return true 
+         * @return false 
+         */
         bool is_initialized();
-
+        
+        /**
+         * @brief Process odometry message
+         * 
+         * @param msg 
+         */
         void odom_callback(const nav_msgs::Odometry::ConstPtr& msg);
-
+        
+        /**
+         * @brief Dynamic reconfigure callback
+         * 
+         * @param dyn_cfg 
+         * @param level 
+         */
         void reconfigure_callback(mappi::MPPIPlannerROSConfig &dyn_cfg, uint32_t level);
 
 };
