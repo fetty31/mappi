@@ -185,7 +185,7 @@ size_t getIdxFromDistance(mappi::objects::Path& path, float dist)
           return i;
   }
 
-  return path.x.size();
+  return path.x.size()-1;
 }
 
 /**

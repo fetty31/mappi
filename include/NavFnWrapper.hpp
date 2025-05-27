@@ -431,6 +431,12 @@ geometry_msgs::PoseStamped NavFnWrapper::chooseGoalByDistance(mappi::objects::Pa
     size_t N = mappi::aux::getIdxFromDistance(goals, lookahead_dist_);
     unsigned int mx, my;
 
+    std::cout << "NavFnWrapper:: indx from distance: " << N << std::endl;
+    std::cout << "Goal x: " << goals.x(N) << " y: " << goals.y(N) << std::endl;
+
+    for(int i=0; i < goals.x.size(); i++)
+        std::cout << "Goal idx:" << i << " x: " << goals.x(i) << " y: " << goals.y(i) << std::endl;
+
     // Search goals vector until the chosen goal is inside the local costmap
     while( (N > 0) && 
         (not costmap_->worldToMap(goals.x(N), goals.y(N), mx, my)) 
@@ -438,12 +444,18 @@ geometry_msgs::PoseStamped NavFnWrapper::chooseGoalByDistance(mappi::objects::Pa
         N--;
     }
 
+    std::cout << "NavFnWrapper:: indx from costmap: " << N << std::endl;
+    std::cout << "Goal x: " << goals.x(N) << " y: " << goals.y(N) << std::endl;
+
     // Check if chosen goal is in free space
     if(not this->isInCollision(costmap_->getCost(mx, my))){
         chosen_goal.pose.position.x = goals.x(N);
         chosen_goal.pose.position.y = goals.y(N);
         return chosen_goal;
     }
+
+    std::cout << "NavFnWrapper:: goal in collision: " << N << std::endl;
+    std::cout << "Goal x: " << goals.x(N) << " y: " << goals.y(N) << std::endl;
 
     // If goal is in collision, create perpendicular virtual goals
     std::vector<float> p_points = mappi::aux::linspace(0.0f, 4.0f, 15); // points to check (perpendicular to the path)
