@@ -1,3 +1,17 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   The Visualizer class is a visualization tool for publishing useful insights about MaPPI's outputs.
+ *   It owns a pointer to the MPPIc object, which uses to retrieve all data to visualize.
+ *   It can also work in a separate thread so that it doesn't block any process when preparing
+ *   the visualization messages (optional). 
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_VISUALIZER_HPP__
 #define __MAPPI_VISUALIZER_HPP__
 

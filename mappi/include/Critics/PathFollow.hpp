@@ -1,3 +1,14 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   Path Follow Critic. It prioritizes trajectories that have their last point closer to the reference path.
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_PATHFOLLOW_CRITIC_HPP__
 #define __MAPPI_PATHFOLLOW_CRITIC_HPP__
 

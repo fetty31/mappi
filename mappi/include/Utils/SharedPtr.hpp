@@ -1,3 +1,14 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   Shared Pointer template
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_shared_ptr_HPP__
 #define __MAPPI_shared_ptr_HPP__
 

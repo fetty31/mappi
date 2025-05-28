@@ -1,3 +1,14 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   Twirling Critic. It penalizes angular velocity (or steering rate) values far from its mean.
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_TWIRLING_CRITIC_HPP__
 #define __MAPPI_TWIRLING_CRITIC_HPP__
 

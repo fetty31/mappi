@@ -1,3 +1,14 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   Obstacles Critic. It penalizes trajectories using the costmap information.
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_OBSTACLE_CRITIC_HPP__
 #define __MAPPI_OBSTACLE_CRITIC_HPP__
 

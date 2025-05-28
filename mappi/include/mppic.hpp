@@ -1,3 +1,24 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   MPPI controller (MPPIc) main class.
+ *      - is responsible for:
+ *          . Computing noise trajectories (from random controls -> integrate states)
+ *          . Evaluating costs for each trajectory --> choose optimal
+ *          . Returning "optimal" control sequence
+ *      - owns:
+ *          . critics manager (To-Do)
+ *          . motion model obj
+ *          . noise generator obj
+ *      - has acces to:
+ *          . costmap (to pass to obstacle critic, at least)
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_HPP__
 #define __MAPPI_HPP__
 
@@ -30,18 +51,6 @@
 namespace mappi {
 
 class MPPIc {
-
-    /* Description:
-        - is responsible for:
-            . Compute noise trajectories (from random controls -> integrate states)
-            . Evaluate costs for each trajectory --> choose optimal
-            . Return "optimal" control sequence
-        - owns:
-            . critics manager (To-Do)
-            . motion model obj
-        - has acces to:
-            . costmap (to pass to obstacle critic, at least)
-    */
 
     // VARIABLES
 

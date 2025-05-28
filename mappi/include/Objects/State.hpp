@@ -1,3 +1,14 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   State and Odometry2D objects.
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_STATE_HPP__
 #define __MAPPI_STATE_HPP__
 

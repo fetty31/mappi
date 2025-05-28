@@ -1,3 +1,15 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   Wrapper class to the well-known NavFn global planner from ROS. It handles 
+ *   all interactions between the MaPPI controller and the planner.
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_NAVFN_WRAPPER_HPP__
 #define __MAPPI_NAVFN_WRAPPER_HPP__
 

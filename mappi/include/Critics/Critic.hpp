@@ -1,3 +1,14 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   Base class for the MPPI critics.
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_CRITIC_HPP__
 #define __MAPPI_CRITIC_HPP__
 

@@ -1,3 +1,15 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   MPPIcROS is the default class adhering to the pluginlib C++ standard.
+ *   It handles all the interaction between MaPPI controller and ROS move_base pipeline.
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_ROS_HPP__
 #define __MAPPI_ROS_HPP__
 

@@ -1,3 +1,20 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   Ackermann Motion Model. Control variables:
+ *          - vx: longitudinal velocity
+ *          - wz: yaw rate
+ *   Equations:
+ *      dx   = vx * cos(yaw)
+ *      dy   = vx * sin(yaw)
+ *      dyaw = w
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_ACKERMANN_MODEL_HPP__
 #define __MAPPI_ACKERMANN_MODEL_HPP__
 

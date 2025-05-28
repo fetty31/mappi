@@ -20,7 +20,7 @@
     </ol>
 </details>
 
-MaPPI is a lightweight **Model Predictive Path Integral (MPPI)** controller for autonomous navigation. It efficiently computes kinematically feasible trajectories by sampling control inputs and evaluating them based on multiple cost functions (critics). This controller is designed for **real-time performance**, **obstacle avoidance**, and **smooth motion planning**, making it ideal for **embedded systems and resource-constrained platforms**.  
+MaPPI is a lightweight **Model Predictive Path Integral (MPPI)** controller for autonomous navigation. It efficiently computes kinematically feasible trajectories by sampling control inputs and evaluating them based on multiple cost functions (critics). This controller is designed for **real-time performance**, **obstacle avoidance** and **smooth motion planning**, making it ideal for **embedded systems and resource-constrained platforms**.  
 
 ### **Distinctive Features**  
 ✅ **Kinematic Bicycle Model** available for vehicle-alike robots _(long. velocity + steering commands)_   
@@ -29,9 +29,25 @@ MaPPI is a lightweight **Model Predictive Path Integral (MPPI)** controller for 
 
 ---
 
+<div align="center">
+  <img src="docs/ona_born_mappi.gif" alt="Mappi at born"  width="800"/>
+  <small>
+  <p> <a href="https://www.vaivelogistics.com/">ONA</a> prototype navigating through El Born - Barcelona using MaPPI. </p>
+  </small>
+</div>
+<br/>
+
+<div align="center">
+  <img src="docs/demo_gz.gif" alt="Mappi at Gazebo"  width="800"/>
+  <small>
+  <p> Maneuverability of MaPPI at simulation. </p>
+  </small>
+</div>
+
 ## **Disclaimer**
 _This project is based on the [nav2](https://docs.nav2.org/) MPPI controller, originally developed by [Alex](https://github.com/artofnothingness) in [mppic](https://github.com/artofnothingness/mppic) and adapted by [Steve Macenski](https://github.com/SteveMacenski) for [nav2](https://docs.nav2.org/). If you plan to use `MaPPI` please make sure to give some love to [nav2](https://github.com/ros-navigation/navigation2) and [mppic](https://github.com/artofnothingness/mppic) projects, which greatly influenced this work._
 
+_`MaPPI` has been developed with the sole purpose of being able to use MPPI within ROS Noetic with different motion models than the ones offered in nav2. If you plan to use MPPI in ROS2 please use the official nav2 controller, which is a much better implementation (now optimized using Eigen)._
 ## **Installation**  
 
 ### **Dependencies**  

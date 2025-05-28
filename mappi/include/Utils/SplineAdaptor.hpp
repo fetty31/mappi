@@ -1,3 +1,14 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   B-spline class. Handles type conversion between MaPPI and Base Splines class.
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_SPLINE_ADAPTOR_HPP__
 #define __MAPPI_SPLINE_ADAPTOR_HPP__
 

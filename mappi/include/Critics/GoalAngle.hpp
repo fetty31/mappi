@@ -1,3 +1,14 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   Goal Angle Critic. It penalizes trajectories that have heading values far from the goal heading.
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_GOALANGLE_CRITIC_HPP__
 #define __MAPPI_GOALANGLE_CRITIC_HPP__
 

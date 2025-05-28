@@ -1,3 +1,14 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   Goal Critic. It penalizes trajectories far from the goal.
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_GOAL_CRITIC_HPP__
 #define __MAPPI_GOAL_CRITIC_HPP__
 

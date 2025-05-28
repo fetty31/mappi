@@ -1,3 +1,14 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   Base Spline class.
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_BASE_SPLINE_HPP__
 #define __MAPPI_BASE_SPLINE_HPP__
 

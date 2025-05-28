@@ -1,3 +1,24 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   Bicycle Kinematic Motion Model. Control variables:
+ *          - vx: longitudinal velocity
+ *          - wz: steering rate (steering velocity)
+ *   Equations:
+ *      dx   = vx * cos(yaw)
+ *      dy   = vx * sin(yaw)
+ *      dyaw = vx * tan(steering)/length
+ *      dsteering = wz
+ * where: 
+ *      - length == robot length
+ *      - steering == robot steering angle (at wheel reference)
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_BICYCLEKIN_MODEL_HPP__
 #define __MAPPI_BICYCLEKIN_MODEL_HPP__
 

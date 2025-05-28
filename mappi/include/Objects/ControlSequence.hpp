@@ -1,3 +1,14 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   Control Sequence and Control objects.
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_CONTROL_SEQUENCE_HPP__
 #define __MAPPI_CONTROL_SEQUENCE_HPP__
 

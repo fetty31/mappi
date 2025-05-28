@@ -1,3 +1,14 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   Forward Critic. It prioritizes going forward.
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_FORWARD_CRITIC_HPP__
 #define __MAPPI_FORWARD_CRITIC_HPP__
 

@@ -1,3 +1,14 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   Filtering functions.
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_FILTERS_HPP__
 #define __MAPPI_FILTERS_HPP__
 

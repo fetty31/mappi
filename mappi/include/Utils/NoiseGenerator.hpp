@@ -1,3 +1,14 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   Noise Generator class. It computes randomly (Gaussian) distributed control inputs in a seperate thread.
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_NOISE_GENERATOR_HPP__
 #define __MAPPI_NOISE_GENERATOR_HPP__
 

@@ -1,3 +1,21 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   Holonomic Motion Model. Control variables:
+ *          - vx: longitudinal velocity
+ *          - vy: lateral velocity
+ *          - wz: yaw rate
+ *   Equations:
+ *      dx   = vx * cos(yaw) - vy * sin(yaw)
+ *      dy   = vx * sin(yaw) + vy * cos(yaw)
+ *      dyaw = w
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_HOLONOMIC_MODEL_HPP__
 #define __MAPPI_HOLONOMIC_MODEL_HPP__
 

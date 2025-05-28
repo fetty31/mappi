@@ -1,3 +1,14 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   Cubic B-spline class.
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_CUBIC_BSPLINE_HPP__
 #define __MAPPI_CUBIC_BSPLINE_HPP__
 

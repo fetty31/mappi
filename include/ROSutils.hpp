@@ -1,3 +1,14 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   Useful auxiliar functions to transform ROS types to MaPPI's and viceversa. 
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #pragma once
 
 #include "mppic.hpp"

@@ -1,3 +1,19 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   Trajectory and Path objects. 
+ *
+ *   Here trajectory owns three tensors [x, y, yaw] of two dimensions, meaning
+ *   each trajectory tensor is composed of all the predicted values for each parallel batch for each time step of the prediction horizon.
+ *
+ *   Here a path object owns three vectors [x, y, yaw] of an specific length. 
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_TRAJECTORY_HPP__
 #define __MAPPI_TRAJECTORY_HPP__
 

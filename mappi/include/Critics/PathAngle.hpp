@@ -1,3 +1,15 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   Path Angle Critic. It penalizes trajectories comparing its heading angles with the
+ *   reference path heading angles.
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_PATHANGLE_CRITIC_HPP__
 #define __MAPPI_PATHANGLE_CRITIC_HPP__
 

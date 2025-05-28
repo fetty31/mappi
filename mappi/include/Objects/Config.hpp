@@ -1,3 +1,14 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   Configuration objects.
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_CONFIG_HPP__
 #define __MAPPI_CONFIG_HPP__
 

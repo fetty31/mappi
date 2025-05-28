@@ -1,3 +1,14 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   Auxiliar class to receive odom data.
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_ODOM_HELPER_HPP__
 #define __MAPPI_ODOM_HELPER_HPP__
 

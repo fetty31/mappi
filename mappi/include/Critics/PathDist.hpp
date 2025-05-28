@@ -1,3 +1,14 @@
+/*
+ * -----------------------------------------------------------------------------
+ * Author      : Oriol Martínez @fetty31
+ * Created     : 2025-01-02
+ * 
+ * Description :
+ *   Path Dist Critic. It penalizes trajectories comparing its distance w.r.t. the reference path.
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef __MAPPI_PATHDIST_CRITIC_HPP__
 #define __MAPPI_PATHDIST_CRITIC_HPP__
 
