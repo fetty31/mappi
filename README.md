@@ -123,7 +123,7 @@ sudo make install
 Clone the repository and build the package:  
 ```bash
 cd ~/catkin_ws/src
-git clone https://gitlab.iri.upc.edu/mobile_robotics/botnet_project/vaive/mappi.git
+git clone https://github.com/fetty31/mappi.git
 cd ..
 rosdep install --from-paths src --ignore-src -r -y
 catkin_make 
