@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
-<package format="2">
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
   <name>mappi</name>
   <version>0.0.0</version>
   <description>The mappi package</description>
@@ -12,49 +13,34 @@
   <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
   <license>TODO</license>
 
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>visualization_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>tf2</depend>
+  <depend>std_msgs</depend>
+  <depend>nav2_costmap_2d</depend>
+  <depend>nav2_common</depend>
+  <depend>nav2_ros_common</depend>
+  <depend>nav2_util</depend>
+  <depend>nav2_msgs</depend>
+  <depend>nav2_core</depend>
+  <depend>pluginlib</depend>
+
   <depend>dynamic_reconfigure</depend>
   <depend>std_srvs</depend>
 
-  <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>nav_msgs</build_depend>
-  <build_depend>std_msgs</build_depend>
-  <build_depend>visualization_msgs</build_depend>
-  <build_depend>geometry_msgs</build_depend>
-  <build_depend>sensor_msgs</build_depend>
-  <build_depend>tf2</build_depend>
-  <build_depend>costmap_2d</build_depend>
-  <build_depend>nav_core</build_depend>
-  <build_depend>pluginlib</build_depend>
-  <!-- <build_depend>navfn</build_depend> -->
-  
-  <build_export_depend>roscpp</build_export_depend>
-  <build_export_depend>nav_msgs</build_export_depend>
-  <build_export_depend>std_msgs</build_export_depend>
-  <build_export_depend>visualization_msgs</build_export_depend>
-  <build_export_depend>geometry_msgs</build_export_depend>
-  <build_export_depend>sensor_msgs</build_export_depend>
-  <build_export_depend>tf2</build_export_depend>
-  <build_export_depend>costmap_2d</build_export_depend>
-  <build_export_depend>nav_core</build_export_depend>
-  <build_export_depend>pluginlib</build_export_depend>
-  <!-- <build_export_depend>navfn</build_export_depend> -->
+  <exec_depend>nav2_bringup</exec_depend>
 
-  <exec_depend>roscpp</exec_depend>
-  <exec_depend>nav_msgs</exec_depend>
-  <exec_depend>std_msgs</exec_depend>
-  <exec_depend>visualization_msgs</exec_depend>
-  <exec_depend>geometry_msgs</exec_depend>
-  <exec_depend>sensor_msgs</exec_depend>
-  <exec_depend>tf2</exec_depend>
-  <exec_depend>costmap_2d</exec_depend>
-  <exec_depend>nav_core</exec_depend>
-  <exec_depend>pluginlib</exec_depend>
-  <!-- <exec_depend>navfn</exec_depend> -->
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
-    <!-- Other tools can request additional information be placed here -->
-    <nav_core plugin="${prefix}/mappi_plugin.xml" />
+    <build_type>ament_cmake</build_type>
+    <nav2_core plugin="${prefix}/mappi_plugin.xml" />
   </export>
 </package>

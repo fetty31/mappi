@@ -9,8 +9,8 @@
  * -----------------------------------------------------------------------------
  */
 
-#ifndef __MAPPI_ODOM_HELPER_HPP__
-#define __MAPPI_ODOM_HELPER_HPP__
+#ifndef __MAPPI_NAV2_CONTROLLER_ODOM_HELPER_HPP__
+#define __MAPPI_NAV2_CONTROLLER_ODOM_HELPER_HPP__
 
 #include <ros/ros.h>
 

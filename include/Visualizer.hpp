@@ -12,8 +12,8 @@
  * -----------------------------------------------------------------------------
  */
 
-#ifndef __MAPPI_VISUALIZER_HPP__
-#define __MAPPI_VISUALIZER_HPP__
+#ifndef __MAPPI_NAV2_CONTROLLER_VISUALIZER_HPP__
+#define __MAPPI_NAV2_CONTROLLER_VISUALIZER_HPP__
 
 #include <memory>
 #include <string>

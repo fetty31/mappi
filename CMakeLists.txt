@@ -1,7 +1,12 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.5)
 project(mappi)
 
 add_compile_options(-std=c++14)
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
 set(CMAKE_BUILD_TYPE "Release")
 
 # add_definitions(-DXTENSOR_ENABLE_XSIMD)
@@ -12,91 +17,101 @@ set(XTENSOR_USE_OPENMP 0)
 
 find_package(xtensor REQUIRED)
 
-find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  nav_msgs
-  geometry_msgs
-  sensor_msgs
-  std_msgs
-  visualization_msgs
-  dynamic_reconfigure
-  costmap_2d
-  nav_core
-  std_srvs
-  tf2
-)
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(std_srvs REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(nav2_core REQUIRED)
+find_package(nav2_common REQUIRED)
+find_package(nav2_costmap_2d REQUIRED)
+find_package(nav2_util REQUIRED)
+find_package(pluginlib REQUIRED)
+find_package(nav2_ros_common REQUIRED)
 
-# Check for Navfn planner
-find_package(navfn)
-if(navfn_FOUND)
-  add_compile_definitions(HAS_NAVFN)
-  message("INFO: navfn planner found!")
-else(navfn_FOUND)
-  message("ERROR: navfn planner could not be found.")
-endif()
-
-generate_dynamic_reconfigure_options(
-  cfg/MaPPI.cfg
-)
-
-catkin_package(
- INCLUDE_DIRS include mappi/include
- LIBRARIES ${PROJECT_NAME}_local_planner 
- CATKIN_DEPENDS roscpp nav_msgs tf2 costmap_2d geometry_msgs nav_core visualization_msgs std_msgs sensor_msgs std_srvs
-#  DEPENDS XTENSOR
-)
+nav2_package()
 
 include_directories(
   include
   mappi/include
-  ${catkin_INCLUDE_DIRS}
   ${xtensor_INCLUDE_DIRS}
 )
 
-if(navfn_FOUND)
-include_directories(
-  ${navfn_INCLUDE_DIRS}
-)
-endif()
-
-# Not all machines have <cpuid.h> available
-set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
-file(WRITE ${CMAKE_BINARY_DIR}/test_cpuid.cpp "#include <cpuid.h>")
-try_compile(HAS_CPUID ${CMAKE_BINARY_DIR} ${CMAKE_BINARY_DIR}/test_cpuid.cpp)
-file(REMOVE ${CMAKE_BINARY_DIR}/test_cpuid.cpp)
-if(HAS_CPUID)
-  message("INFO: CPUID found!")
-  add_compile_definitions(HAS_CPUID)
-endif()
-
-# Nano MPPIC (standalone lib)
+# MPPIc (standalone lib)
 add_library(${PROJECT_NAME} 
             mappi/src/mppic.cpp
             )
 target_compile_options(${PROJECT_NAME} PUBLIC)
 target_include_directories(${PROJECT_NAME} PUBLIC ${xtensor_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} xtensor ${catkin_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} xtensor nav2_costmap_2d)
 
-# ROS nano MPPIC library
-add_library(${PROJECT_NAME}_local_planner
-              src/Controller.cpp
+# ROS MPPIc library (nav2 controller)
+add_library(${PROJECT_NAME}_nav2_controller SHARED
+              src/Controller.
+              cpp
               )
+# prevent pluginlib from using boost
+target_compile_definitions(${PROJECT_NAME}_nav2_controller PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
 
-add_dependencies(${PROJECT_NAME}_local_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_gencfg)
-target_link_libraries(${PROJECT_NAME}_local_planner ${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_nav2_controller PUBLIC
+  ${geometry_msgs_TARGETS}
+  ${nav_msgs_TARGETS}
+  ${PROJECT_NAME}
+  nav2_core::nav2_core
+  nav2_costmap_2d::filters
+  nav2_costmap_2d::layers
+  nav2_costmap_2d::nav2_costmap_2d_client
+  nav2_costmap_2d::nav2_costmap_2d_core
+  nav2_ros_common::nav2_ros_common
+  nav2_util::nav2_util_core
+  pluginlib::pluginlib
+  rclcpp::rclcpp
+  tf2::tf2
+)
 
-if(navfn_FOUND)
-  add_dependencies(${PROJECT_NAME}_local_planner ${navfn_EXPORTED_TARGETS})
-  target_link_libraries( ${PROJECT_NAME}_local_planner ${navfn_LIBRARIES} )
-endif()
+set(dependencies
+  rclcpp
+  geometry_msgs
+  nav2_costmap_2d
+  pluginlib
+  nav_msgs
+  nav2_util
+  nav2_core
+  tf2
+  nav2_ros_common
+  visualization_msgs
+  std_srvs
+  std_msgs
+  ${PROJECT_NAME}
+)
 
 # Binaries
-install(TARGETS ${PROJECT_NAME}_local_planner
-         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-         RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION})
-
-install(FILES
-  mappi_plugin.xml
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+install(TARGETS ${PROJECT_NAME}_nav2_controller
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
 )
+
+install(DIRECTORY include/
+  DESTINATION include/
+)
+
+# Install launch files.
+install(DIRECTORY
+  # launch
+  config
+  DESTINATION share/${PROJECT_NAME}/
+)
+
+ament_export_include_directories(include)
+ament_export_libraries(${PROJECT_NAME}_nav2_controller)
+ament_export_dependencies(${dependencies})
+
+# Export plugin
+pluginlib_export_plugin_description_file(nav2_core mappi_plugin.xml)
+
+ament_package()

@@ -8,7 +8,7 @@ using xt::evaluation_strategy::immediate;
 MPPIc::MPPIc() : is_configured_(false) { }
         
 void MPPIc::configure(config::MPPIc& cfg, 
-                            shared_ptr<costmap_2d::Costmap2DROS>& costmap)
+                            shared_ptr<nav2_costmap_2d::Costmap2DROS>& costmap)
 {
     cfg_ = cfg;
     

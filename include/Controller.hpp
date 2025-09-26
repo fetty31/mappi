@@ -10,72 +10,76 @@
  * -----------------------------------------------------------------------------
  */
 
-#ifndef __MAPPI_ROS_HPP__
-#define __MAPPI_ROS_HPP__
+#ifndef __MAPPI_NAV2_CONTROLLER_ROS_HPP__
+#define __MAPPI_NAV2_CONTROLLER_ROS_HPP__
 
 #include <chrono>
 #include <cmath>
+#include <algorithm>
+#include <string>
+#include <memory>
 
 #include "mppic.hpp"
 
 #include "ROSutils.hpp"
 #include "Visualizer.hpp"
 #include "OdomHelper.hpp"
+#include "ParametersHandler.hpp"
 
-#include <dynamic_reconfigure/server.h>
-#include <mappi/MPPIPlannerROSConfig.h>
+#include "nav2_core/controller.hpp"
+#include "rclcpp/rclcpp.hpp"
+#include "pluginlib/class_loader.hpp"
+#include "nav2_ros_common/lifecycle_node.hpp"
+#include "nav2_ros_common/node_utils.hpp"
 
-#include <nav_core/base_local_planner.h>
-
-#ifdef HAS_NAVFN
-    #include "NavFnWrapper.hpp"
-#endif
-
-#include <ros/ros.h>
-#include <tf2_ros/buffer.h>
-#include <costmap_2d/costmap_2d_ros.h>
-#include <geometry_msgs/Twist.h>
-#include <geometry_msgs/TransformStamped.h>
-#include <std_srvs/Empty.h>
+// #include <std_srvs/Empty.h>
 
 namespace mappi {
 
-class MPPIcROS : public nav_core::BaseLocalPlanner {
+class MPPIcROS : public nav2_core::Controller {
 
      // VARIABLES
 
-    private:
+    protected:
 
-        tf2_ros::Buffer* tf_;
+        nav2::LifecycleNode::WeakPtr node_;
+
+        rclcpp::Clock::SharedPtr clock_;
+
+        std::shared_ptr<tf2_ros::Buffer> tf_;
+
         std::string local_frame_, global_frame_;
+        std::string plugin_name_;
 
-        mappi::shared_ptr<costmap_2d::Costmap2DROS> costmap_ros_ptr_;
+
+        mappi::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros_ptr_;
+
+        rclcpp::Logger logger_ {rclcpp::get_logger("MaPPIController")};
 
         MPPIc mappi_;
         std::unique_ptr<Visualizer> visualizer_ptr_;
-        std::unique_ptr<OdomHelper> odom_helper_ptr_;
+        std::unique_ptr<ParametersHandler> parameters_handler_;
+        // std::unique_ptr<OdomHelper> odom_helper_ptr_;
 
-        #ifdef HAS_NAVFN
-            NavFnWrapper navfn_wrapper_;
-        #endif
-
-        objects::Path global_plan_;
-        objects::Path local_plan_;
+        nav_msgs::msg::Path global_plan_;
 
         objects::Odometry2d current_odom_;
 
-        bool initialized_;
+        bool initialized_{false};
         bool use_local_planner_;
 
         float goal_tolerance_;
         float dist_shift_;
 
-        ros::Publisher global_pub_;
-        ros::Publisher local_pub_;
+        double desired_linear_vel_;
+        double lookahead_dist_;
+        double max_angular_vel_;
+        rclcpp::Duration transform_tolerance_ {0, 0};
 
-        ros::ServiceClient costmap_client_;
+        std::shared_ptr<nav2::Publisher<nav_msgs::msg::Path>> global_pub_;
+        std::shared_ptr<nav2::Publisher<nav_msgs::msg::Path>> local_pub_;
 
-        dynamic_reconfigure::Server<mappi::MPPIPlannerROSConfig> *dyn_srv_;
+        // ros::ServiceClient costmap_client_;
 
     // FUNCTIONS
 
@@ -85,53 +89,68 @@ class MPPIcROS : public nav_core::BaseLocalPlanner {
          * @brief Construct a new MPPIcROS object
          * 
          */
-        MPPIcROS();
+        MPPIcROS() = default;
 
-        /**
-         * @brief Construct a new MPPIcROS object
-         * 
-         * @param name 
-         * @param tf 
-         * @param costmap_ros 
-         */
-        MPPIcROS(std::string name, 
-                        tf2_ros::Buffer* tf,
-                        costmap_2d::Costmap2DROS* costmap_ros);
-        
         /**
          * @brief Destroy the MPPIcROS object
          * 
          */
-        ~MPPIcROS();
+        ~MPPIcROS() override;
         
         /**
-         * @brief Initialize MPPIcROS object
+         * @brief Configure MPPIcROS object
          * 
          * @param name 
          * @param tf 
          * @param costmap_ros 
          */
-        void initialize(std::string name, 
-                        tf2_ros::Buffer* tf,
-                        costmap_2d::Costmap2DROS* costmap_ros) override;
+        void configure( const nav2::LifecycleNode::WeakPtr & parent,
+                        std::string name, const std::shared_ptr<tf2_ros::Buffer> tf,
+                        const std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros) override;
+        
+        /**
+         * @brief Perform cleanup
+         * 
+         */
+        void cleanup() override;
+
+        /**
+         * @brief Activate controller
+         * 
+         */
+        void activate() override;
+
+        /**
+         * @brief Deactivate controller
+         * 
+         */
+        void deactivate() override;
+
+        /**
+         * @brief Set speed limit
+         * 
+         * @param speed_limit 
+         * @param percentage 
+         */
+        void setSpeedLimit(const double & speed_limit, const bool & percentage) override;
         
         /**
          * @brief Compute velocity commands from MPPI controller
          * 
-         * @param cmd_vel Output velocity commands
-         * @return true 
-         * @return false 
+         * @param pose Robot pose
+         * @param velocity Robot velocity
+         * @param goal_checker Nav2 goal checker
          */
-        bool computeVelocityCommands(geometry_msgs::Twist& cmd_vel) override;
+        geometry_msgs::msg::TwistStamped computeVelocityCommands(const geometry_msgs::msg::PoseStamped & pose,
+                                                                 const geometry_msgs::msg::Twist & velocity,
+                                                                 nav2_core::GoalChecker* goal_checker) override;
         
         /**
          * @brief Set the global plan object
          * 
-         * @param global_plan 
-         * @return true 
-         * @return false 
+         * @param path 
          */
-        bool setPlan(const std::vector<geometry_msgs::PoseStamped>& global_plan) override;
+        void setPlan(const nav_msgs::msg::Path & path) override;
         
         /**
          * @brief Check if the goal is reached
@@ -148,22 +167,18 @@ class MPPIcROS : public nav_core::BaseLocalPlanner {
          * @return false 
          */
         bool is_initialized();
-        
-        /**
-         * @brief Process odometry message
-         * 
-         * @param msg 
-         */
-        void odom_callback(const nav_msgs::Odometry::ConstPtr& msg);
-        
-        /**
-         * @brief Dynamic reconfigure callback
-         * 
-         * @param dyn_cfg 
-         * @param level 
-         */
-        void reconfigure_callback(mappi::MPPIPlannerROSConfig &dyn_cfg, uint32_t level);
 
+    protected:
+
+        void setUpParameters();
+            
+        nav_msgs::msg::Path transformGlobalPlan(const geometry_msgs::msg::PoseStamped & pose);
+
+        bool transformPose(const std::shared_ptr<tf2_ros::Buffer> tf,
+                           const std::string frame,
+                           const geometry_msgs::msg::PoseStamped & in_pose,
+                           geometry_msgs::msg::PoseStamped & out_pose,
+                           const rclcpp::Duration & transform_tolerance) const;
 };
 
 } // namespace mappi

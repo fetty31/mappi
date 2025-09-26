@@ -19,9 +19,9 @@
 #include <cmath>
 #include <numeric>
 
-#include <costmap_2d/costmap_2d_ros.h> // to-do: avoid ros dependency
-#include <costmap_2d/costmap_2d.h>
-#include <costmap_2d/inflation_layer.h>
+#include <nav2_costmap_2d/costmap_2d_ros.h> // to-do: avoid ros dependency
+#include <nav2_costmap_2d/costmap_2d.h>
+#include <nav2_costmap_2d/inflation_layer.h>
 
 namespace mappi::critics {
 
@@ -34,8 +34,8 @@ class Critic {
 
     protected:
         std::string name_;
-        mappi::shared_ptr<costmap_2d::Costmap2DROS> costmap_ros_ptr_;
-        costmap_2d::Costmap2D * costmap_ptr_{nullptr};
+        mappi::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros_ptr_;
+        nav2_costmap_2d::Costmap2D * costmap_ptr_{nullptr};
 
     // FUNCTIONS
 
@@ -58,7 +58,7 @@ class Critic {
          * @param name Name of the critic
          * @param costmap_ros Costmap 2D object
          */
-        virtual void configure(std::string name, mappi::shared_ptr<costmap_2d::Costmap2DROS>& costmap_ros){
+        virtual void configure(std::string name, mappi::shared_ptr<nav2_costmap_2d::Costmap2DROS>& costmap_ros){
             name_ = name;
             costmap_ros_ptr_ = costmap_ros;
             costmap_ptr_ = costmap_ros->getCostmap();
@@ -120,7 +120,7 @@ class Critic {
             if(not costmap_ptr_->worldToMap(x, y, x_i, y_i)) // this point lies outside the costmap
                 return 0;
 
-            unsigned char output_cost = costmap_2d::FREE_SPACE;
+            unsigned char output_cost = nav2_costmap_2d::FREE_SPACE;
 
             // Check footprint collision
             float cos_th = cos(theta);
@@ -168,7 +168,7 @@ class Critic {
                         y = p1_y + slope_x*(x-p1_x);
 
                         if(not costmap_ptr_->worldToMap(x, y, mx, my))
-                            return costmap_2d::LETHAL_OBSTACLE;
+                            return nav2_costmap_2d::LETHAL_OBSTACLE;
 
                         output_cost = std::max(costmap_ptr_->getCost(mx, my), output_cost);
                     }
@@ -181,7 +181,7 @@ class Critic {
                         x = p1_x + slope_y*(y-p1_y);
 
                         if(not costmap_ptr_->worldToMap(x, y, mx, my))
-                            return costmap_2d::LETHAL_OBSTACLE;
+                            return nav2_costmap_2d::LETHAL_OBSTACLE;
 
                         output_cost = std::max(costmap_ptr_->getCost(mx, my), output_cost);
                     }
@@ -204,13 +204,13 @@ class Critic {
                 costmap_ros_ptr_->getLayeredCostmap()->isTrackingUnknown();
 
             switch(cost) {
-                case(costmap_2d::LETHAL_OBSTACLE):
+                case(nav2_costmap_2d::LETHAL_OBSTACLE):
                     return true;
-                case(costmap_2d::INSCRIBED_INFLATED_OBSTACLE):
+                case(nav2_costmap_2d::INSCRIBED_INFLATED_OBSTACLE):
                     return true;
-                case(costmap_2d::NO_INFORMATION):
+                case(nav2_costmap_2d::NO_INFORMATION):
                     return is_tracking_unkown ? false : true;
-                case(costmap_2d::FREE_SPACE):
+                case(nav2_costmap_2d::FREE_SPACE):
                     return false;
                 default:
                     return false;

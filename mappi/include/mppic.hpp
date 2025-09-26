@@ -101,7 +101,7 @@ class MPPIc {
          * @param costmap Pointer to costmap object
          */
         void configure(config::MPPIc&,
-                        mappi::shared_ptr<costmap_2d::Costmap2DROS>&);
+                        mappi::shared_ptr<nav2_costmap_2d::Costmap2DROS>&);
         
         /**
          * @brief Shutdown MPPIc. 

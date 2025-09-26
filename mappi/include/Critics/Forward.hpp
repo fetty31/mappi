@@ -43,7 +43,7 @@ class Forward : public Critic {
                         mappi::config::
                             GenericCritic& config,
                         mappi::shared_ptr
-                            <costmap_2d::Costmap2DROS>& costmap_ros);
+                            <nav2_costmap_2d::Costmap2DROS>& costmap_ros);
         
         /**
          * @brief Score the sampled trajectories
@@ -74,7 +74,7 @@ void Forward::configure(std::string name,
                     mappi::config::
                         GenericCritic& config,
                     mappi::shared_ptr
-                        <costmap_2d::Costmap2DROS>& costmap_ros){
+                        <nav2_costmap_2d::Costmap2DROS>& costmap_ros){
 
     Critic::configure(name, costmap_ros); // call parent function
     cfg_ = config;
