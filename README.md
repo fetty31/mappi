@@ -20,12 +20,18 @@
     </ol>
 </details>
 
-MaPPI is a lightweight **Model Predictive Path Integral (MPPI)** controller for autonomous navigation. It efficiently computes kinematically feasible trajectories by sampling control inputs and evaluating them based on multiple cost functions (critics). This controller is designed for **real-time performance**, **obstacle avoidance** and **smooth motion planning**, making it ideal for **embedded systems and resource-constrained platforms**.  
+MaPPI is a lightweight implementation of the **Model Predictive Path Integral (MPPI)** controller for autonomous navigation. It generates kinematically feasible trajectories by sampling control inputs and evaluating them against multiple cost functions (critics). Designed for **real-time operation**, **obstacle avoidance** and **smooth motion planning**, MaPPI is well-suited for **embedded systems and resource-limited platforms**.  
+
+By now you'll be probably asking yourself: **What Makes MaPPI Different from the Nav2 MPPI Controller?** 
 
 ### **Distinctive Features**  
-✅ **Kinematic Bicycle Model** available for vehicle-alike robots _(long. velocity + steering commands)_   
-✅ **Stand alone _C++_ library** - MaPPI is implemented as a stand-alone _C++_ library in order to be used outside the ROS framework without changes, making it more portable.   
-✅ **ROS Noetic compatibility** - _C++_ plugin that integrates with `move_base` ___nav_core::BaseLocalPlanner___
+✅ **Kinematic Bicycle Model** – unlike the official Nav2 MPPI controller, MaPPI supports vehicle-like robots through a kinematic bicycle model (longitudinal velocity + steering inputs), not just differential/ackermann drive kinematics.  
+✅ **Standalone _C++_ library** – MaPPI is implemented as a portable, standalone _C++_ library, enabling use outside the ROS ecosystem without modification.  
+✅ **ROS Noetic support** – while Nav2 targets ROS 2, MaPPI also provides a _C++_ plugin for ROS 1 (`move_base`) via ___nav_core::BaseLocalPlanner___, ensuring compatibility with existing ROS 1 workflows.  
+
+### **Other Features**
+✅ **Model prediction is contained in _MotionModel_ class** – unlike the Nav2 MPPI controller, the trajectory generation is computed propagating the Motion Model ODE, which ensures direct compliance with your robot motion.
+ 
 
 ---
 
