@@ -1,0 +1,7 @@
+<library path="lib/libmappi_local_planner">
+  <class name="mappi/MPPIPlannerROS" type="mappi::MPPIcROS" base_class_type="nav_core::BaseLocalPlanner">
+    <description>
+      Custom implementation of the Model Predictive Path Integral controller (MPPIc)
+    </description>
+  </class>
+</library>
