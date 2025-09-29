@@ -5,6 +5,7 @@
  * 
  * Description :
  *   Configuration objects.
+ *      types matching ROS2 parameters types: {double, int, string, bool}
  *
  * -----------------------------------------------------------------------------
  */
@@ -18,36 +19,36 @@ namespace mappi::config {
 
 struct Noise
 {
-    unsigned int batch_size;
-    unsigned int time_steps;
+    int batch_size;
+    int time_steps;
 
-    float std_vx, std_vy, std_wz;
+    double std_vx, std_vy, std_wz;
 };
 
 struct AckermannModel 
 {
-    float min_r;
+    double min_r;
 };
 
 struct BicycleKinModel 
 {
-    float length;
-    float max_steer;
+    double length;
+    double max_steer;
 };
 
 struct Constraints 
 {
-    float max_vx, min_vx;
-    float max_vy, min_vy;
-    float max_wz, min_wz;
+    double max_vx, min_vx;
+    double max_vy, min_vy;
+    double max_wz, min_wz;
 };
 
 struct CommonCost
 {
     bool active;
-    unsigned int power;
-    float weight;
-    float threshold;
+    int power;
+    double weight;
+    double threshold;
 };
 
 struct GenericCritic{
@@ -62,35 +63,48 @@ struct PathDistCritic{
 struct PathCritic 
 {
     CommonCost common;
-    size_t offset_from_furthest;
+    int offset_from_furthest;
 };
 
 struct PathAngleCritic
 {
     CommonCost common;
-    size_t offset_from_furthest;
-    float angle_threshold;
+    int offset_from_furthest;
+    double angle_threshold;
 };
 
 struct ObstaclesCritic
 {
     CommonCost common;
-    float repulsive_weight;
-    float inflation_radius;
-    float inflation_scale_factor;
-    float collision_cost;
-    float collision_margin_dist;
+    double repulsive_weight;
+    double inflation_radius;
+    double inflation_scale_factor;
+    double collision_cost;
+    double collision_margin_dist;
+};
+
+struct Visualization
+{
+    bool active;
+    int batch_stride;
+    int time_stride;
+    double default_z;
+    double scale;
 };
 
 struct MPPIc 
 {
     struct Settings
     {
-        unsigned int num_iters;
-        unsigned int num_retry;
-        unsigned int offset;
+        int num_iters;
+        int num_retry;
+        int offset;
+        double goal_tolerance;
+        double dist_shift;
         bool use_splines;
         std::string motion_model;
+        std::string global_frame;
+        std::string local_frame;
     } settings;
 
     AckermannModel ackermann;
@@ -107,9 +121,11 @@ struct MPPIc
     GenericCritic goalangle_crtc;
     ObstaclesCritic obs_crtc;
 
-    float model_dt;
-    float temperature;
-    float gamma;
+    Visualization visual;
+
+    double model_dt;
+    double temperature;
+    double gamma;
 
     /**
      * @brief Aux. function to print out all set parameters
@@ -130,6 +146,10 @@ void MPPIc::print_out(){
     std::cout << "  - temperature: " << temperature  << std::endl;
     std::cout << "  - gamma: " << gamma << std::endl;
     std::cout << "  - use_splines: " << settings.use_splines << std::endl;
+    std::cout << "  - dist_shift: " << settings.dist_shift << std::endl;
+    std::cout << "  - goal_tolerance: " << settings.goal_tolerance << std::endl;
+    std::cout << "  - global_frame: " << settings.global_frame << std::endl;
+    std::cout << "  - local_frame: " << settings.local_frame << std::endl;
 
     std::cout << "MotionModel: " << settings.motion_model << std::endl;
     if (settings.motion_model=="Ackermann")
@@ -138,6 +158,13 @@ void MPPIc::print_out(){
         std::cout << "  - length: " << bicycleKin.length << std::endl;
         std::cout << "  - max steering: " << bicycleKin.max_steer << std::endl;
     }
+
+    std::cout << "Visualization: " << std::endl;
+    std::cout << "  - visual.active: "          << visual.active        << std::endl;
+    std::cout << "  - visual.batch_stride: "    << visual.batch_stride  << std::endl;
+    std::cout << "  - visual.time_stride: "     << visual.time_stride   << std::endl;
+    std::cout << "  - visual.default_z: "       << visual.default_z     << std::endl;
+    std::cout << "  - visual.scale: "           << visual.scale         << std::endl;
 
     std::cout << "Noise Settings: " << std::endl;
     std::cout << "  - noise.std_vx: " << noise.std_vx << std::endl;

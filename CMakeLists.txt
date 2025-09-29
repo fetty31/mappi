@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
 project(mappi)
 
-add_compile_options(-std=c++14)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -14,6 +15,7 @@ set(CMAKE_BUILD_TYPE "Release")
 
 set(XTENSOR_USE_TBB 1)
 set(XTENSOR_USE_OPENMP 0)
+# set(XTENSOR_USE_XSIMD 1)
 
 find_package(xtensor REQUIRED)
 
@@ -31,9 +33,23 @@ find_package(nav2_common REQUIRED)
 find_package(nav2_costmap_2d REQUIRED)
 find_package(nav2_util REQUIRED)
 find_package(pluginlib REQUIRED)
-find_package(nav2_ros_common REQUIRED)
 
 nav2_package()
+
+set(dependencies_pkgs
+  rclcpp
+  geometry_msgs
+  nav2_costmap_2d
+  pluginlib
+  nav_msgs
+  nav2_util
+  nav2_core
+  nav2_common
+  tf2
+  visualization_msgs
+  std_srvs
+  std_msgs
+)
 
 include_directories(
   include
@@ -46,48 +62,17 @@ add_library(${PROJECT_NAME}
             mappi/src/mppic.cpp
             )
 target_compile_options(${PROJECT_NAME} PUBLIC)
-target_include_directories(${PROJECT_NAME} PUBLIC ${xtensor_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} xtensor nav2_costmap_2d)
+target_include_directories(${PROJECT_NAME} PUBLIC ${xtensor_INCLUDE_DIRS}) # ${xsimd_INCLUDE_DIRS}
+target_link_libraries(${PROJECT_NAME} xtensor) # xtensor::optimize xtensor::use_xsimd
 
-# ROS MPPIc library (nav2 controller)
+# ROS Nav2 controller plugin (depends on nav2 + mappi core lib)
 add_library(${PROJECT_NAME}_nav2_controller SHARED
-              src/Controller.
-              cpp
+              src/Controller.cpp
               )
 # prevent pluginlib from using boost
 target_compile_definitions(${PROJECT_NAME}_nav2_controller PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
-
-target_link_libraries(${PROJECT_NAME}_nav2_controller PUBLIC
-  ${geometry_msgs_TARGETS}
-  ${nav_msgs_TARGETS}
-  ${PROJECT_NAME}
-  nav2_core::nav2_core
-  nav2_costmap_2d::filters
-  nav2_costmap_2d::layers
-  nav2_costmap_2d::nav2_costmap_2d_client
-  nav2_costmap_2d::nav2_costmap_2d_core
-  nav2_ros_common::nav2_ros_common
-  nav2_util::nav2_util_core
-  pluginlib::pluginlib
-  rclcpp::rclcpp
-  tf2::tf2
-)
-
-set(dependencies
-  rclcpp
-  geometry_msgs
-  nav2_costmap_2d
-  pluginlib
-  nav_msgs
-  nav2_util
-  nav2_core
-  tf2
-  nav2_ros_common
-  visualization_msgs
-  std_srvs
-  std_msgs
-  ${PROJECT_NAME}
-)
+target_link_libraries(${PROJECT_NAME}_nav2_controller ${PROJECT_NAME})
+ament_target_dependencies(${PROJECT_NAME}_nav2_controller ${dependencies_pkgs})
 
 # Binaries
 install(TARGETS ${PROJECT_NAME}_nav2_controller
@@ -109,7 +94,7 @@ install(DIRECTORY
 
 ament_export_include_directories(include)
 ament_export_libraries(${PROJECT_NAME}_nav2_controller)
-ament_export_dependencies(${dependencies})
+ament_export_dependencies(${dependencies_pkgs})
 
 # Export plugin
 pluginlib_export_plugin_description_file(nav2_core mappi_plugin.xml)

@@ -43,7 +43,7 @@ class GoalAngle : public Critic {
                         mappi::config::
                             GenericCritic& config,
                         mappi::shared_ptr
-                            <nav2_costmap_2d::Costmap2DROS>& costmap_ros);
+                            <mappi::utils::CostmapInterface>& costmap_ros);
 
         /**
          * @brief Score the sampled trajectories
@@ -57,7 +57,7 @@ class GoalAngle : public Critic {
         void score(mappi::objects::State& states,
                     mappi::objects::Trajectory& trajectories,
                     mappi::objects::Path& plan,
-                    xt::xtensor<float,1>& costs,
+                    xt::xtensor<double,1>& costs,
                     bool &fail_flag) override;
 
         /**
@@ -74,7 +74,7 @@ void GoalAngle::configure(std::string name,
                     mappi::config::
                         GenericCritic& config,
                     mappi::shared_ptr
-                        <nav2_costmap_2d::Costmap2DROS>& costmap_ros){
+                        <mappi::utils::CostmapInterface>& costmap_ros){
 
     Critic::configure(name, costmap_ros); // call parent function
     cfg_ = config;
@@ -83,11 +83,11 @@ void GoalAngle::configure(std::string name,
 void GoalAngle::score(mappi::objects::State& states,
                     mappi::objects::Trajectory& trajectories,
                     mappi::objects::Path& plan,
-                    xt::xtensor<float,1>& costs,
-                    bool &fail_flag)
+                    xt::xtensor<double,1>& costs,
+                    bool & /*fail_flag*/)
 {
 
-    if(not costmap_ros_ptr_ || not cfg_.common.active){
+    if(not costmap_ || not cfg_.common.active){
         return;
     }
 
@@ -95,7 +95,7 @@ void GoalAngle::score(mappi::objects::State& states,
         return;
 
     const auto goal_idx = plan.x.shape(0) - 1;
-    const float goal_yaw = plan.yaw(goal_idx);
+    const double goal_yaw = plan.yaw(goal_idx);
 
     costs += xt::pow(
         xt::mean( xt::abs(

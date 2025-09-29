@@ -42,8 +42,9 @@
 
 #include "Utils/NoiseGenerator.hpp"
 #include "Utils/Auxiliar.hpp"
-#include "Utils/Filters.hpp"
-#include "Utils/SplineAdaptor.hpp"
+#include "Utils/Filters/SavitskyGolay.hpp"
+#include "Utils/Filters/LowPass.hpp"
+#include "Utils/Splines/SplineAdaptor.hpp"
 
 #include <memory>
 #include <chrono>
@@ -78,7 +79,7 @@ class MPPIc {
 
         utils::NoiseGenerator noise_gen_;
 
-        xt::xtensor<float, 1> costs_;
+        xt::xtensor<double, 1> costs_;
 
         bool is_configured_;
 

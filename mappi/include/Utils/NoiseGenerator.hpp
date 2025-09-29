@@ -29,9 +29,9 @@ class NoiseGenerator {
     // VARIABLES
 
     private:
-        xt::xtensor<float, 2> noises_vx_;
-        xt::xtensor<float, 2> noises_vy_;
-        xt::xtensor<float, 2> noises_wz_;
+        xt::xtensor<double, 2> noises_vx_;
+        xt::xtensor<double, 2> noises_vy_;
+        xt::xtensor<double, 2> noises_wz_;
 
         std::thread noise_thread_;
         std::condition_variable noise_cond_;
@@ -123,9 +123,9 @@ void NoiseGenerator::reset(mappi::config::Noise cfg, bool is_holonomic)
     // Recompute the noises on reset
     std::unique_lock<std::mutex> guard(noise_lock_);
     cfg_ = cfg;
-    xt::noalias(noises_vx_) = xt::zeros<float>({cfg_.batch_size, cfg_.time_steps});
-    xt::noalias(noises_vy_) = xt::zeros<float>({cfg_.batch_size, cfg_.time_steps});
-    xt::noalias(noises_wz_) = xt::zeros<float>({cfg_.batch_size, cfg_.time_steps});
+    xt::noalias(noises_vx_) = xt::zeros<double>({cfg_.batch_size, cfg_.time_steps});
+    xt::noalias(noises_vy_) = xt::zeros<double>({cfg_.batch_size, cfg_.time_steps});
+    xt::noalias(noises_wz_) = xt::zeros<double>({cfg_.batch_size, cfg_.time_steps});
     is_holonomic_ = is_holonomic;
 
     ready_ = true;
@@ -157,12 +157,12 @@ void NoiseGenerator::noiseThread()
 
 void NoiseGenerator::generateNoise()
 {
-    xt::noalias(noises_vx_) = xt::random::randn<float>(
+    xt::noalias(noises_vx_) = xt::random::randn<double>(
         {cfg_.batch_size, cfg_.time_steps}, 0.0, cfg_.std_vx);
-    xt::noalias(noises_wz_) = xt::random::randn<float>(
+    xt::noalias(noises_wz_) = xt::random::randn<double>(
         {cfg_.batch_size, cfg_.time_steps}, 0.0, cfg_.std_wz);
     if (is_holonomic_) {
-        xt::noalias(noises_vy_) = xt::random::randn<float>(
+        xt::noalias(noises_vy_) = xt::random::randn<double>(
             {cfg_.batch_size, cfg_.time_steps}, 0.0, cfg_.std_vy);
     }
 }

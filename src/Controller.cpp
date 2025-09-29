@@ -50,13 +50,14 @@ void MPPIcROS::configure( const nav2::LifecycleNode::WeakPtr & parent,
 
     tf_ = tf;
     costmap_ros_ptr_ = costmap_ros;
+    costmap_mappi_ = mappi::make_shared<mappi::ROS2CostmapAdapter>(costmap_ros_ptr_);
     plugin_name_ = name;
     logger_ = node->get_logger();
     clock_ = node->get_clock();
 
-    parameters_handler_ = std::make_unique<ParametersHandler>(parent);
+    RCLCPP_INFO(logger_, "mappi:: Initializing with plugin name %s", plugin_name_.c_str());
 
-    RCLCPP_INFO(logger_, "mappi:: Initializing...");
+    parameters_handler_ = std::make_unique<ParametersHandler>(parent);
 
     global_pub_ = node->create_publisher<nav_msgs::msg::Path>("global_plan", 1);
     local_pub_ = node->create_publisher<nav_msgs::msg::Path>("interpolated_plan", 1);
@@ -69,12 +70,11 @@ void MPPIcROS::configure( const nav2::LifecycleNode::WeakPtr & parent,
     */
 
     // Set up MPPI config
-    config::MPPIc config;
-    this->setUpParameters(config);
-    config.print_out(); // print out config (debug)
+    this->setUpParameters(config_);
+    config_.print_out(); // print out config (debug)
     
     // Initialize MPPI controller
-    mappi_.configure(config, costmap_ros_ptr_);
+    mappi_.configure(config_, costmap_mappi_);
 
     // Set up Visualizer instance
     visualizer_ptr_ = std::make_unique<Visualizer>(&mappi_, &nh);
@@ -193,8 +193,6 @@ void MPPIcROS::setPlan(const nav_msgs::msg::Path & path)
     RCLCPP_INFO(logger_, "mappi:: Setting new global plan");
 
     global_plan_ = path;
-
-    // ROS_INFO("mappi:: shifting global plan");
 
     // (optional) Shift local plan to avoid planning inside the robot's footprint 
     // aux::shiftPlan(global_plan_, dist_shift_);
@@ -366,203 +364,123 @@ bool MPPIcROS::transformPose(const std::shared_ptr<tf2_ros::Buffer> tf,
 
 void MPPIcROS::setUpParameters(config::MPPIc& config)
 {
-    // Default
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".desired_linear_vel", rclcpp::ParameterValue(0.2));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".lookahead_dist",
-        rclcpp::ParameterValue(0.4));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".max_angular_vel", rclcpp::ParameterValue(1.0));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".transform_tolerance", rclcpp::ParameterValue(0.1));
+    // Visualization
+    auto getParamVis = parameters_handler_->getParamGetter(plugin_name_ + ".Visualization");
+    getParamVis(config.visual.active, "active", false, ParameterType::Static);
+    getParamVis(config.visual.batch_stride, "batch_stride", 100, ParameterType::Static);
+    getParamVis(config.visual.time_stride, "time_stride", 3, ParameterType::Static);
+    getParamVis(config.visual.default_z, "default_z", 0.2, ParameterType::Static);
+    getParamVis(config.visual.scale, "scale", 0.05, ParameterType::Static);
 
-    // MaPPI
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".GeneralSettings.goal_tolerance", rclcpp::ParameterValue(0.1));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".GeneralSettings.plan_shift",     rclcpp::ParameterValue(1.0));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".GeneralSettings.global_frame",   rclcpp::ParameterValue("map"));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".GeneralSettings.local_frame",    rclcpp::ParameterValue("odom"));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".GeneralSettings.batch_size",     rclcpp::ParameterValue(1000));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".GeneralSettings.num_iterations", rclcpp::ParameterValue(4));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".GeneralSettings.time_steps",     rclcpp::ParameterValue(40));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".GeneralSettings.num_retry",      rclcpp::ParameterValue(2));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".GeneralSettings.control_offset", rclcpp::ParameterValue(1));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".GeneralSettings.use_splines",    rclcpp::ParameterValue(false));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".GeneralSettings.model_dt",       rclcpp::ParameterValue(0.01));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".GeneralSettings.temperature",    rclcpp::ParameterValue(1.0));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".GeneralSettings.gamma",          rclcpp::ParameterValue(1.0));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".Ackermann.min_radius",           rclcpp::ParameterValue(3.0));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".BicycleKin.length",              rclcpp::ParameterValue(1.0));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".BicycleKin.max_steer",           rclcpp::ParameterValue(0.3));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".MotionModel",                    rclcpp::ParameterValue("BicycleKin"));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".NoiseGeneration.std_vx",         rclcpp::ParameterValue(0.01));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".NoiseGeneration.std_vy",         rclcpp::ParameterValue(0.01));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".NoiseGeneration.std_wz",         rclcpp::ParameterValue(0.01));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".Constraints.max_vx",             rclcpp::ParameterValue(2.0));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".Constraints.min_vx",             rclcpp::ParameterValue(-1.0));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".Constraints.max_vy",             rclcpp::ParameterValue(1.0));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".Constraints.min_vy",             rclcpp::ParameterValue(-1.0));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".Constraints.max_wz",             rclcpp::ParameterValue(0.3));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".Constraints.min_wz",             rclcpp::ParameterValue(-0.3));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".Critics.Goal.power",         rclcpp::ParameterValue(1));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".Critics.Goal.active",            rclcpp::ParameterValue(true));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".Critics.Goal.weight",            rclcpp::ParameterValue(5.0));
-    declare_parameter_if_not_declared(
-        node, plugin_name_ + ".Critics.Goal.threshold",         rclcpp::ParameterValue(0.5));
+    // General
+    auto getParamGen = parameters_handler_->getParamGetter(plugin_name_ + ".GeneralSettings");
+    getParamGen(config.settings.global_frame, "global_frame", "", ParameterType::Static);
+    getParamGen(config.settings.local_frame, "local_frame", "", ParameterType::Static);
+    getParamGen(config.settings.num_iters, "num_iterations", 1);
+    getParamGen(config.settings.num_retry, "num_retry", 4);
+    getParamGen(config.settings.offset, "control_offset", 1);
+    getParamGen(config.settings.goal_tolerance, "goal_tolerance", 0.5);
+    getParamGen(config.settings.dist_shift, "plan_shift", 1.0);
+    getParamGen(config.settings.use_splines, "use_splines", false);
 
-    
+    getParamGen(config.noise.batch_size, "batch_size", 1000);
+    getParamGen(config.noise.time_steps, "time_steps", 100);
 
-    node->get_parameter(plugin_name_ + ".desired_linear_vel", desired_linear_vel_);
-    node->get_parameter(plugin_name_ + ".lookahead_dist", lookahead_dist_);
-    node->get_parameter(plugin_name_ + ".max_angular_vel", max_angular_vel_);
-    double transform_tolerance;
-    node->get_parameter(plugin_name_ + ".transform_tolerance", transform_tolerance);
-    transform_tolerance_ = rclcpp::Duration::from_seconds(transform_tolerance);
+    getParamGen(config.model_dt, "model_dt", 0.05);
+    getParamGen(config.temperature, "temperature", 0.3);
+    getParamGen(config.gamma, "gamma", 0.05);
 
-    // Set up ROS wrapper params
-    // nh.param<float>("GeneralSettings/goal_tolerance", goal_tolerance_, 0.1f);
-    // nh.param<float>("GeneralSettings/plan_shift", dist_shift_, 1.0f);
-    // nh.param<bool>("GeneralSettings/use_local_planner", use_local_planner_, true);
+    // Constraints
+    auto getParamCnstr = parameters_handler_->getParamGetter(plugin_name_ + ".Constraints");
+    getParamCnstr(config.bounds.max_vx, "max_vx", 0.75);
+    getParamCnstr(config.bounds.min_vx, "min_vx", 0.75);
+    getParamCnstr(config.bounds.max_vy, "max_vy", 0.5);
+    getParamCnstr(config.bounds.min_vy, "min_vy", -0.5);
+    getParamCnstr(config.bounds.max_wz, "max_wz", 0.5);
+    getParamCnstr(config.bounds.min_wz, "min_wz", -0.5);
 
-    // nh.param<std::string>("GeneralSettings/global_frame", global_frame_, ""); 
-    // nh.param<std::string>("GeneralSettings/local_frame", local_frame_, ""); 
-    // if(local_frame_ == "")
-    //     nh_upper.param<std::string>("local_costmap/global_frame", local_frame_, "odom");
-    // if(global_frame_ == "")
-    //     nh_upper.param<std::string>("global_costmap/global_frame", global_frame_, "map");
+    // Motion Model
+    auto getParamModel = parameters_handler_->getParamGetter(plugin_name_);
+    getParamModel(config.settings.motion_model, "MotionModel", "BicycleKin");
 
-    // int batch_size, num_iters, time_steps, num_retry, offset;
+    // Ackermann model
+    auto getParamAck = parameters_handler_->getParamGetter(plugin_name_ + ".Ackermann");
+    getParamAck(config.ackermann.min_r, "min_radius", 3.0);
 
-    // nh.param<bool>("GeneralSettings/use_splines", config.settings.use_splines, false);
+    // BicycleKin model
+    auto getParamBicycle = parameters_handler_->getParamGetter(plugin_name_ + ".BicycleKin");
+    getParamBicycle(config.bicycleKin.length, "length", 0.5);
+    getParamBicycle(config.bicycleKin.max_steer, "max_steer", 0.3);
 
-    // config.settings.num_iters  = static_cast<unsigned int>(num_iters);
-    // config.settings.num_retry   = static_cast<unsigned int>(num_retry);
-    // config.settings.offset      = static_cast<unsigned int>(offset);
-    
-    // config.noise.batch_size = static_cast<unsigned int>(batch_size);
-    // config.noise.time_steps = static_cast<unsigned int>(time_steps);
+    // BicycleKin model
+    auto getParamNoise = parameters_handler_->getParamGetter(plugin_name_ + ".NoiseGeneration");
+    getParamNoise(config.noise.std_vx, "std_vx", 0.5);
+    getParamNoise(config.noise.std_vy, "std_vy", 0.3);
+    getParamNoise(config.noise.std_wz, "std_wz", 0.3);
 
-    // nh.param<float>("GeneralSettings/model_dt",     config.model_dt,    0.01f);
-    // nh.param<float>("GeneralSettings/temperature",  config.temperature, 1.0f);
-    // nh.param<float>("GeneralSettings/gamma",        config.gamma,       1.0f);
+    // Critics
+    auto getParamCrtc = parameters_handler_->getParamGetter(plugin_name_ + ".Critics");
+    getParamCrtc(config.goal_crtc.active, "Goal.active", true);
+    getParamCrtc(config.goal_crtc.power, "Goal.power", 1);
+    getParamCrtc(config.goal_crtc.weight, "Goal.weight", 1.0);
+    getParamCrtc(config.goal_crtc.threshold, "Goal.threshold", 1.5);
 
-    // nh.param<float>("Ackermann/min_radius",  config.ackermann.min_r,  3.0f);
-    // nh.param<float>("BicycleKin/length",     config.bicycleKin.length,  1.0f);
-    // nh.param<float>("BicycleKin/max_steer",  config.bicycleKin.max_steer,  0.3f);
+    getParamCrtc(config.goalangle_crtc.active, "GoalAngle.active", false);
+    getParamCrtc(config.goalangle_crtc.power, "GoalAngle.power", 1);
+    getParamCrtc(config.goalangle_crtc.weight, "GoalAngle.weight", 1.0);
+    getParamCrtc(config.goalangle_crtc.threshold, "GoalAngle.threshold", 1.5);
 
-    // nh.param<std::string>("MotionModel", config.settings.motion_model, "BicycleKin");
+    getParamCrtc(config.pathdist_crtc.active, "PathDist.active", false);
+    getParamCrtc(config.pathdist_crtc.power, "PathDist.power", 1);
+    getParamCrtc(config.pathdist_crtc.weight, "PathDist.weight", 1.0);
+    getParamCrtc(config.pathdist_crtc.threshold, "PathDist.threshold", 1.5);
+    getParamCrtc(config.pathdist_crtc.traj_stride, "PathDist.traj_stride", 2);
 
-    // nh.param<float>("NoiseGeneration/std_vx", config.noise.std_vx, 0.01f);
-    // nh.param<float>("NoiseGeneration/std_vy", config.noise.std_vy, 0.01f);
-    // nh.param<float>("NoiseGeneration/std_wz", config.noise.std_wz, 0.01f);
+    getParamCrtc(config.twir_crtc.active, "Twirling.active", false);
+    getParamCrtc(config.twir_crtc.power, "Twirling.power", 1);
+    getParamCrtc(config.twir_crtc.weight, "Twirling.weight", 1.0);
+    getParamCrtc(config.twir_crtc.threshold, "Twirling.threshold", 1.5);
 
-    // nh.param<float>("Constraints/max_vx", config.bounds.max_vx, 2.0f);
-    // nh.param<float>("Constraints/min_vx", config.bounds.min_vx, -1.0f);
-    // nh.param<float>("Constraints/max_vy", config.bounds.max_vy, 1.0f);
-    // nh.param<float>("Constraints/min_vy", config.bounds.min_vy, -1.0f);
-    // nh.param<float>("Constraints/max_wz", config.bounds.max_wz, 0.3f);
-    // nh.param<float>("Constraints/min_wz", config.bounds.min_wz, -0.3f);
-    
-    //     // Goal critic config
-    // int power;
-    // nh.param<int>("Critics/Goal/power", power, 1);
-    // config.goal_crtc.common.power = static_cast<unsigned int>(power);
-    // nh.param<bool>("Critics/Goal/active",       config.goal_crtc.common.active,     true);
-    // nh.param<float>("Critics/Goal/weight",      config.goal_crtc.common.weight,     5.0f);
-    // nh.param<float>("Critics/Goal/threshold",   config.goal_crtc.common.threshold,  0.5f);
+    getParamCrtc(config.forward_crtc.active, "Forward.active", false);
+    getParamCrtc(config.forward_crtc.power, "Forward.power", 1);
+    getParamCrtc(config.forward_crtc.weight, "Forward.weight", 1.0);
+    getParamCrtc(config.forward_crtc.threshold, "Forward.threshold", 1.5);
 
-    //     // PathDist critic config
-    // nh.param<int>("Critics/PathDist/power", power, 1);
-    // config.pathdist_crtc.common.power = static_cast<unsigned int>(power);
-    // nh.param<bool>("Critics/PathDist/active",       config.pathdist_crtc.common.active,     true);
-    // nh.param<float>("Critics/PathDist/weight",      config.pathdist_crtc.common.weight,     5.0f);
-    // nh.param<float>("Critics/PathDist/threshold",   config.pathdist_crtc.common.threshold,  1.0f);
-    // nh.param<int>("Critics/PathDist/stride",        config.pathdist_crtc.traj_stride,       2);
+    getParamCrtc(config.pathfollow_crtc.active, "PathFollow.active", false);
+    getParamCrtc(config.pathfollow_crtc.power, "PathFollow.power", 1);
+    getParamCrtc(config.pathfollow_crtc.weight, "PathFollow.weight", 1.0);
+    getParamCrtc(config.pathfollow_crtc.threshold, "PathFollow.threshold", 1.5);
+    getParamCrtc(config.pathfollow_crtc.offset_from_furthest, "PathFollow.offset_from_furthest", 3);
 
-    //     // GoalAngle critic config
-    // nh.param<int>("Critics/GoalAngle/power", power, 1);
-    // config.goalangle_crtc.common.power = static_cast<unsigned int>(power);
-    // nh.param<bool>("Critics/GoalAngle/active",      config.goalangle_crtc.common.active,    true);
-    // nh.param<float>("Critics/GoalAngle/weight",     config.goalangle_crtc.common.weight,    5.0f);
-    // nh.param<float>("Critics/GoalAngle/threshold",  config.goalangle_crtc.common.threshold, 1.0f);
+    getParamCrtc(config.pathangle_crtc.active, "PathAngle.active", false);
+    getParamCrtc(config.pathangle_crtc.power, "PathAngle.power", 1);
+    getParamCrtc(config.pathangle_crtc.weight, "PathAngle.weight", 1.0);
+    getParamCrtc(config.pathangle_crtc.threshold, "PathAngle.threshold", 1.5);
+    getParamCrtc(config.pathangle_crtc.offset_from_furthest, "PathAngle.offset_from_furthest", 3);
+    getParamCrtc(config.pathangle_crtc.angle_threshold, "PathAngle.angle_threshold", 1.57);
 
-    //     // Twirling critic config
-    // nh.param<int>("Critics/Twirling/power", power, 1);
-    // config.twir_crtc.common.power = static_cast<unsigned int>(power);
-    // nh.param<bool>("Critics/Twirling/active",   config.twir_crtc.common.active, true);
-    // nh.param<float>("Critics/Twirling/weight",  config.twir_crtc.common.weight, 10.0f);
+    getParamCrtc(config.obs_crtc.active, "Obstacles.active", false);
+    getParamCrtc(config.obs_crtc.power, "Obstacles.power", 1);
+    getParamCrtc(config.obs_crtc.weight, "Obstacles.weight", 1.0);
+    getParamCrtc(config.obs_crtc.threshold, "Obstacles.threshold", 1.5);
+    getParamCrtc(config.obs_crtc.repulsive_weight, "Obstacles.repulsive_weight", 0.0);
+    getParamCrtc(config.obs_crtc.collision_cost, "Obstacles.collision_cost", 100000.0);
+    getParamCrtc(config.obs_crtc.collision_margin_dist, "Obstacles.collision_margin_dist", 0.2);
 
-    //     // Forward critic config
-    // nh.param<int>("Critics/Forward/power", power, 1);
-    // config.forward_crtc.common.power = static_cast<unsigned int>(power);
-    // nh.param<bool>("Critics/Forward/active",   config.forward_crtc.common.active, true);
-    // nh.param<float>("Critics/Forward/weight",  config.forward_crtc.common.weight, 10.0f);
-
-    //     // PathFollow critic config
-    // nh.param<int>("Critics/PathFollow/power", power, 1);
-    // config.pathfollow_crtc.common.power = static_cast<unsigned int>(power);
-    // nh.param<bool>("Critics/PathFollow/active",     config.pathfollow_crtc.common.active,   true);
-    // nh.param<float>("Critics/PathFollow/weight",    config.pathfollow_crtc.common.weight,    5.0f);
-    // nh.param<float>("Critics/PathFollow/threshold", config.pathfollow_crtc.common.threshold, 0.5f);
-    // nh.param<int>("Critics/PathFollow/offset_from_furthest", offset, 3);
-    // config.pathfollow_crtc.offset_from_furthest = static_cast<size_t>(offset);
-
-    //     // PathFollow critic config
-    // nh.param<int>("Critics/PathAngle/power", power, 1);
-    // config.pathangle_crtc.common.power = static_cast<unsigned int>(power);
-    // nh.param<bool>("Critics/PathAngle/active",     config.pathangle_crtc.common.active,   true);
-    // nh.param<float>("Critics/PathAngle/weight",    config.pathangle_crtc.common.weight,    15.0f);
-    // nh.param<float>("Critics/PathAngle/threshold", config.pathangle_crtc.common.threshold, 0.5f);
-    // nh.param<float>("Critics/PathAngle/angle_threshold", config.pathangle_crtc.angle_threshold, 90.0f);
-    // config.pathangle_crtc.angle_threshold *= M_PI/180.0; // from deg to rad
-    // nh.param<int>("Critics/PathAngle/offset_from_furthest", offset, 3);
-    // config.pathangle_crtc.offset_from_furthest = static_cast<size_t>(offset);
-
-    //     // Obstacles critic config
-    // nh.param<int>("Critics/Obstacles/power", power, 1);
-    // config.obs_crtc.common.power = static_cast<unsigned int>(power);
-    // nh.param<bool>("Critics/Obstacles/active",                  config.obs_crtc.common.active,          true);
-    // nh.param<float>("Critics/Obstacles/weight",                 config.obs_crtc.common.weight,          5.0f);
-    // nh.param<float>("Critics/Obstacles/threshold",              config.obs_crtc.common.threshold,       1.0f);
-    // nh.param<float>("Critics/Obstacles/repulsive_weight",       config.obs_crtc.repulsive_weight,       5.0f);
-    // nh.param<float>("Critics/Obstacles/collision_cost",         config.obs_crtc.collision_cost,         100000.0f);
-    // nh.param<float>("Critics/Obstacles/collision_margin_dist",  config.obs_crtc.collision_margin_dist,  0.1f);
-
+    // To-Do:
     // nh_upper.param<float>("local_costmap/inflation_layer/inflation_radius",    
     //                         config.obs_crtc.inflation_radius, 
     //                         0.0f);
     // nh_upper.param<float>("local_costmap/inflation_layer/cost_scaling_factor", 
     //                         config.obs_crtc.inflation_scale_factor, 
     //                         0.0f);
+
+
+    // Default
+    double transform_tolerance;
+    node->get_parameter(plugin_name_ + ".GeneralSettings.transform_tolerance", transform_tolerance);
+    transform_tolerance_ = rclcpp::Duration::from_seconds(transform_tolerance);
+
 }
 
 } // namespace mappi

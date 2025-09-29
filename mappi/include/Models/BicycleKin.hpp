@@ -44,7 +44,7 @@ class BicycleKin : public MotionModel {
          * @param dt 
          */
         explicit BicycleKin(mappi::config::BicycleKinModel& config, 
-                            float dt) : MotionModel(dt) 
+                            double dt) : MotionModel(dt) 
         {
             cfg_ = config;
         }
@@ -55,7 +55,7 @@ class BicycleKin : public MotionModel {
          * @param config Configuration object
          * @param dt Sampling time [s]
          */
-        void setConfig(mappi::config::BicycleKinModel& config, float dt)
+        void setConfig(mappi::config::BicycleKinModel& config, double dt)
         {
             MotionModel::setConfig(dt);
             cfg_ = config;
@@ -78,10 +78,10 @@ class BicycleKin : public MotionModel {
         void integrate(mappi::objects::State& st, 
                     mappi::objects::Trajectory& traj) override 
         {
-            const float initial_yaw = st.odom.yaw;
-            const float initial_steering = st.odom.steering;
+            const double initial_yaw = st.odom.yaw;
+            const double initial_steering = st.odom.steering;
 
-            auto && steer = xt::xtensor<float, 2>::from_shape(st.wz.shape()); // abuse of notation, here wz == steering rate
+            auto && steer = xt::xtensor<double, 2>::from_shape(st.wz.shape()); // abuse of notation, here wz == steering rate
             xt::noalias(steer) = (xt::cumsum(st.wz * model_dt, 1) + initial_steering);
 
             // Limit steering angle
@@ -103,8 +103,8 @@ class BicycleKin : public MotionModel {
 
             const auto yaw_accum = xt::view(traj.yaw, xt::all(), xt::range(0, -1));
 
-            auto && yaw_cos = xt::xtensor<float, 2>::from_shape(traj.yaw.shape());
-            auto && yaw_sin = xt::xtensor<float, 2>::from_shape(traj.yaw.shape());
+            auto && yaw_cos = xt::xtensor<double, 2>::from_shape(traj.yaw.shape());
+            auto && yaw_sin = xt::xtensor<double, 2>::from_shape(traj.yaw.shape());
             xt::noalias(xt::view(yaw_cos, xt::all(), 0)) = std::cos(initial_yaw);
             xt::noalias(xt::view(yaw_sin, xt::all(), 0)) = std::sin(initial_yaw);
             xt::noalias(xt::view(yaw_cos, xt::all(), xt::range(1, xt::placeholders::_))) = xt::cos(yaw_accum);

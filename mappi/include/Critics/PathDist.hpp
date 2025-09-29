@@ -43,7 +43,7 @@ class PathDist : public Critic {
                         mappi::config::
                             PathDistCritic& config,
                         mappi::shared_ptr
-                            <nav2_costmap_2d::Costmap2DROS>& costmap_ros);
+                            <mappi::utils::CostmapInterface>& costmap_ros);
 
         /**
          * @brief Score the sampled trajectories
@@ -57,7 +57,7 @@ class PathDist : public Critic {
         void score(mappi::objects::State& states,
                     mappi::objects::Trajectory& trajectories,
                     mappi::objects::Path& plan,
-                    xt::xtensor<float,1>& costs,
+                    xt::xtensor<double,1>& costs,
                     bool &fail_flag) override;
 
         /**
@@ -74,7 +74,7 @@ void PathDist::configure(std::string name,
                         mappi::config::
                             PathDistCritic& config,
                         mappi::shared_ptr
-                            <nav2_costmap_2d::Costmap2DROS>& costmap_ros){
+                            <mappi::utils::CostmapInterface>& costmap_ros){
 
     Critic::configure(name, costmap_ros); // call parent function
     cfg_ = config;
@@ -83,11 +83,11 @@ void PathDist::configure(std::string name,
 void PathDist::score(mappi::objects::State& states,
                         mappi::objects::Trajectory& trajectories,
                         mappi::objects::Path& plan,
-                        xt::xtensor<float,1>& costs,
-                        bool &fail_flag)
+                        xt::xtensor<double,1>& costs,
+                        bool & /*fail_flag*/)
 {
 
-    if(not costmap_ros_ptr_ || not cfg_.common.active){
+    if(not costmap_ || not cfg_.common.active){
         return;
     }
 
@@ -106,19 +106,19 @@ void PathDist::score(mappi::objects::State& states,
     const size_t time_steps = T_x.shape(1);
     const size_t traj_pts_eval = floor(time_steps / trajectory_point_step_);
     const size_t path_segments_count = plan.x.shape(0) - 1;
-    auto && cost = xt::xtensor<float, 1>::from_shape({costs.shape(0)});
+    auto && cost = xt::xtensor<double, 1>::from_shape({costs.shape(0)});
 
     for (size_t t = 0; t < batch_size; ++t) {
-        float summed_dist = 0;
+        double summed_dist = 0;
         for (size_t p = trajectory_point_step_; p < time_steps; p += trajectory_point_step_) {
-            float min_dist_sq = std::numeric_limits<float>::max();
+            double min_dist_sq = std::numeric_limits<double>::max();
             size_t min_s = 0;
 
             // Find closest path segment to the trajectory point
             for (size_t s = 0; s < path_segments_count - 1; s++) {
-                float dx = P_x(s) - T_x(t, p);
-                float dy = P_y(s) - T_y(t, p);
-                float dist_sq = dx * dx + dy * dy;
+                double dx = P_x(s) - T_x(t, p);
+                double dy = P_y(s) - T_y(t, p);
+                double dist_sq = dx * dx + dy * dy;
                 if (dist_sq < min_dist_sq) {
                     min_dist_sq = dist_sq;
                     min_s = s;

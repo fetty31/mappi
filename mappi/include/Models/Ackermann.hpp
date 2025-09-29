@@ -40,7 +40,7 @@ class Ackermann : public MotionModel {
          * @param dt 
          */
         explicit Ackermann(mappi::config::AckermannModel& config, 
-                            float dt) : MotionModel(dt) 
+                            double dt) : MotionModel(dt) 
         {
             cfg_ = config;
         }
@@ -51,7 +51,7 @@ class Ackermann : public MotionModel {
          * @param config Configuration object
          * @param dt Sampling time [s]
          */
-        void setConfig(mappi::config::AckermannModel& config, float dt)
+        void setConfig(mappi::config::AckermannModel& config, double dt)
         {
             MotionModel::setConfig(dt);
             cfg_ = config;

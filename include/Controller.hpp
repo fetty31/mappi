@@ -51,12 +51,13 @@ class MPPIcROS : public nav2_core::Controller {
         std::string local_frame_, global_frame_;
         std::string plugin_name_;
 
-
         mappi::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros_ptr_;
+        mappi::shared_ptr<mappi::utils::CostmapInterface> costmap_mappi_;
 
         rclcpp::Logger logger_ {rclcpp::get_logger("MaPPIController")};
 
         MPPIc mappi_;
+        config::MPPIc config_;
         std::unique_ptr<Visualizer> visualizer_ptr_;
         std::unique_ptr<ParametersHandler> parameters_handler_;
         // std::unique_ptr<OdomHelper> odom_helper_ptr_;
@@ -66,14 +67,7 @@ class MPPIcROS : public nav2_core::Controller {
         objects::Odometry2d current_odom_;
 
         bool initialized_{false};
-        bool use_local_planner_;
 
-        float goal_tolerance_;
-        float dist_shift_;
-
-        double desired_linear_vel_;
-        double lookahead_dist_;
-        double max_angular_vel_;
         rclcpp::Duration transform_tolerance_ {0, 0};
 
         std::shared_ptr<nav2::Publisher<nav_msgs::msg::Path>> global_pub_;
@@ -170,7 +164,7 @@ class MPPIcROS : public nav2_core::Controller {
 
     protected:
 
-        void setUpParameters();
+        void setUpParameters(config::MPPIc& config);
             
         nav_msgs::msg::Path transformGlobalPlan(const geometry_msgs::msg::PoseStamped & pose);
 

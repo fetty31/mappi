@@ -30,7 +30,7 @@ class MotionModel {
     // VARIABLES
 
     protected:
-        float model_dt;
+        double model_dt;
 
     // FUNCTIONS
 
@@ -40,7 +40,7 @@ class MotionModel {
          * 
          * @param dt 
          */
-        MotionModel(float dt) : model_dt(dt) { };
+        MotionModel(double dt) : model_dt(dt) { };
 
         /**
          * @brief Destroy the Motion Model object
@@ -57,15 +57,15 @@ class MotionModel {
         virtual void integrate(mappi::objects::State& st, 
                             mappi::objects::Trajectory& traj)
         {
-            const float initial_yaw = st.odom.yaw;
+            const double initial_yaw = st.odom.yaw;
 
             xt::noalias(traj.yaw) =
                 aux::normalize_angles(xt::cumsum(st.wz * model_dt, 1) + initial_yaw);
 
             const auto yaw_accum = xt::view(traj.yaw, xt::all(), xt::range(0, -1));
 
-            auto && yaw_cos = xt::xtensor<float, 2>::from_shape(traj.yaw.shape());
-            auto && yaw_sin = xt::xtensor<float, 2>::from_shape(traj.yaw.shape());
+            auto && yaw_cos = xt::xtensor<double, 2>::from_shape(traj.yaw.shape());
+            auto && yaw_sin = xt::xtensor<double, 2>::from_shape(traj.yaw.shape());
             xt::noalias(xt::view(yaw_cos, xt::all(), 0)) = std::cos(initial_yaw);
             xt::noalias(xt::view(yaw_sin, xt::all(), 0)) = std::sin(initial_yaw);
             xt::noalias(xt::view(yaw_cos, xt::all(), xt::range(1, xt::placeholders::_))) = xt::cos(yaw_accum);
@@ -88,7 +88,7 @@ class MotionModel {
          * 
          * @param dt Sampling time [s]
          */
-        virtual void setConfig(float dt) { model_dt = dt; }
+        virtual void setConfig(double dt) { model_dt = dt; }
 
         /**
          * @brief Whether the motion model is holonomic or not

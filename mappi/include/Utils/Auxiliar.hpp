@@ -98,12 +98,12 @@ std::vector<T> linspace(T a, T b, size_t N) {
  * @param odom 2D Pose
  * @param x Point x coordinate
  * @param y Point y coordinate
- * @return float 
+ * @return double 
  */
-inline float poseToPointAngle(mappi::objects::Odometry2d& odom, float x, float y)
+inline double poseToPointAngle(mappi::objects::Odometry2d& odom, double x, double y)
 {
-  float diff_yaw = odom.yaw - std::atan2(y - odom.y, x - odom.x);
-  float norm_yaw = std::fmod( std::fmod(diff_yaw, 2.0*M_PI) + 2.0*M_PI, 2.0*M_PI );
+  double diff_yaw = odom.yaw - std::atan2(y - odom.y, x - odom.x);
+  double norm_yaw = std::fmod( std::fmod(diff_yaw, 2.0*M_PI) + 2.0*M_PI, 2.0*M_PI );
 
   return (norm_yaw > M_PI) ? norm_yaw - 2.0*M_PI : norm_yaw;
 }
@@ -129,7 +129,7 @@ size_t findPathMinDistPoint(const mappi::objects::Trajectory& trajectories,
   const auto dists = dx * dx + dy * dy;
 
   size_t max_id_by_trajectories = 0;
-  float min_distance_by_path = std::numeric_limits<float>::max();
+  double min_distance_by_path = std::numeric_limits<double>::max();
 
   for (size_t i = 0; i < dists.shape(0); i++) {
     size_t min_id_by_path = 0;
@@ -154,7 +154,7 @@ size_t findPathMinDistPoint(const mappi::objects::Trajectory& trajectories,
  * @return true 
  * @return false 
  */
-bool robotNearGoal(float pose_tolerance, 
+bool robotNearGoal(double pose_tolerance, 
                     const mappi::objects::Odometry2d& robot_pose,
                     const mappi::objects::Path& plan)
 {
@@ -183,12 +183,12 @@ bool robotNearGoal(float pose_tolerance,
  * @param dist Distance
  * @return size_t 
  */
-size_t getIdxFromDistance(mappi::objects::Path& path, float dist)
+size_t getIdxFromDistance(mappi::objects::Path& path, double dist)
 {
   if(path.x.size() < 1)
     return size_t(0);
 
-  float cumdist = 0.0f;
+  double cumdist = 0.0f;
   for(size_t i=0; i < path.x.size()-1; i++){
       cumdist += std::sqrt( std::pow(path.x(i+1)-path.x(i),2) + 
                             std::pow(path.y(i+1)-path.y(i),2) );
@@ -205,7 +205,7 @@ size_t getIdxFromDistance(mappi::objects::Path& path, float dist)
  * @param path Path to shift
  * @param dist Distance to shift
  */
-void shiftPlan(mappi::objects::Path& path, float dist)
+void shiftPlan(mappi::objects::Path& path, double dist)
 {
   size_t index = aux::getIdxFromDistance(path, dist);
 

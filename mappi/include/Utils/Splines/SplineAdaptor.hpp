@@ -17,7 +17,7 @@
 
 namespace mappi::spline {
 
-class BSpline : public fCubicBSpline {
+class BSpline : public dCubicBSpline {
 
     public:
         /**
@@ -25,12 +25,12 @@ class BSpline : public fCubicBSpline {
          * 
          * @param path Path to interpolate
          */
-        BSpline(const mappi::objects::Path& path) : fCubicBSpline()
+        BSpline(const mappi::objects::Path& path) : dCubicBSpline()
         {
-            std::vector<std::vector<float>> points;
+            std::vector<std::vector<double>> points;
             points.reserve(path.x.size());
 
-            std::vector<float> p;
+            std::vector<double> p;
             p.resize(3);
             for(size_t i=0; i < path.x.size(); i++){
                 p[0] = path.x(i);
@@ -49,9 +49,9 @@ class BSpline : public fCubicBSpline {
          * @param d_order Derivative order (0: spline / 1: first derivative / 2: second derivate / ...)
          * @return mappi::objects::Path 
          */
-        mappi::objects::Path interpolate(const std::vector<float> u_vec, const size_t d_order) 
+        mappi::objects::Path interpolate(const std::vector<double> u_vec, const size_t d_order) 
         {
-            const std::vector<std::vector<float>> interp_points = fCubicBSpline::evaluate(u_vec, d_order);
+            const std::vector<std::vector<double>> interp_points = dCubicBSpline::evaluate(u_vec, d_order);
 
             mappi::objects::Path path;
             path.reset(interp_points.size());
@@ -69,11 +69,11 @@ class BSpline : public fCubicBSpline {
          * 
          * @param u Point where to evaluate
          * @param d_order Derivative order (0: spline / 1: first derivative / 2: second derivate / ...)
-         * @return const std::vector<float> 
+         * @return const std::vector<double> 
          */
-        const std::vector<float> interpolate(const float u, const size_t d_order)
+        const std::vector<double> interpolate(const double u, const size_t d_order)
         {
-            return fCubicBSpline::evaluate(u, d_order);
+            return dCubicBSpline::evaluate(u, d_order);
         }
 
 };

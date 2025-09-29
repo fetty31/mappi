@@ -43,7 +43,7 @@ class Forward : public Critic {
                         mappi::config::
                             GenericCritic& config,
                         mappi::shared_ptr
-                            <nav2_costmap_2d::Costmap2DROS>& costmap_ros);
+                            <mappi::utils::CostmapInterface>& costmap_ros);
         
         /**
          * @brief Score the sampled trajectories
@@ -57,7 +57,7 @@ class Forward : public Critic {
         void score(mappi::objects::State& states,
                     mappi::objects::Trajectory& trajectories,
                     mappi::objects::Path& plan,
-                    xt::xtensor<float,1>& costs,
+                    xt::xtensor<double,1>& costs,
                     bool &fail_flag) override;
         
         /**
@@ -74,7 +74,7 @@ void Forward::configure(std::string name,
                     mappi::config::
                         GenericCritic& config,
                     mappi::shared_ptr
-                        <nav2_costmap_2d::Costmap2DROS>& costmap_ros){
+                        <mappi::utils::CostmapInterface>& costmap_ros){
 
     Critic::configure(name, costmap_ros); // call parent function
     cfg_ = config;
@@ -83,11 +83,11 @@ void Forward::configure(std::string name,
 void Forward::score(mappi::objects::State& states,
                     mappi::objects::Trajectory& trajectories,
                     mappi::objects::Path& plan,
-                    xt::xtensor<float,1>& costs,
-                    bool &fail_flag)
+                    xt::xtensor<double,1>& costs,
+                    bool & /*fail_flag*/)
 {
 
-    if(not costmap_ros_ptr_ || not cfg_.common.active){
+    if(not costmap_ || not cfg_.common.active){
         return;
     }
 

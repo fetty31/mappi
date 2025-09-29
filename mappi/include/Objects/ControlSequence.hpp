@@ -18,14 +18,14 @@ namespace mappi::objects {
 
 struct Control
 {
-  float vx{0.0f}, vy{0.0f}, wz{0.0f};
+  double vx{0.0}, vy{0.0}, wz{0.0};
 };
 
 struct ControlSequence
 {
-  xt::xtensor<float, 1> vx;
-  xt::xtensor<float, 1> vy;
-  xt::xtensor<float, 1> wz;
+  xt::xtensor<double, 1> vx;
+  xt::xtensor<double, 1> vy;
+  xt::xtensor<double, 1> wz;
 
   /**
    * @brief Resets the control sequence
@@ -34,9 +34,9 @@ struct ControlSequence
    */
   void reset(unsigned int time_steps)
   {
-    vx = xt::zeros<float>({time_steps});
-    vy = xt::zeros<float>({time_steps});
-    wz = xt::zeros<float>({time_steps});
+    vx = xt::zeros<double>({time_steps});
+    vy = xt::zeros<double>({time_steps});
+    wz = xt::zeros<double>({time_steps});
   }
 };
 

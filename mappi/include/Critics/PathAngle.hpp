@@ -44,7 +44,7 @@ class PathAngle : public Critic {
                         mappi::config::
                             PathAngleCritic& config,
                         mappi::shared_ptr
-                            <nav2_costmap_2d::Costmap2DROS>& costmap_ros);
+                            <mappi::utils::CostmapInterface>& costmap_ros);
 
         /**
          * @brief Score the sampled trajectories
@@ -58,7 +58,7 @@ class PathAngle : public Critic {
         void score(mappi::objects::State& states,
                     mappi::objects::Trajectory& trajectories,
                     mappi::objects::Path& plan,
-                    xt::xtensor<float,1>& costs,
+                    xt::xtensor<double,1>& costs,
                     bool &fail_flag) override;
 
         /**
@@ -75,7 +75,7 @@ void PathAngle::configure(std::string name,
                         mappi::config::
                             PathAngleCritic& config,
                         mappi::shared_ptr
-                            <nav2_costmap_2d::Costmap2DROS>& costmap_ros){
+                            <mappi::utils::CostmapInterface>& costmap_ros){
 
     Critic::configure(name, costmap_ros); // call parent function
     cfg_ = config;
@@ -84,11 +84,11 @@ void PathAngle::configure(std::string name,
 void PathAngle::score(mappi::objects::State& states,
                         mappi::objects::Trajectory& trajectories,
                         mappi::objects::Path& plan,
-                        xt::xtensor<float,1>& costs,
-                        bool &fail_flag)
+                        xt::xtensor<double,1>& costs,
+                        bool & /*fail_flag*/)
 {
 
-    if(not costmap_ros_ptr_ || not cfg_.common.active){
+    if(not costmap_ || not cfg_.common.active){
         return;
     }
 
@@ -99,7 +99,7 @@ void PathAngle::score(mappi::objects::State& states,
 
     size_t min_dist_path_point = mappi::aux::findPathMinDistPoint(trajectories, plan);
 
-    auto offseted_idx = std::min(min_dist_path_point + cfg_.offset_from_furthest, path_size);
+    auto offseted_idx = std::min(min_dist_path_point + static_cast<size_t>(cfg_.offset_from_furthest), path_size);
 
     const auto path_x = plan.x(offseted_idx);
     const auto path_y = plan.y(offseted_idx);

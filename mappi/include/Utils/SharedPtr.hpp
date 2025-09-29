@@ -12,14 +12,32 @@
 #ifndef __MAPPI_shared_ptr_HPP__
 #define __MAPPI_shared_ptr_HPP__
 
-#include <ros/common.h> 
+// Try ROS1 first
+#if __has_include(<ros/version.h>)
+    #include <ros/version.h>
+    #define MAPPI_ROS1
+#endif
 
 namespace mappi {
-#if ROS_VERSION_MAJOR > 1
 
-    #include <memory> // Use std::shared_ptr for ROS2
-	 
-	template <typename T>
+#if defined(MAPPI_ROS1)
+
+    #include <boost/shared_ptr.hpp> // Use boost::shared_ptr for ROS
+    #include <boost/make_shared.hpp>
+
+    template <typename T>
+    using shared_ptr = boost::shared_ptr<T>;
+
+    template <typename T, typename... Args>
+    boost::shared_ptr<T> make_shared(Args&&... args) {
+        return boost::make_shared<T>(std::forward<Args>(args)...);
+    }
+
+#else // Assume ROS2 or non-ROS project
+
+    #include <memory>
+
+    template <typename T>
 	using shared_ptr = std::shared_ptr<T>;
 
 	template <typename T, typename... Args>
@@ -27,19 +45,8 @@ namespace mappi {
     	return std::make_shared<T>(std::forward<Args>(args)...);
 	}
 
-#else
-
-    #include <boost/shared_ptr.hpp> // Use boost::shared_ptr for ROS
-    
-	template <typename T>
-	using shared_ptr = boost::shared_ptr<T>;
-
-	template <typename T, typename... Args>
-	boost::shared_ptr<T> make_shared(Args&&... args) {
-    	return boost::make_shared<T>(std::forward<Args>(args)...);
-	}
-
 #endif
-}
+
+} // namespace mappi
 
 #endif

@@ -8,7 +8,7 @@ using xt::evaluation_strategy::immediate;
 MPPIc::MPPIc() : is_configured_(false) { }
         
 void MPPIc::configure(config::MPPIc& cfg, 
-                            shared_ptr<nav2_costmap_2d::Costmap2DROS>& costmap)
+                            shared_ptr<utils::CostmapInterface>& costmap)
 {
     cfg_ = cfg;
     
@@ -50,7 +50,7 @@ void MPPIc::reset()
     
     noise_gen_.reset(cfg_.noise, isHolonomic());
 
-    costs_ = xt::zeros<float>({cfg_.noise.batch_size});
+    costs_ = xt::zeros<double>({cfg_.noise.batch_size});
 
     ctrl_history_[0] = {0.0, 0.0, 0.0};
     ctrl_history_[1] = {0.0, 0.0, 0.0};
@@ -196,7 +196,7 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
     // (optional) Interpolate received plan 
     if(cfg_.settings.use_splines){
         spline::BSpline spline(plan);
-        std::vector<float> u = aux::linspace<float>(0.0f, 0.99f, 100);
+        std::vector<double> u = aux::linspace<double>(0.0, 0.99, 100);
 
         objects::Path interp_plan = spline.interpolate(u, 0);
         plan_ = interp_plan;
@@ -222,15 +222,15 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
     filters::savitskyGolayFilter(ctrl_seq_, ctrl_history_);
 
     // Get control from sequence
-    float vx = ctrl_seq_.vx(cfg_.settings.offset);
-    float wz = ctrl_seq_.wz(cfg_.settings.offset);
-    float vy = 0.0;
+    double vx = ctrl_seq_.vx(cfg_.settings.offset);
+    double wz = ctrl_seq_.wz(cfg_.settings.offset);
+    double vy = 0.0;
     if(isHolonomic()) vy = ctrl_seq_.vy(cfg_.settings.offset);
 
     // (optional) Low pass filter 
-    // wz = filters::lowPassFilter<float>(wz);
+    // wz = filters::lowPassFilter<double>(wz);
 
-    filters::lowPassFilter<float>(vx, vy, wz, 
+    filters::lowPassFilter<double>(vx, vy, wz, 
                                 output.vx, 
                                 output.vy, 
                                 output.wz );
@@ -401,7 +401,7 @@ void MPPIc::shiftControlSeq()
 void MPPIc::setPlanFreeSpace()
 {
     for(size_t i=0; i < plan_.x.size(); ++i){
-        unsigned char cost_c = pathfollow_critic_.costAtPose(plan_.x(i), plan_.y(i));
+        unsigned char cost_c = pathfollow_critic_.costAt(plan_.x(i), plan_.y(i));
 
         if(pathfollow_critic_.isInCollision(cost_c)){
             plan_.free(i) = false;

@@ -33,7 +33,7 @@ class Holonomic : public MotionModel {
          * 
          * @param dt 
          */
-        Holonomic(float dt) : MotionModel(dt) {};
+        Holonomic(double dt) : MotionModel(dt) {};
 
         /**
          * @brief Whether the motion model is holonomic or not
