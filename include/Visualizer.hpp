@@ -21,13 +21,16 @@
 
 #include "mppic.hpp"
 #include "ROSutils.hpp"
+#include "ParametersHandler.hpp"
 
-#include <ros/ros.h>
-#include <visualization_msgs/MarkerArray.h>
-#include <visualization_msgs/Marker.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/PointField.h>
-#include <sensor_msgs/point_cloud2_iterator.h>
+#include "rclcpp/rclcpp.hpp"
+#include "rclcpp_lifecycle/lifecycle_node.hpp"
+
+#include <visualization_msgs/msg/marker_array.hpp>
+#include <visualization_msgs/msg/marker.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <sensor_msgs/msg/point_field.hpp>
+#include <sensor_msgs/point_cloud2_iterator.hpp>
 
 namespace mappi {
 
@@ -38,21 +41,18 @@ class Visualizer {
     private:
         MPPIc* mppic_;
 
-    	ros::NodeHandle* nh_ptr_;
-        ros::Publisher marker_pub_, marker_opt_pub_;
-        ros::Publisher pcl_pub_, pcl_opt_pub_;
+        rclcpp_lifecycle::LifecycleNode::WeakPtr parent_;
+        std::string name_;
 
-        std::thread pub_thread_;
+        rclcpp::Clock::SharedPtr clock_;
 
-        int batch_stride_;
-        int time_stride_;
+        rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr marker_pub_, marker_opt_pub_;
+        rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pcl_pub_, pcl_opt_pub_;
 
-        float default_z_;
-        float scale_;
+        config::Visualization cfg_;
 
         int marker_id_;
         std::string frame_id_;
-
 
     // FUNCTIONS
 
@@ -62,9 +62,13 @@ class Visualizer {
          * @brief Construct a new Visualizer object
          * 
          * @param mppic Pointer to MPPI controller
-         * @param nh_ptr Pointer to ROS node handle
+         * @param config Configuration 
          */
-        Visualizer(MPPIc* mppic, ros::NodeHandle* nh_ptr);
+        Visualizer(rclcpp_lifecycle::LifecycleNode::WeakPtr parent, 
+                    const std::string &name,
+                    MPPIc* mppic,
+                    config::Visualization& config,
+                    ParametersHandler* parameters_handler);
 
         /**
          * @brief Destroy the Visualizer object
@@ -73,30 +77,12 @@ class Visualizer {
         ~Visualizer();
 
         /**
-         * @brief Start visualizing thread
-         * 
-         */
-        void startThread();
-
-        /**
-         * @brief Stop visualizing thread
-         * 
-         */
-        void stopThread();
-
-        /**
          * @brief Publish visualization topics
          * 
          */
         void publish();
 
     private:
-
-        /**
-         * @brief Publish thread
-         * 
-         */
-        void publishThread();
 
         /**
          * @brief Fill ROS marker array msg from sampled trajectories
@@ -109,7 +95,7 @@ class Visualizer {
         void fillMarkermsg(const objects::Trajectory& trajectories,
                             const int &batch_stride,
                             const int &time_stride,
-                            visualization_msgs::MarkerArray* msg);
+                            visualization_msgs::msg::MarkerArray* msg);
 
         /**
         * @brief Fill ROS point cloud msg from sampled trajectories
@@ -122,7 +108,7 @@ class Visualizer {
         void fillPointCloudmsg(const objects::Trajectory& trajectories,
                                 const int &batch_stride,
                                 const int &time_stride,
-                                sensor_msgs::PointCloud2* msg);
+                                sensor_msgs::msg::PointCloud2* msg);
         
         /**
          * @brief Get the marker array msg
@@ -131,7 +117,7 @@ class Visualizer {
          * @return true 
          * @return false 
          */
-        bool getMarkerTrajectories(visualization_msgs::MarkerArray* msg);
+        bool getMarkerTrajectories(visualization_msgs::msg::MarkerArray* msg);
 
         /**
          * @brief Get the marker array msg filled only with the optimal trajectory
@@ -140,7 +126,7 @@ class Visualizer {
          * @return true 
          * @return false 
          */
-        bool getMarkerOptimalTrajectory(visualization_msgs::MarkerArray* msg);
+        bool getMarkerOptimalTrajectory(visualization_msgs::msg::MarkerArray* msg);
 
         /**
          * @brief Get the point cloud msg
@@ -149,7 +135,7 @@ class Visualizer {
          * @return true 
          * @return false 
          */
-        bool getPointCloudTrajectories(sensor_msgs::PointCloud2* msg);
+        bool getPointCloudTrajectories(sensor_msgs::msg::PointCloud2* msg);
 
         /**
          * @brief Get the point cloud msg filled only with the optimal trajectory
@@ -158,7 +144,7 @@ class Visualizer {
          * @return true 
          * @return false 
          */
-        bool getPointCloudOptimalTrajectory(sensor_msgs::PointCloud2* msg);
+        bool getPointCloudOptimalTrajectory(sensor_msgs::msg::PointCloud2* msg);
         
         /**
          * @brief Reset visualizer object
@@ -168,84 +154,68 @@ class Visualizer {
 
 };
 
-Visualizer::Visualizer(MPPIc* mppic, 
-                        ros::NodeHandle* nh_ptr) : mppic_(mppic),
-                                                    nh_ptr_(nh_ptr)
+Visualizer::Visualizer(rclcpp_lifecycle::LifecycleNode::WeakPtr parent, 
+                        const std::string &name,
+                        MPPIc* mppic,
+                        config::Visualization& config,
+                        ParametersHandler* parameters_handler) : mppic_(mppic),
+                                                                    cfg_(config)
 {
-    nh_ptr->param<int>("Visualization/batch_stride", batch_stride_, 50); 
-    nh_ptr->param<int>("Visualization/time_stride",  time_stride_,  3); 
-    nh_ptr->param<float>("Visualization/default_z",  default_z_,    0.03f); 
-    nh_ptr->param<float>("Visualization/scale",      scale_,        0.03f); 
+    parent_ = parent;
+    name_ = name;
+    auto node = parent_.lock();
 
-    nh_ptr->param<std::string>("GeneralSettings/global_frame", frame_id_, ""); 
-    if(frame_id_ == ""){
-        ros::NodeHandle nh_upper("~");
-        nh_upper.param<std::string>("local_costmap/global_frame", frame_id_, "odom");
-    }
+    clock_ = node->get_clock();
+
+    auto getParam = parameters_handler->getParamGetter(name + ".GeneralSettings"); 
+    getParam(frame_id_, "global_frame", std::string(""), ParameterType::Static);
 
     reset();
 
-    marker_pub_      = nh_ptr_->advertise<visualization_msgs::MarkerArray>("trajectories", 1);
-    marker_opt_pub_  = nh_ptr_->advertise<visualization_msgs::MarkerArray>("optimal_trajectory", 1);
+    marker_pub_      = node->create_publisher<visualization_msgs::msg::MarkerArray>("trajectories", 1);
+    marker_opt_pub_  = node->create_publisher<visualization_msgs::msg::MarkerArray>("optimal_trajectory", 1);
 
-    pcl_pub_     = nh_ptr_->advertise<sensor_msgs::PointCloud2>("pcl_trajectories", 1);
-    pcl_opt_pub_ = nh_ptr_->advertise<sensor_msgs::PointCloud2>("pcl_optimal_trajectory", 1);
+    pcl_pub_     = node->create_publisher<sensor_msgs::msg::PointCloud2>("pcl_trajectories", 1);
+    pcl_opt_pub_ = node->create_publisher<sensor_msgs::msg::PointCloud2>("pcl_optimal_trajectory", 1);
 }
 
 Visualizer::~Visualizer()
 {
     delete mppic_;
-    delete nh_ptr_;
-}
-
-void Visualizer::startThread()
-{
-    pub_thread_ = std::thread(std::bind(&Visualizer::publishThread, this));
-}
-
-void Visualizer::stopThread()
-{
-    if (pub_thread_.joinable())
-        pub_thread_.join();
 }
 
 void Visualizer::publish()
 {
-    sensor_msgs::PointCloud2 pcl_msg; 
-    visualization_msgs::MarkerArray m_msg;
+    if(!cfg_.active)
+        return;
 
-    if( (marker_pub_.getNumSubscribers() > 0) && getMarkerTrajectories(&m_msg) ) {
-        marker_pub_.publish(m_msg);
+    sensor_msgs::msg::PointCloud2 pcl_msg; 
+    visualization_msgs::msg::MarkerArray m_msg;
+
+    // if( (marker_pub_->getNumSubscribers() > 0) && getMarkerTrajectories(&m_msg) ) {
+    if( getMarkerTrajectories(&m_msg) ) {
+        marker_pub_->publish(m_msg);
     }
 
-    if( (pcl_pub_.getNumSubscribers() > 0) && getPointCloudTrajectories(&pcl_msg) ) {
-        pcl_pub_.publish(pcl_msg);
+    // if( (pcl_pub_->getNumSubscribers() > 0) && getPointCloudTrajectories(&pcl_msg) ) {
+    if( getPointCloudTrajectories(&pcl_msg) ) {
+        pcl_pub_->publish(pcl_msg);
     }
 
-    if( (marker_opt_pub_.getNumSubscribers() > 0) && getMarkerOptimalTrajectory(&m_msg) ) {
-        marker_opt_pub_.publish(m_msg);
+    // if( (marker_opt_pub_->getNumSubscribers() > 0) && getMarkerOptimalTrajectory(&m_msg) ) {
+    if( getMarkerOptimalTrajectory(&m_msg) ) {
+        marker_opt_pub_->publish(m_msg);
     }
 
-    if( (pcl_opt_pub_.getNumSubscribers() > 0) && getPointCloudOptimalTrajectory(&pcl_msg) ) {
-        pcl_opt_pub_.publish(pcl_msg);
+    // if( (pcl_opt_pub_->getNumSubscribers() > 0) && getPointCloudOptimalTrajectory(&pcl_msg) ) {
+    if( getPointCloudOptimalTrajectory(&pcl_msg) ) {
+        pcl_opt_pub_->publish(pcl_msg);
     }
 
     reset();
 }
 
-void Visualizer::publishThread()
-{
-    ROS_INFO_ONCE("mappi::Visualizer publish thread started!");
-
-    while(ros::ok()){
-
-        publish();
-
-        ros::Duration(0.05).sleep();
-    }
-}
-
-bool Visualizer::getMarkerTrajectories(visualization_msgs::MarkerArray* msg)
+bool Visualizer::getMarkerTrajectories(visualization_msgs::msg::MarkerArray* msg)
 {
     const objects::Trajectory trajectories = mppic_->getCandidateTrajectories();
 
@@ -253,12 +223,12 @@ bool Visualizer::getMarkerTrajectories(visualization_msgs::MarkerArray* msg)
     if(shape[0] < 1)
         return false;
     
-    fillMarkermsg(trajectories, batch_stride_, time_stride_, msg);
+    fillMarkermsg(trajectories, cfg_.batch_stride, cfg_.time_stride, msg);
 
     return true;
 }
 
-bool Visualizer::getMarkerOptimalTrajectory(visualization_msgs::MarkerArray* msg)
+bool Visualizer::getMarkerOptimalTrajectory(visualization_msgs::msg::MarkerArray* msg)
 {
     const objects::Trajectory trajectory = mppic_->getOptimalTrajectory();
 
@@ -266,12 +236,12 @@ bool Visualizer::getMarkerOptimalTrajectory(visualization_msgs::MarkerArray* msg
     if(shape[1] < 1)
         return false;
     
-    fillMarkermsg(trajectory, batch_stride_, 1 /*time_stride_*/, msg);
+    fillMarkermsg(trajectory, cfg_.batch_stride, 1 /*time_stride*/, msg);
 
     return true;
 }
 
-bool Visualizer::getPointCloudTrajectories(sensor_msgs::PointCloud2* msg)
+bool Visualizer::getPointCloudTrajectories(sensor_msgs::msg::PointCloud2* msg)
 {
     const objects::Trajectory trajectories = mppic_->getCandidateTrajectories();
 
@@ -279,12 +249,12 @@ bool Visualizer::getPointCloudTrajectories(sensor_msgs::PointCloud2* msg)
     if(shape[0] < 1)
         return false;
     
-    fillPointCloudmsg(trajectories, batch_stride_, time_stride_, msg);
+    fillPointCloudmsg(trajectories, cfg_.batch_stride, cfg_.time_stride, msg);
 
     return true;
 }
 
-bool Visualizer::getPointCloudOptimalTrajectory(sensor_msgs::PointCloud2* msg)
+bool Visualizer::getPointCloudOptimalTrajectory(sensor_msgs::msg::PointCloud2* msg)
 {
     const objects::Trajectory trajectory = mppic_->getOptimalTrajectory();
 
@@ -292,7 +262,7 @@ bool Visualizer::getPointCloudOptimalTrajectory(sensor_msgs::PointCloud2* msg)
     if(shape[1] < 1)
         return false;
     
-    fillPointCloudmsg(trajectory, batch_stride_, 1 /*time_stride_*/, msg);
+    fillPointCloudmsg(trajectory, cfg_.batch_stride, 1 /*cfg_.time_stride*/, msg);
 
     return true;
 }
@@ -306,7 +276,7 @@ void Visualizer::reset()
 void Visualizer::fillMarkermsg(const objects::Trajectory& trajectories,
                                 const int &batch_stride,
                                 const int &time_stride,
-                                visualization_msgs::MarkerArray* msg)
+                                visualization_msgs::msg::MarkerArray* msg)
 {
     msg->markers.clear();
 
@@ -325,14 +295,14 @@ void Visualizer::fillMarkermsg(const objects::Trajectory& trajectories,
 
             auto color = ros_utils::createColor(0, green_component, blue_component, 1);
 
-            auto pose = (shape[0] > 1) ? ros_utils::createPose(trajectories.x(i, j), trajectories.y(i, j), default_z_) :
-                                         ros_utils::createPose(trajectories.x(i, j), trajectories.y(i, j), default_z_, trajectories.yaw(i, j));
+            auto pose = (shape[0] > 1) ? ros_utils::createPose(trajectories.x(i, j), trajectories.y(i, j), cfg_.default_z) :
+                                         ros_utils::createPose(trajectories.x(i, j), trajectories.y(i, j), cfg_.default_z, trajectories.yaw(i, j));
 
-            auto scale  = (shape[0] > 1) ? ros_utils::createScale(scale_, scale_, scale_) :
-                                           ros_utils::createScale(scale_, scale_/3.0f, scale_/3.0f);
+            auto scale  = (shape[0] > 1) ? ros_utils::createScale(cfg_.scale, cfg_.scale, cfg_.scale) :
+                                           ros_utils::createScale(cfg_.scale, cfg_.scale/3.0f, cfg_.scale/3.0f);
 
-            auto marker = (shape[0] > 1) ? ros_utils::createMarker(marker_id_++, pose, scale, color, frame_id_) :
-                                           ros_utils::createArrowMarker(marker_id_++, pose, scale, color, frame_id_);
+            auto marker = (shape[0] > 1) ? ros_utils::createMarker(marker_id_++, pose, scale, color, clock_, frame_id_) :
+                                           ros_utils::createArrowMarker(marker_id_++, pose, scale, color, clock_, frame_id_);
 
             msg->markers.push_back(marker);
         }
@@ -342,7 +312,7 @@ void Visualizer::fillMarkermsg(const objects::Trajectory& trajectories,
 void Visualizer::fillPointCloudmsg(const objects::Trajectory& trajectories, 
                                     const int &batch_stride,
                                     const int &time_stride,
-                                    sensor_msgs::PointCloud2* msg)
+                                    sensor_msgs::msg::PointCloud2* msg)
 {
     auto & shape = trajectories.x.shape();
     const float shape_0 = static_cast<float>(shape[0]);
@@ -352,14 +322,14 @@ void Visualizer::fillPointCloudmsg(const objects::Trajectory& trajectories,
     sensor_msgs::PointCloud2Modifier modifier(*msg);
 
     modifier.setPointCloud2Fields(4,
-        "x", 1, sensor_msgs::PointField::FLOAT32,
-        "y", 1, sensor_msgs::PointField::FLOAT32,
-        "z", 1, sensor_msgs::PointField::FLOAT32,
-        "intensity", 1, sensor_msgs::PointField::FLOAT32);
+        "x", 1, sensor_msgs::msg::PointField::FLOAT32,
+        "y", 1, sensor_msgs::msg::PointField::FLOAT32,
+        "z", 1, sensor_msgs::msg::PointField::FLOAT32,
+        "intensity", 1, sensor_msgs::msg::PointField::FLOAT32);
 
     //Msg header
-    msg->header = std_msgs::Header();
-    msg->header.stamp = ros::Time::now();
+    msg->header = std_msgs::msg::Header();
+    msg->header.stamp = clock_->now();
     msg->header.frame_id = frame_id_;
 
     msg->height = 1;
@@ -381,12 +351,11 @@ void Visualizer::fillPointCloudmsg(const objects::Trajectory& trajectories,
     sensor_msgs::PointCloud2Iterator<float> iter_i(*msg, "intensity");
 
     //iterate over the message and populate the fields.  
-    int c=0;
     for (size_t i = 0; i < shape[0]; i += batch_stride) {
         for (size_t j = 0; j < shape[1]; j += time_stride) {
             *iter_x = trajectories.x(i, j);
             *iter_y = trajectories.y(i, j);
-            *iter_z = default_z_;
+            *iter_z = cfg_.default_z;
 
             const float j_flt = static_cast<float>(j);
             float intensity = 1.0f - j_flt / shape_1;

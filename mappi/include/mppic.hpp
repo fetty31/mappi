@@ -41,6 +41,7 @@
 #include "Objects/Config.hpp"
 
 #include "Utils/NoiseGenerator.hpp"
+#include "Utils/CostmapInterface.hpp"
 #include "Utils/Auxiliar.hpp"
 #include "Utils/Filters/SavitskyGolay.hpp"
 #include "Utils/Filters/LowPass.hpp"
@@ -102,7 +103,7 @@ class MPPIc {
          * @param costmap Pointer to costmap object
          */
         void configure(config::MPPIc&,
-                        mappi::shared_ptr<nav2_costmap_2d::Costmap2DROS>&);
+                        shared_ptr<utils::CostmapInterface>&);
         
         /**
          * @brief Shutdown MPPIc. 
@@ -244,7 +245,7 @@ class MPPIc {
          * @brief Apply control variables max/min boundaries and motion constraints (if any)
          * 
          */
-        void applyControlConstraints(objects::ControlSequence&);
+        void applyControlConstraints();
         
         /**
          * @brief Set the plan free space

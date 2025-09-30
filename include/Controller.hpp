@@ -23,16 +23,22 @@
 
 #include "ROSutils.hpp"
 #include "Visualizer.hpp"
-#include "OdomHelper.hpp"
+// #include "OdomHelper.hpp"
 #include "ParametersHandler.hpp"
+#include "CostmapAdapter.hpp"
 
 #include "nav2_core/controller.hpp"
-#include "rclcpp/rclcpp.hpp"
-#include "pluginlib/class_loader.hpp"
-#include "nav2_ros_common/lifecycle_node.hpp"
-#include "nav2_ros_common/node_utils.hpp"
+#include "nav2_core/goal_checker.hpp"
 
-// #include <std_srvs/Empty.h>
+#include "rclcpp/rclcpp.hpp"
+#include "rclcpp_lifecycle/lifecycle_node.hpp"
+
+#include "pluginlib/class_loader.hpp"
+
+// #include "nav2_ros_common/lifecycle_node.hpp"
+// #include "nav2_ros_common/node_utils.hpp"
+
+// #include <std_srvs/srv/empty.h>
 
 namespace mappi {
 
@@ -42,7 +48,7 @@ class MPPIcROS : public nav2_core::Controller {
 
     protected:
 
-        nav2::LifecycleNode::WeakPtr node_;
+        rclcpp_lifecycle::LifecycleNode::WeakPtr node_;
 
         rclcpp::Clock::SharedPtr clock_;
 
@@ -70,8 +76,8 @@ class MPPIcROS : public nav2_core::Controller {
 
         rclcpp::Duration transform_tolerance_ {0, 0};
 
-        std::shared_ptr<nav2::Publisher<nav_msgs::msg::Path>> global_pub_;
-        std::shared_ptr<nav2::Publisher<nav_msgs::msg::Path>> local_pub_;
+        rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr global_pub_;
+        rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr local_pub_;
 
         // ros::ServiceClient costmap_client_;
 
@@ -98,7 +104,7 @@ class MPPIcROS : public nav2_core::Controller {
          * @param tf 
          * @param costmap_ros 
          */
-        void configure( const nav2::LifecycleNode::WeakPtr & parent,
+        void configure( const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
                         std::string name, const std::shared_ptr<tf2_ros::Buffer> tf,
                         const std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros) override;
         
@@ -152,7 +158,7 @@ class MPPIcROS : public nav2_core::Controller {
          * @return true 
          * @return false 
          */
-        bool isGoalReached() override;
+        // bool isGoalReached();
         
         /**
          * @brief Check if MPPIcROS is initialized

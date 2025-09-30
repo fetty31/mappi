@@ -81,7 +81,7 @@ void Forward::configure(std::string name,
 }
 
 void Forward::score(mappi::objects::State& states,
-                    mappi::objects::Trajectory& trajectories,
+                    mappi::objects::Trajectory& /*trajectories*/,
                     mappi::objects::Path& plan,
                     xt::xtensor<double,1>& costs,
                     bool & /*fail_flag*/)

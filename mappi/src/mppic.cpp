@@ -126,7 +126,7 @@ objects::Trajectory MPPIc::getCandidateTrajectories()
         objects::Trajectory traj_cpy(trajectory_);
     reset_mtx.unlock();
 
-    return std::move(traj_cpy);
+    return traj_cpy;
 }
 
 objects::Path MPPIc::getCurrentPlan()
@@ -135,7 +135,7 @@ objects::Path MPPIc::getCurrentPlan()
         objects::Path plan_cpy(plan_);
     reset_mtx.unlock();
 
-    return std::move(plan_cpy);
+    return plan_cpy;
 }
 
 objects::Odometry2d MPPIc::getOdometry()
@@ -144,7 +144,7 @@ objects::Odometry2d MPPIc::getOdometry()
         objects::Odometry2d odom_cpy(state_.odom);
     reset_mtx.unlock(); 
 
-    return std::move(odom_cpy);
+    return odom_cpy;
 }
 
 objects::Trajectory MPPIc::getOptimalTrajectory()
@@ -166,7 +166,7 @@ objects::Trajectory MPPIc::getOptimalTrajectory()
 
     reset_mtx.unlock(); 
 
-    return std::move(opt_trajectory);
+    return opt_trajectory;
 }
 
 objects::Control MPPIc::getControl(const objects::Odometry2d& odom, 
@@ -255,7 +255,7 @@ bool MPPIc::isHolonomic()
 
 void MPPIc::predict(bool &failed)
 {
-    for(unsigned int i=0; i < cfg_.settings.num_iters; ++i){
+    for(int i=0; i < cfg_.settings.num_iters; ++i){
         generateNoisedTrajectories();   // integrate new trajectories with newly computed control inputs
 
         evalTrajectories(failed);       // evaluate trajectories score
@@ -266,7 +266,7 @@ void MPPIc::predict(bool &failed)
 
 bool MPPIc::fallback(bool &failed)
 {
-    static size_t count = 0;
+    static int count = 0;
 
     if(not failed){
         std::cout << "mappi::MPPIc prediction done\n";
@@ -343,7 +343,7 @@ void MPPIc::optimizeControlSeq()
     xt::noalias(ctrl_seq_.vy) = xt::sum(state_.cvy * softmaxes_extened, 0, immediate);
     xt::noalias(ctrl_seq_.wz) = xt::sum(state_.cwz * softmaxes_extened, 0, immediate);
 
-    applyControlConstraints(ctrl_seq_);
+    applyControlConstraints();
 }
 
 void MPPIc::updateState(objects::State& st,
@@ -372,7 +372,7 @@ void MPPIc::updateState(objects::State& st,
     motion_mdl_ptr_->integrate(st, traj);
 }
 
-void MPPIc::applyControlConstraints(objects::ControlSequence& sequence)
+void MPPIc::applyControlConstraints()
 {
     if (isHolonomic()) {
         ctrl_seq_.vy = xt::clip(ctrl_seq_.vy, cfg_.bounds.min_vy, cfg_.bounds.max_vy);

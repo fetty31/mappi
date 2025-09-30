@@ -81,8 +81,8 @@ void Twirling::configure(std::string name,
 }
 
 void Twirling::score(mappi::objects::State& states,
-                    mappi::objects::Trajectory& trajectories,
-                    mappi::objects::Path& plan,
+                    mappi::objects::Trajectory& /*trajectories*/,
+                    mappi::objects::Path& /*plan*/,
                     xt::xtensor<double,1>& costs,
                     bool & /*fail_flag*/)
 {

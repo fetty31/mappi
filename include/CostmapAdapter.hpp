@@ -12,10 +12,10 @@
 #ifndef __MAPPI_NAV2_COSTMAP_ADAPTER_HPP__
 #define __MAPPI_NAV2_COSTMAP_ADAPTER_HPP__
 
-#include "mappi/utils/CostmapInterface.hpp"
-#include <nav2_costmap_2d/costmap_2d_ros.h>
-#include <nav2_costmap_2d/costmap_2d.h>
-#include <nav2_costmap_2d/inflation_layer.h>
+#include "mppic.hpp"
+#include <nav2_costmap_2d/costmap_2d_ros.hpp>
+#include <nav2_costmap_2d/costmap_2d.hpp>
+#include <nav2_costmap_2d/inflation_layer.hpp>
 #include <geometry_msgs/msg/point.hpp>
 
 #include <string>
@@ -44,7 +44,7 @@ public:
         return costmap->getCost(mx, my);
     }
 
-    unsigned char costAt(double x, double y, double theta) const override {
+    unsigned char costAt(double x, double y, double /*theta*/) const override {
 
         auto* costmap = costmap_ros_->getCostmap();
         // unique_lock lock(*(costmap->getMutex())); // To-Do: adapt to nav2 costmap
@@ -55,7 +55,8 @@ public:
 
         unsigned char output_cost = nav2_costmap_2d::FREE_SPACE;
 
-        std::vector<geometry_msgs::msg::Point> oriented_footprint = costmap_ros_->getOrientedFootprint();
+        std::vector<geometry_msgs::msg::Point> oriented_footprint;
+        costmap_ros_->getOrientedFootprint(oriented_footprint);
 
         static unsigned int N = 5;
         for(unsigned int i=0; i < oriented_footprint.size(); i++){
@@ -86,10 +87,10 @@ public:
                     x += sign_x*delta_x;
                     y = p1_y + slope_x*(x-p1_x);
 
-                    if(not costmap_->worldToMap(x, y, mx, my))
+                    if(not costmap->worldToMap(x, y, mx, my))
                         return nav2_costmap_2d::LETHAL_OBSTACLE;
 
-                    output_cost = std::max(costmap_->getCost(mx, my), output_cost);
+                    output_cost = std::max(costmap->getCost(mx, my), output_cost);
                 }
             }
             else{
@@ -99,10 +100,10 @@ public:
                     y += sign_y*delta_y;
                     x = p1_x + slope_y*(y-p1_y);
 
-                    if(not costmap_->worldToMap(x, y, mx, my))
+                    if(not costmap->worldToMap(x, y, mx, my))
                         return nav2_costmap_2d::LETHAL_OBSTACLE;
 
-                    output_cost = std::max(costmap_->getCost(mx, my), output_cost);
+                    output_cost = std::max(costmap->getCost(mx, my), output_cost);
                 }
             }
 

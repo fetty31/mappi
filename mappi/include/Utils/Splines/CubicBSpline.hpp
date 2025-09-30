@@ -33,9 +33,9 @@ class CubicBSpline : public BaseSpline<T> {
          * 
          * @param n 
          * @param u 
-         * @return const size_t 
+         * @return size_t 
          */
-        const size_t findKnotSpan(const size_t n, const T u);
+        size_t findKnotSpan(const size_t n, const T u);
 
         /**
          * @brief B-spline basis function
@@ -122,7 +122,7 @@ void CubicBSpline<T>::initialize()
 }
 
 template<typename T>
-const size_t CubicBSpline<T>::findKnotSpan(const size_t n, const T u)
+size_t CubicBSpline<T>::findKnotSpan(const size_t n, const T u)
 {
     if (u >= knotVector_[n+1])
         return n;

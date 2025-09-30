@@ -1,14 +1,13 @@
 #include "Controller.hpp"
 
-#include "nav2_core/controller_exceptions.hpp"
-#include "nav2_core/planner_exceptions.hpp"
+// #include "nav2_core/controller_exceptions.hpp"
+// #include "nav2_core/planner_exceptions.hpp"
 #include "nav2_util/geometry_utils.hpp"
 
 using std::hypot;
 using std::min;
 using std::max;
 using std::abs;
-using nav2::declare_parameter_if_not_declared;
 using nav2_util::geometry_utils::euclidean_distance;
 
 namespace mappi 
@@ -40,7 +39,7 @@ MPPIcROS::~MPPIcROS()
     mappi_.shutdown();
 }
 
-void MPPIcROS::configure( const nav2::LifecycleNode::WeakPtr & parent,
+void MPPIcROS::configure( const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
                             std::string name, const std::shared_ptr<tf2_ros::Buffer> tf,
                             const std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros)
 {
@@ -65,10 +64,6 @@ void MPPIcROS::configure( const nav2::LifecycleNode::WeakPtr & parent,
     // Srv client
     // costmap_client_ = nh_upper.serviceClient<std_srvs::Empty>("clear_costmaps");
 
-    /* To-Do:
-            - set up parameters via parameter handler
-    */
-
     // Set up MPPI config
     this->setUpParameters(config_);
     config_.print_out(); // print out config (debug)
@@ -77,7 +72,7 @@ void MPPIcROS::configure( const nav2::LifecycleNode::WeakPtr & parent,
     mappi_.configure(config_, costmap_mappi_);
 
     // Set up Visualizer instance
-    visualizer_ptr_ = std::make_unique<Visualizer>(&mappi_, &nh);
+    visualizer_ptr_ = std::make_unique<Visualizer>(parent, name, &mappi_, config_.visual, parameters_handler_.get());
 
     // Set up Odometry Helper instance
     // odom_helper_ptr_ = std::make_unique<OdomHelper>(name);
@@ -94,7 +89,8 @@ void MPPIcROS::cleanup()
     "Cleaning up controller: %s of type mappi::MPPIcROS",
     plugin_name_.c_str());
     global_pub_.reset();
-    // parameters_handler_.reset();
+    local_pub_.reset();
+    parameters_handler_.reset();
     mappi_.shutdown();
 }
 
@@ -104,8 +100,8 @@ void MPPIcROS::activate()
         logger_,
         "Activating controller: %s of type mappi::MPPIcROS\"  %s",
         plugin_name_.c_str(),plugin_name_.c_str());
-    global_pub_->on_activate();
-    // parameters_handler_->start();
+    // global_pub_->on_activate();
+    parameters_handler_->start();
 }
 
 void MPPIcROS::deactivate()
@@ -114,7 +110,7 @@ void MPPIcROS::deactivate()
     logger_,
     "Dectivating controller: %s of type mappi::MPPIcROS\"  %s",
     plugin_name_.c_str(),plugin_name_.c_str());
-    global_pub_->on_deactivate();
+    // global_pub_->on_deactivate();
     mappi_.reset();
 }
 
@@ -126,9 +122,16 @@ void MPPIcROS::setSpeedLimit(const double& speed_limit, const bool& percentage)
 
 geometry_msgs::msg::TwistStamped MPPIcROS::computeVelocityCommands(const geometry_msgs::msg::PoseStamped & pose,
                                                                     const geometry_msgs::msg::Twist & velocity,
-                                                                    nav2_core::GoalChecker * goal_checker)
+                                                                    nav2_core::GoalChecker * /*goal_checker*/)
 {
-    if(not is_initialized()) return false;
+    geometry_msgs::msg::TwistStamped cmd_vel;
+    cmd_vel.header.frame_id = pose.header.frame_id;
+    cmd_vel.header.stamp = clock_->now();
+    cmd_vel.twist.linear.x  = 0.0;
+    cmd_vel.twist.linear.y  = 0.0;
+    cmd_vel.twist.angular.z = 0.0;
+
+    if(not is_initialized()) return cmd_vel;
 
     RCLCPP_INFO(logger_, "mappi:: computing velocity commands...");
 
@@ -155,7 +158,6 @@ geometry_msgs::msg::TwistStamped MPPIcROS::computeVelocityCommands(const geometr
     objects::Control cmd = mappi_.getControl(current_odom_, plan);
     // NOTE: if no control is found, cmd variable will be returned filled with 0s
     
-    geometry_msgs::msg::TwistStamped cmd_vel;
     cmd_vel.header.frame_id = pose.header.frame_id;
     cmd_vel.header.stamp = clock_->now();
     cmd_vel.twist.linear.x  = cmd.vx;
@@ -175,7 +177,7 @@ geometry_msgs::msg::TwistStamped MPPIcROS::computeVelocityCommands(const geometr
 
     // Publish interpolated plan
     static nav_msgs::msg::Path path_msg;
-    ros_utils::mppic2ros(mappi_.getCurrentPlan(), path_msg, local_frame_);
+    ros_utils::mppic2ros(mappi_.getCurrentPlan(), path_msg, local_frame_, clock_);
     local_pub_->publish(path_msg);
 
     RCLCPP_INFO(logger_, "mappi:: published local plan");
@@ -187,7 +189,7 @@ void MPPIcROS::setPlan(const nav_msgs::msg::Path & path)
 {
     if(not is_initialized()){
         RCLCPP_ERROR(logger_, "mappi: This controller has not been initialized, please call configure() before using %s", plugin_name_.c_str());
-        return false;
+        return;
     }
 
     RCLCPP_INFO(logger_, "mappi:: Setting new global plan");
@@ -214,23 +216,23 @@ void MPPIcROS::setPlan(const nav_msgs::msg::Path & path)
 
 }
 
-bool MPPIcROS::isGoalReached()
-{
-    ROS_INFO("mappi:: is goal reached?");
+// bool MPPIcROS::isGoalReached()
+// {
+//     ROS_INFO("mappi:: is goal reached?");
 
-    if (not is_initialized()) {
-        ROS_ERROR("mappi: This planner/controller has not been initialized, please call initialize() before using this planner");
-        return false;
-    }
+//     if (not is_initialized()) {
+//         ROS_ERROR("mappi: This planner/controller has not been initialized, please call initialize() before using this planner");
+//         return false;
+//     }
 
-    if(aux::robotNearGoal(this->goal_tolerance_, current_odom_, global_plan_))
-    {
-        ROS_WARN("mappi: Goal reached!");
-        return true;
-    }
-    else
-        return false;
-}
+//     if(aux::robotNearGoal(this->goal_tolerance_, current_odom_, global_plan_))
+//     {
+//         ROS_WARN("mappi: Goal reached!");
+//         return true;
+//     }
+//     else
+//         return false;
+// }
 
 bool MPPIcROS::is_initialized()
 {
@@ -243,7 +245,7 @@ MPPIcROS::transformGlobalPlan(const geometry_msgs::msg::PoseStamped & pose)
     // Original mplementation taken fron nav2_dwb_controller
 
     if (global_plan_.poses.empty()) {
-        throw nav2_core::PlannerException("Received plan with zero length");
+        throw std::runtime_error("Received plan with zero length");
     }
 
     // let's get the pose of the robot in the frame of the plan
@@ -252,7 +254,7 @@ MPPIcROS::transformGlobalPlan(const geometry_msgs::msg::PoseStamped & pose)
         tf_, global_plan_.header.frame_id, pose,
         robot_pose, transform_tolerance_))
     {
-        throw nav2_core::PlannerException("Unable to transform robot pose into global plan's frame");
+        throw std::runtime_error("Unable to transform robot pose into global plan's frame");
     }
 
     // We'll discard points on the plan that are outside the local costmap
@@ -301,7 +303,7 @@ MPPIcROS::transformGlobalPlan(const geometry_msgs::msg::PoseStamped & pose)
     global_pub_->publish(transformed_plan);
 
     if (transformed_plan.poses.empty()) {
-        throw nav2_core::PlannerException("Resulting plan has 0 poses in it.");
+        throw std::runtime_error("Resulting plan has 0 poses in it.");
     }
 
     return transformed_plan;
@@ -374,14 +376,18 @@ void MPPIcROS::setUpParameters(config::MPPIc& config)
 
     // General
     auto getParamGen = parameters_handler_->getParamGetter(plugin_name_ + ".GeneralSettings");
-    getParamGen(config.settings.global_frame, "global_frame", "", ParameterType::Static);
-    getParamGen(config.settings.local_frame, "local_frame", "", ParameterType::Static);
+    getParamGen(config.settings.global_frame, "global_frame", std::string(""), ParameterType::Static);
+    getParamGen(config.settings.local_frame, "local_frame", std::string(""), ParameterType::Static);
     getParamGen(config.settings.num_iters, "num_iterations", 1);
     getParamGen(config.settings.num_retry, "num_retry", 4);
     getParamGen(config.settings.offset, "control_offset", 1);
     getParamGen(config.settings.goal_tolerance, "goal_tolerance", 0.5);
     getParamGen(config.settings.dist_shift, "plan_shift", 1.0);
     getParamGen(config.settings.use_splines, "use_splines", false);
+
+    double transform_tolerance;
+    getParamGen(transform_tolerance, "transform_tolerance", false, ParameterType::Static);
+    transform_tolerance_ = rclcpp::Duration::from_seconds(transform_tolerance);
 
     getParamGen(config.noise.batch_size, "batch_size", 1000);
     getParamGen(config.noise.time_steps, "time_steps", 100);
@@ -401,7 +407,7 @@ void MPPIcROS::setUpParameters(config::MPPIc& config)
 
     // Motion Model
     auto getParamModel = parameters_handler_->getParamGetter(plugin_name_);
-    getParamModel(config.settings.motion_model, "MotionModel", "BicycleKin");
+    getParamModel(config.settings.motion_model, "MotionModel", std::string("BicycleKin"));
 
     // Ackermann model
     auto getParamAck = parameters_handler_->getParamGetter(plugin_name_ + ".Ackermann");
@@ -420,53 +426,54 @@ void MPPIcROS::setUpParameters(config::MPPIc& config)
 
     // Critics
     auto getParamCrtc = parameters_handler_->getParamGetter(plugin_name_ + ".Critics");
-    getParamCrtc(config.goal_crtc.active, "Goal.active", true);
-    getParamCrtc(config.goal_crtc.power, "Goal.power", 1);
-    getParamCrtc(config.goal_crtc.weight, "Goal.weight", 1.0);
-    getParamCrtc(config.goal_crtc.threshold, "Goal.threshold", 1.5);
+    getParamCrtc(config.goal_crtc.common.active, "Goal.active", true);
+    getParamCrtc(config.goal_crtc.common.power, "Goal.power", 1);
+    getParamCrtc(config.goal_crtc.common.weight, "Goal.weight", 1.0);
+    getParamCrtc(config.goal_crtc.common.threshold, "Goal.threshold", 1.5);
 
-    getParamCrtc(config.goalangle_crtc.active, "GoalAngle.active", false);
-    getParamCrtc(config.goalangle_crtc.power, "GoalAngle.power", 1);
-    getParamCrtc(config.goalangle_crtc.weight, "GoalAngle.weight", 1.0);
-    getParamCrtc(config.goalangle_crtc.threshold, "GoalAngle.threshold", 1.5);
+    getParamCrtc(config.goalangle_crtc.common.active, "GoalAngle.active", false);
+    getParamCrtc(config.goalangle_crtc.common.power, "GoalAngle.power", 1);
+    getParamCrtc(config.goalangle_crtc.common.weight, "GoalAngle.weight", 1.0);
+    getParamCrtc(config.goalangle_crtc.common.threshold, "GoalAngle.threshold", 1.5);
 
-    getParamCrtc(config.pathdist_crtc.active, "PathDist.active", false);
-    getParamCrtc(config.pathdist_crtc.power, "PathDist.power", 1);
-    getParamCrtc(config.pathdist_crtc.weight, "PathDist.weight", 1.0);
-    getParamCrtc(config.pathdist_crtc.threshold, "PathDist.threshold", 1.5);
+    getParamCrtc(config.pathdist_crtc.common.active, "PathDist.active", false);
+    getParamCrtc(config.pathdist_crtc.common.power, "PathDist.power", 1);
+    getParamCrtc(config.pathdist_crtc.common.weight, "PathDist.weight", 1.0);
+    getParamCrtc(config.pathdist_crtc.common.threshold, "PathDist.threshold", 1.5);
     getParamCrtc(config.pathdist_crtc.traj_stride, "PathDist.traj_stride", 2);
 
-    getParamCrtc(config.twir_crtc.active, "Twirling.active", false);
-    getParamCrtc(config.twir_crtc.power, "Twirling.power", 1);
-    getParamCrtc(config.twir_crtc.weight, "Twirling.weight", 1.0);
-    getParamCrtc(config.twir_crtc.threshold, "Twirling.threshold", 1.5);
+    getParamCrtc(config.twir_crtc.common.active, "Twirling.active", false);
+    getParamCrtc(config.twir_crtc.common.power, "Twirling.power", 1);
+    getParamCrtc(config.twir_crtc.common.weight, "Twirling.weight", 1.0);
+    getParamCrtc(config.twir_crtc.common.threshold, "Twirling.threshold", 1.5);
 
-    getParamCrtc(config.forward_crtc.active, "Forward.active", false);
-    getParamCrtc(config.forward_crtc.power, "Forward.power", 1);
-    getParamCrtc(config.forward_crtc.weight, "Forward.weight", 1.0);
-    getParamCrtc(config.forward_crtc.threshold, "Forward.threshold", 1.5);
+    getParamCrtc(config.forward_crtc.common.active, "Forward.active", false);
+    getParamCrtc(config.forward_crtc.common.power, "Forward.power", 1);
+    getParamCrtc(config.forward_crtc.common.weight, "Forward.weight", 1.0);
+    getParamCrtc(config.forward_crtc.common.threshold, "Forward.threshold", 1.5);
 
-    getParamCrtc(config.pathfollow_crtc.active, "PathFollow.active", false);
-    getParamCrtc(config.pathfollow_crtc.power, "PathFollow.power", 1);
-    getParamCrtc(config.pathfollow_crtc.weight, "PathFollow.weight", 1.0);
-    getParamCrtc(config.pathfollow_crtc.threshold, "PathFollow.threshold", 1.5);
+    getParamCrtc(config.pathfollow_crtc.common.active, "PathFollow.active", false);
+    getParamCrtc(config.pathfollow_crtc.common.power, "PathFollow.power", 1);
+    getParamCrtc(config.pathfollow_crtc.common.weight, "PathFollow.weight", 1.0);
+    getParamCrtc(config.pathfollow_crtc.common.threshold, "PathFollow.threshold", 1.5);
     getParamCrtc(config.pathfollow_crtc.offset_from_furthest, "PathFollow.offset_from_furthest", 3);
 
-    getParamCrtc(config.pathangle_crtc.active, "PathAngle.active", false);
-    getParamCrtc(config.pathangle_crtc.power, "PathAngle.power", 1);
-    getParamCrtc(config.pathangle_crtc.weight, "PathAngle.weight", 1.0);
-    getParamCrtc(config.pathangle_crtc.threshold, "PathAngle.threshold", 1.5);
+    getParamCrtc(config.pathangle_crtc.common.active, "PathAngle.active", false);
+    getParamCrtc(config.pathangle_crtc.common.power, "PathAngle.power", 1);
+    getParamCrtc(config.pathangle_crtc.common.weight, "PathAngle.weight", 1.0);
+    getParamCrtc(config.pathangle_crtc.common.threshold, "PathAngle.threshold", 1.5);
     getParamCrtc(config.pathangle_crtc.offset_from_furthest, "PathAngle.offset_from_furthest", 3);
     getParamCrtc(config.pathangle_crtc.angle_threshold, "PathAngle.angle_threshold", 1.57);
 
-    getParamCrtc(config.obs_crtc.active, "Obstacles.active", false);
-    getParamCrtc(config.obs_crtc.power, "Obstacles.power", 1);
-    getParamCrtc(config.obs_crtc.weight, "Obstacles.weight", 1.0);
-    getParamCrtc(config.obs_crtc.threshold, "Obstacles.threshold", 1.5);
+    getParamCrtc(config.obs_crtc.common.active, "Obstacles.active", false);
+    getParamCrtc(config.obs_crtc.common.power, "Obstacles.power", 1);
+    getParamCrtc(config.obs_crtc.common.weight, "Obstacles.weight", 1.0);
+    getParamCrtc(config.obs_crtc.common.threshold, "Obstacles.threshold", 1.5);
     getParamCrtc(config.obs_crtc.repulsive_weight, "Obstacles.repulsive_weight", 0.0);
     getParamCrtc(config.obs_crtc.collision_cost, "Obstacles.collision_cost", 100000.0);
     getParamCrtc(config.obs_crtc.collision_margin_dist, "Obstacles.collision_margin_dist", 0.2);
-
+    config.obs_crtc.inflation_radius = 0.0;
+    config.obs_crtc.inflation_scale_factor = 0.0;
     // To-Do:
     // nh_upper.param<float>("local_costmap/inflation_layer/inflation_radius",    
     //                         config.obs_crtc.inflation_radius, 
@@ -474,13 +481,7 @@ void MPPIcROS::setUpParameters(config::MPPIc& config)
     // nh_upper.param<float>("local_costmap/inflation_layer/cost_scaling_factor", 
     //                         config.obs_crtc.inflation_scale_factor, 
     //                         0.0f);
-
-
-    // Default
-    double transform_tolerance;
-    node->get_parameter(plugin_name_ + ".GeneralSettings.transform_tolerance", transform_tolerance);
-    transform_tolerance_ = rclcpp::Duration::from_seconds(transform_tolerance);
-
+    
 }
 
 } // namespace mappi

@@ -94,7 +94,7 @@ class BaseSpline {
          * 
          * @return const size_t 
          */
-        const size_t size();
+        const size_t& size();
 
         /**
          * @brief Get spline degree
@@ -139,7 +139,7 @@ const T BaseSpline<T>::curvature(const T u)
 }
 
 template<typename T>
-const size_t BaseSpline<T>::size()
+const size_t& BaseSpline<T>::size()
 {
     return control_points_.size();
 }

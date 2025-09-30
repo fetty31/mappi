@@ -10,6 +10,8 @@ endif()
 
 set(CMAKE_BUILD_TYPE "Release")
 
+message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
+
 # add_definitions(-DXTENSOR_ENABLE_XSIMD)
 # add_definitions(-DXTENSOR_USE_XSIMD)
 
