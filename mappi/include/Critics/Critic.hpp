@@ -13,12 +13,18 @@
 #define __MAPPI_CRITIC_HPP__
 
 #include "Objects/Config.hpp"
+#include "Objects/State.hpp"
+#include "Objects/Trajectory.hpp"
+#include "Utils/Auxiliar.hpp"
 #include "Utils/SharedPtr.hpp"
 #include "Utils/CostmapInterface.hpp"
 
 #include <string>
 #include <cmath>
 #include <numeric>
+
+#include <xtensor/xtensor.hpp>
+#include <xtensor/xview.hpp>
 
 namespace mappi::critics {
 

@@ -33,7 +33,7 @@ namespace mappi::aux {
   * @return auto 
   */
 template<typename T>
-auto normalize_angles(const T & angles)
+inline auto normalize_angles(const T & angles)
 {
   // auto && theta = xt::eval(xt::fmod(angles + M_PI, 2.0 * M_PI));
   auto && theta = xt::eval(xt::fmod( xt::fmod(angles, 2.0*M_PI) + 2.0*M_PI, 2.0*M_PI ));
@@ -50,7 +50,7 @@ auto normalize_angles(const T & angles)
  * @return auto 
  */
 template<typename F, typename T>
-auto shortest_angular_dist(const F& from, const T& to)
+inline auto shortest_angular_dist(const F& from, const T& to)
 {
   return normalize_angles(to - from);
 }
@@ -64,7 +64,7 @@ auto shortest_angular_dist(const F& from, const T& to)
  * @return T 
  */
 template<typename T>
-T l2_norm(const std::vector<T>& p1, const std::vector<T>& p2)
+inline T l2_norm(const std::vector<T>& p1, const std::vector<T>& p2)
 {
   if( (p1.size() < 2) || (p2.size() < 2) )
     return static_cast<T>(0.0);
@@ -82,7 +82,7 @@ T l2_norm(const std::vector<T>& p1, const std::vector<T>& p2)
  * @return std::vector<T> 
  */
 template <typename T>
-std::vector<T> linspace(T a, T b, size_t N) {
+inline std::vector<T> linspace(T a, T b, size_t N) {
     T h = (b - a) / static_cast<T>(N-1);
     std::vector<T> xs(N);
     typename std::vector<T>::iterator x;
@@ -116,9 +116,9 @@ inline double poseToPointAngle(mappi::objects::Odometry2d& odom, double x, doubl
  * @param time_step Point of the horizon length from where to start
  * @return size_t 
  */
-size_t findPathMinDistPoint(const mappi::objects::Trajectory& trajectories,
-                            const mappi::objects::Path& plan,
-                            const int time_step = -1 )
+inline size_t findPathMinDistPoint(const mappi::objects::Trajectory& trajectories,
+                                    const mappi::objects::Path& plan,
+                                    const int time_step = -1 )
 {
   const auto traj_x = xt::view(trajectories.x, xt::all(), time_step, xt::newaxis());
   const auto traj_y = xt::view(trajectories.y, xt::all(), time_step, xt::newaxis());
@@ -154,9 +154,9 @@ size_t findPathMinDistPoint(const mappi::objects::Trajectory& trajectories,
  * @return true 
  * @return false 
  */
-bool robotNearGoal(double pose_tolerance, 
-                    const mappi::objects::Odometry2d& robot_pose,
-                    const mappi::objects::Path& plan)
+inline bool robotNearGoal(double pose_tolerance, 
+                          const mappi::objects::Odometry2d& robot_pose,
+                          const mappi::objects::Path& plan)
 {
   const auto goal_idx = plan.x.shape(0)-1;
   const auto goal_x = plan.x(goal_idx);
@@ -183,7 +183,7 @@ bool robotNearGoal(double pose_tolerance,
  * @param dist Distance
  * @return size_t 
  */
-size_t getIdxFromDistance(mappi::objects::Path& path, double dist)
+inline size_t getIdxFromDistance(mappi::objects::Path& path, double dist)
 {
   if(path.x.size() < 1)
     return size_t(0);
@@ -205,7 +205,7 @@ size_t getIdxFromDistance(mappi::objects::Path& path, double dist)
  * @param path Path to shift
  * @param dist Distance to shift
  */
-void shiftPlan(mappi::objects::Path& path, double dist)
+inline void shiftPlan(mappi::objects::Path& path, double dist)
 {
   size_t index = aux::getIdxFromDistance(path, dist);
 

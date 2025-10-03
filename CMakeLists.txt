@@ -61,6 +61,19 @@ include_directories(
 
 # MPPIc (standalone lib)
 add_library(${PROJECT_NAME} 
+            mappi/src/Critics/Forward.cpp
+            mappi/src/Critics/Goal.cpp
+            mappi/src/Critics/GoalAngle.cpp
+            mappi/src/Critics/Obstacles.cpp
+            mappi/src/Critics/PathAngle.cpp
+            mappi/src/Critics/PathDist.cpp
+            mappi/src/Critics/PathFollow.cpp
+            mappi/src/Critics/Twirling.cpp
+            mappi/src/Utils/NoiseGenerator.cpp
+            mappi/src/Utils/Splines/BaseSpline.cpp
+            mappi/src/Utils/Splines/CubicBSpline.cpp
+            mappi/src/Utils/Filters/LowPass.cpp
+            mappi/src/Utils/Filters/SavitskyGolay.cpp
             mappi/src/mppic.cpp
             )
 target_compile_options(${PROJECT_NAME} PUBLIC)

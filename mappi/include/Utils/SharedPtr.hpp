@@ -15,15 +15,15 @@
 // Try ROS1 first
 #if __has_include(<ros/version.h>)
     #include <ros/version.h>
-    #define MAPPI_ROS1
+    #include <boost/shared_ptr.hpp> // Use boost::shared_ptr for ROS1
+    #include <boost/make_shared.hpp>
+#else
+    #include <memory> // Use std::shared_ptr for ROS2 / non-ROS
 #endif
 
 namespace mappi {
 
 #if defined(MAPPI_ROS1)
-
-    #include <boost/shared_ptr.hpp> // Use boost::shared_ptr for ROS
-    #include <boost/make_shared.hpp>
 
     template <typename T>
     using shared_ptr = boost::shared_ptr<T>;
@@ -34,8 +34,6 @@ namespace mappi {
     }
 
 #else // Assume ROS2 or non-ROS project
-
-    #include <memory>
 
     template <typename T>
 	using shared_ptr = std::shared_ptr<T>;

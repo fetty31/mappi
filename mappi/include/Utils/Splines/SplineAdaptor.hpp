@@ -32,7 +32,7 @@ class BSpline : public dCubicBSpline {
 
             std::vector<double> p;
             p.resize(3);
-            for(size_t i=0; i < path.x.size(); i++){
+            for(std::size_t i=0; i < path.x.size(); i++){
                 p[0] = path.x(i);
                 p[1] = path.y(i);
                 p[2] = path.yaw(i);
@@ -49,13 +49,13 @@ class BSpline : public dCubicBSpline {
          * @param d_order Derivative order (0: spline / 1: first derivative / 2: second derivate / ...)
          * @return mappi::objects::Path 
          */
-        mappi::objects::Path interpolate(const std::vector<double> u_vec, const size_t d_order) 
+        mappi::objects::Path interpolate(const std::vector<double> u_vec, const std::size_t d_order) 
         {
             const std::vector<std::vector<double>> interp_points = dCubicBSpline::evaluate(u_vec, d_order);
 
             mappi::objects::Path path;
             path.reset(interp_points.size());
-            for(size_t i=0; i < interp_points.size(); i++){
+            for(std::size_t i=0; i < interp_points.size(); i++){
                 path.x(i) = interp_points[i][0];
                 path.y(i) = interp_points[i][1];
                 path.yaw(i) = interp_points[i][2];
@@ -71,7 +71,7 @@ class BSpline : public dCubicBSpline {
          * @param d_order Derivative order (0: spline / 1: first derivative / 2: second derivate / ...)
          * @return const std::vector<double> 
          */
-        const std::vector<double> interpolate(const double u, const size_t d_order)
+        const std::vector<double> interpolate(const double u, const std::size_t d_order)
         {
             return dCubicBSpline::evaluate(u, d_order);
         }
