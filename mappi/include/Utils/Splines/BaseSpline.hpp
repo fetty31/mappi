@@ -96,16 +96,19 @@ class BaseSpline {
          * 
          * @return const std::size_t 
          */
-        const std::size_t& size();
+        std::size_t size() const;
 
         /**
          * @brief Get spline degree
          * 
          * @return const std::size_t& 
          */
-        const std::size_t& degree();
+        std::size_t degree() const;
 };
 
 }// namespace mappi::spline
+
+typedef mappi::spline::BaseSpline<float> fBaseSpline;
+typedef mappi::spline::BaseSpline<double> dBaseSpline;
 
 #endif

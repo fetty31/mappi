@@ -18,9 +18,9 @@ BaseSpline<T>::BaseSpline() : degree_(3) { }
 
 template<typename T>
 BaseSpline<T>::BaseSpline(const std::vector<std::vector<T>>& control_points)
-                                                : control_points_(control_points), degree_(3) 
+                                                : degree_(3), control_points_(control_points) 
 { 
-    initialize();
+    // initialize();
 }
 
 template<typename T>
@@ -48,15 +48,19 @@ const T BaseSpline<T>::curvature(const T u)
 }
 
 template<typename T>
-const std::size_t& BaseSpline<T>::size()
+std::size_t BaseSpline<T>::size() const
 {
     return control_points_.size();
 }
 
 template<typename T>
-const std::size_t& BaseSpline<T>::degree()
+std::size_t BaseSpline<T>::degree() const
 {
     return degree_;
 }
+
+// Explicit instantiation 
+template class BaseSpline<double>;
+template class BaseSpline<float>;
 
 } // namespace mappi::spline

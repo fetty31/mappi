@@ -1,5 +1,5 @@
 <library path="mappi_nav2_controller">
-  <class name="mappi/MPPIPlannerROS" type="mappi::MPPIcROS" base_class_type="nav2_core::Controller">
+  <class name="mappi::MPPIcROS" type="mappi::MPPIcROS" base_class_type="nav2_core::Controller">
     <description>
       Custom implementation of the Model Predictive Path Integral controller (MPPIc)
     </description>

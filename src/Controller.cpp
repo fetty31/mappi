@@ -34,32 +34,36 @@ Iter min_by(Iter begin, Iter end, Getter getCompareVal)
   return lowest_it;
 }
 
-MPPIcROS::~MPPIcROS()
-{
-    mappi_.shutdown();
-}
-
 void MPPIcROS::configure( const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
                             std::string name, const std::shared_ptr<tf2_ros::Buffer> tf,
                             const std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros)
 {
+    std::cout << "CONFIGURING MPPIcROS\n";
+
     node_ = parent;
 
     auto node = node_.lock();
+    if (!node) {
+        RCLCPP_ERROR(rclcpp::get_logger("MPPIcROS"), "Parent node not yet available!");
+        return;
+    }
+
+    std::cout << "node lock\n";
 
     tf_ = tf;
     costmap_ros_ptr_ = costmap_ros;
-    costmap_mappi_ = mappi::make_shared<mappi::ROS2CostmapAdapter>(costmap_ros_ptr_);
     plugin_name_ = name;
     logger_ = node->get_logger();
     clock_ = node->get_clock();
 
-    RCLCPP_INFO(logger_, "mappi:: Initializing with plugin name %s", plugin_name_.c_str());
+    RCLCPP_INFO(logger_, "mappi:: Configuring with plugin name %s", plugin_name_.c_str());
 
     parameters_handler_ = std::make_unique<ParametersHandler>(parent);
 
     global_pub_ = node->create_publisher<nav_msgs::msg::Path>("global_plan", 1);
     local_pub_ = node->create_publisher<nav_msgs::msg::Path>("interpolated_plan", 1);
+
+    std::cout << "publishers declared\n";
 
     // Srv client
     // costmap_client_ = nh_upper.serviceClient<std_srvs::Empty>("clear_costmaps");
@@ -67,9 +71,6 @@ void MPPIcROS::configure( const rclcpp_lifecycle::LifecycleNode::WeakPtr & paren
     // Set up MPPI config
     this->setUpParameters(config_);
     config_.print_out(); // print out config (debug)
-    
-    // Initialize MPPI controller
-    mappi_.configure(config_, costmap_mappi_);
 
     // Set up Visualizer instance
     visualizer_ptr_ = std::make_unique<Visualizer>(parent, name, &mappi_, config_.visual, parameters_handler_.get());
@@ -77,41 +78,47 @@ void MPPIcROS::configure( const rclcpp_lifecycle::LifecycleNode::WeakPtr & paren
     // Set up Odometry Helper instance
     // odom_helper_ptr_ = std::make_unique<OdomHelper>(name);
 
-    initialized_ = true;
-
-    RCLCPP_INFO(logger_, "mappi:: Finished initializing...");
+    RCLCPP_INFO(logger_, "mappi:: Configured!");
 }
 
 void MPPIcROS::cleanup()
 {
     RCLCPP_INFO(
-    logger_,
-    "Cleaning up controller: %s of type mappi::MPPIcROS",
-    plugin_name_.c_str());
+        logger_,
+        "Cleaning up controller: %s of type mappi::MPPIcROS",
+        plugin_name_.c_str()
+    );
     global_pub_.reset();
     local_pub_.reset();
     parameters_handler_.reset();
     mappi_.shutdown();
+    visualizer_ptr_.reset();
 }
 
 void MPPIcROS::activate()
 {
     RCLCPP_INFO(
         logger_,
-        "Activating controller: %s of type mappi::MPPIcROS\"  %s",
-        plugin_name_.c_str(),plugin_name_.c_str());
-    // global_pub_->on_activate();
+        "Activating controller: %s of type mappi::MPPIcROS",
+        plugin_name_.c_str()
+    );
     parameters_handler_->start();
+    visualizer_ptr_->initialize();
+
+    costmap_mappi_ = mappi::make_shared<mappi::ROS2CostmapAdapter>(costmap_ros_ptr_);
+    mappi_.configure(config_, costmap_mappi_); // Initialize MPPI controller
+    active_ = true;
 }
 
 void MPPIcROS::deactivate()
 {
     RCLCPP_INFO(
-    logger_,
-    "Dectivating controller: %s of type mappi::MPPIcROS\"  %s",
-    plugin_name_.c_str(),plugin_name_.c_str());
-    // global_pub_->on_deactivate();
+        logger_,
+        "Dectivating controller: %s of type mappi::MPPIcROS",
+        plugin_name_.c_str()
+    );
     mappi_.reset();
+    active_ = false;
 }
 
 void MPPIcROS::setSpeedLimit(const double& speed_limit, const bool& percentage)
@@ -131,14 +138,20 @@ geometry_msgs::msg::TwistStamped MPPIcROS::computeVelocityCommands(const geometr
     cmd_vel.twist.linear.y  = 0.0;
     cmd_vel.twist.angular.z = 0.0;
 
-    if(not is_initialized()) return cmd_vel;
+    if(not is_active()) return cmd_vel;
 
-    RCLCPP_INFO(logger_, "mappi:: computing velocity commands...");
+    RCLCPP_INFO(
+        logger_,
+        "%s: computing velocity commands...",
+        plugin_name_.c_str()
+    );
 
     std::lock_guard<std::mutex> param_lock(*parameters_handler_->getLock());
 
     // Transform global plan w.r.t. current pose
-    auto transformed_plan = transformGlobalPlan(pose);
+    nav_msgs::msg::Path transformed_plan;
+    if(transformGlobalPlan(pose, transformed_plan)) // could not transform global plan
+        return cmd_vel;
     
     // Get current pose (transform to mappi type)
     ros_utils::ros2mppic(pose, current_odom_); 
@@ -151,7 +164,11 @@ geometry_msgs::msg::TwistStamped MPPIcROS::computeVelocityCommands(const geometr
 
     auto start_time = std::chrono::system_clock::now();
 
-    RCLCPP_INFO(logger_, "mappi:: calling MPPI controller...");
+    RCLCPP_INFO(
+        logger_,
+        "%s: calling MPPI controller...",
+        plugin_name_.c_str()
+    );
 
     objects::Path plan;
     ros_utils::ros2mppic(global_plan_, plan); // transform global plan to mappi type
@@ -168,37 +185,34 @@ geometry_msgs::msg::TwistStamped MPPIcROS::computeVelocityCommands(const geometr
     static std::chrono::duration<double> elapsed_time;
     elapsed_time = end_time - start_time;
 
-    RCLCPP_INFO(logger_, "mappi:: Elapsed time: %f ms", elapsed_time.count()*1000.0);
+    RCLCPP_INFO(logger_, "%s: Elapsed time: %f ms", plugin_name_.c_str(), elapsed_time.count()*1000.0);
 
     // Publish generated trajectories
     visualizer_ptr_->publish();
 
-    RCLCPP_INFO(logger_, "mappi:: published trajectories");
+    RCLCPP_INFO(logger_, "%s: published trajectories", plugin_name_.c_str());
 
     // Publish interpolated plan
     static nav_msgs::msg::Path path_msg;
     ros_utils::mppic2ros(mappi_.getCurrentPlan(), path_msg, local_frame_, clock_);
     local_pub_->publish(path_msg);
 
-    RCLCPP_INFO(logger_, "mappi:: published local plan");
+    RCLCPP_INFO(logger_, "%s: published local plan", plugin_name_.c_str());
 
     return cmd_vel;
 }
 
 void MPPIcROS::setPlan(const nav_msgs::msg::Path & path)
 {
-    if(not is_initialized()){
+    if(not is_active()){
         RCLCPP_ERROR(logger_, "mappi: This controller has not been initialized, please call configure() before using %s", plugin_name_.c_str());
         return;
     }
 
-    RCLCPP_INFO(logger_, "mappi:: Setting new global plan");
+    RCLCPP_INFO(logger_, "%s: Setting new global plan", plugin_name_.c_str());
 
     global_plan_ = path;
 
-    // (optional) Shift local plan to avoid planning inside the robot's footprint 
-    // aux::shiftPlan(global_plan_, dist_shift_);
-    
     // (optional) Clear costmaps
     // static std_srvs::Empty srv;
     // if (costmap_client_.call(srv))
@@ -220,7 +234,7 @@ void MPPIcROS::setPlan(const nav_msgs::msg::Path & path)
 // {
 //     ROS_INFO("mappi:: is goal reached?");
 
-//     if (not is_initialized()) {
+//     if (not is_active()) {
 //         ROS_ERROR("mappi: This planner/controller has not been initialized, please call initialize() before using this planner");
 //         return false;
 //     }
@@ -234,18 +248,20 @@ void MPPIcROS::setPlan(const nav_msgs::msg::Path & path)
 //         return false;
 // }
 
-bool MPPIcROS::is_initialized()
+bool MPPIcROS::is_active()
 {
-    return initialized_;
+    return active_;
 }
 
-nav_msgs::msg::Path
-MPPIcROS::transformGlobalPlan(const geometry_msgs::msg::PoseStamped & pose)
+
+int MPPIcROS::transformGlobalPlan(const geometry_msgs::msg::PoseStamped & pose,
+                                    nav_msgs::msg::Path & path)
 {
-    // Original mplementation taken fron nav2_dwb_controller
+    // Original implementation taken from nav2_dwb_controller
 
     if (global_plan_.poses.empty()) {
-        throw std::runtime_error("Received plan with zero length");
+        RCLCPP_ERROR(logger_, "%s: received plan with zero length", plugin_name_.c_str());
+        return 1;
     }
 
     // let's get the pose of the robot in the frame of the plan
@@ -254,7 +270,8 @@ MPPIcROS::transformGlobalPlan(const geometry_msgs::msg::PoseStamped & pose)
         tf_, global_plan_.header.frame_id, pose,
         robot_pose, transform_tolerance_))
     {
-        throw std::runtime_error("Unable to transform robot pose into global plan's frame");
+        RCLCPP_ERROR(logger_, "%s: unable to transform robot pose into global plan's frame", plugin_name_.c_str());
+        return 1;
     }
 
     // We'll discard points on the plan that are outside the local costmap
@@ -303,10 +320,13 @@ MPPIcROS::transformGlobalPlan(const geometry_msgs::msg::PoseStamped & pose)
     global_pub_->publish(transformed_plan);
 
     if (transformed_plan.poses.empty()) {
-        throw std::runtime_error("Resulting plan has 0 poses in it.");
+        RCLCPP_ERROR(logger_, "%s: transformed plan is empty", plugin_name_.c_str());
+        return 1;
     }
 
-    return transformed_plan;
+    path = transformed_plan;
+
+    return 0;
 }
 
 bool MPPIcROS::transformPose(const std::shared_ptr<tf2_ros::Buffer> tf,
@@ -316,7 +336,7 @@ bool MPPIcROS::transformPose(const std::shared_ptr<tf2_ros::Buffer> tf,
                             const rclcpp::Duration & transform_tolerance
                             ) const
 {
-  // Implementation taken as is fron nav_2d_utils in nav2_dwb_controller
+  // Implementation taken as is from nav_2d_utils in nav2_dwb_controller
 
     if (in_pose.header.frame_id == frame) {
         out_pose = in_pose;
@@ -386,7 +406,7 @@ void MPPIcROS::setUpParameters(config::MPPIc& config)
     getParamGen(config.settings.use_splines, "use_splines", false);
 
     double transform_tolerance;
-    getParamGen(transform_tolerance, "transform_tolerance", false, ParameterType::Static);
+    getParamGen(transform_tolerance, "transform_tolerance", 0.5, ParameterType::Static);
     transform_tolerance_ = rclcpp::Duration::from_seconds(transform_tolerance);
 
     getParamGen(config.noise.batch_size, "batch_size", 1000);

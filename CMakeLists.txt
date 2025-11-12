@@ -83,6 +83,7 @@ target_link_libraries(${PROJECT_NAME} xtensor) # xtensor::optimize xtensor::use_
 # ROS Nav2 controller plugin (depends on nav2 + mappi core lib)
 add_library(${PROJECT_NAME}_nav2_controller SHARED
               src/Controller.cpp
+              src/ParametersHandler.cpp
               )
 # prevent pluginlib from using boost
 target_compile_definitions(${PROJECT_NAME}_nav2_controller PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
@@ -102,7 +103,7 @@ install(DIRECTORY include/
 
 # Install launch files.
 install(DIRECTORY
-  # launch
+  launch
   config
   DESTINATION share/${PROJECT_NAME}/
 )

@@ -38,6 +38,7 @@ void MPPIc::configure(config::MPPIc& cfg,
 void MPPIc::shutdown()
 {
     noise_gen_.shutdown(); // join noise threads
+    motion_mdl_ptr_.reset();
 }
 
 void MPPIc::reset()

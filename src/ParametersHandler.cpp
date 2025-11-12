@@ -18,24 +18,31 @@ namespace mappi
 {
 
 ParametersHandler::ParametersHandler(
-  const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent)
+    const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent)
 {
-  node_ = parent;
-  auto node = node_.lock();
-  node_name_ = node->get_name();
-  logger_ = node->get_logger();
+    node_ = parent;
+    // DO NOT lock or access the node here
+    // node_name_ = node->get_name();
+    // logger_ = node->get_logger();
 }
 
 void ParametersHandler::start()
 {
-  auto node = node_.lock();
-  on_set_param_handler_ = node->add_on_set_parameters_callback(
-    std::bind(
-      &ParametersHandler::dynamicParamsCallback, this,
-      std::placeholders::_1));
+    auto node = node_.lock();
+    if (!node) {
+        RCLCPP_ERROR(rclcpp::get_logger("ParametersHandler"),
+                     "Lifecycle node not yet available!");
+        return;
+    }
 
-  auto get_param = getParamGetter(node_name_);
-  get_param(verbose_, "verbose", false);
+    node_name_ = node->get_name();
+    logger_ = node->get_logger();
+
+    on_set_param_handler_ = node->add_on_set_parameters_callback(
+        std::bind(&ParametersHandler::dynamicParamsCallback, this, std::placeholders::_1));
+
+    auto get_param = getParamGetter(node_name_);
+    get_param(verbose_, "verbose", false);
 }
 
 rcl_interfaces::msg::SetParametersResult

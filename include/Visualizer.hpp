@@ -6,8 +6,6 @@
  * Description :
  *   The Visualizer class is a visualization tool for publishing useful insights about MaPPI's outputs.
  *   It owns a pointer to the MPPIc object, which uses to retrieve all data to visualize.
- *   It can also work in a separate thread so that it doesn't block any process when preparing
- *   the visualization messages (optional). 
  *
  * -----------------------------------------------------------------------------
  */
@@ -40,6 +38,7 @@ class Visualizer {
 
     private:
         MPPIc* mppic_;
+        ParametersHandler* parameters_handler_;
 
         rclcpp_lifecycle::LifecycleNode::WeakPtr parent_;
         std::string name_;
@@ -75,6 +74,11 @@ class Visualizer {
          * 
          */
         ~Visualizer();
+        
+        /**
+         * @brief Initialize the Visualizer object
+         */
+        void initialize();
 
         /**
          * @brief Publish visualization topics
@@ -155,33 +159,42 @@ class Visualizer {
 };
 
 Visualizer::Visualizer(rclcpp_lifecycle::LifecycleNode::WeakPtr parent, 
-                        const std::string &name,
-                        MPPIc* mppic,
-                        config::Visualization& config,
-                        ParametersHandler* parameters_handler) : mppic_(mppic),
-                                                                    cfg_(config)
+                       const std::string &name,
+                       MPPIc* mppic,
+                       config::Visualization& config,
+                       ParametersHandler* parameters_handler)
+: mppic_(mppic), parameters_handler_(parameters_handler), parent_(parent), name_(name), cfg_(config)
 {
-    parent_ = parent;
-    name_ = name;
-    auto node = parent_.lock();
-
-    clock_ = node->get_clock();
-
-    auto getParam = parameters_handler->getParamGetter(name + ".GeneralSettings"); 
-    getParam(frame_id_, "global_frame", std::string(""), ParameterType::Static);
-
-    reset();
-
-    marker_pub_      = node->create_publisher<visualization_msgs::msg::MarkerArray>("trajectories", 1);
-    marker_opt_pub_  = node->create_publisher<visualization_msgs::msg::MarkerArray>("optimal_trajectory", 1);
-
-    pcl_pub_     = node->create_publisher<sensor_msgs::msg::PointCloud2>("pcl_trajectories", 1);
-    pcl_opt_pub_ = node->create_publisher<sensor_msgs::msg::PointCloud2>("pcl_optimal_trajectory", 1);
+    // DO NOT call parent_.lock() here
+    // DO NOT create publishers here
+    // DO NOT get parameters here
 }
 
 Visualizer::~Visualizer()
 {
     delete mppic_;
+}
+
+void Visualizer::initialize()
+{
+    auto node = parent_.lock();
+    if (!node) {
+        RCLCPP_ERROR(rclcpp::get_logger("Visualizer"), "Node not available during initialize!");
+        return;
+    }
+
+    clock_ = node->get_clock();
+
+    auto getParam = parameters_handler_->getParamGetter(name_ + ".GeneralSettings"); 
+    getParam(frame_id_, "global_frame", std::string(""), ParameterType::Static);
+
+    reset();
+
+    marker_pub_     = node->create_publisher<visualization_msgs::msg::MarkerArray>("trajectories", 1);
+    marker_opt_pub_ = node->create_publisher<visualization_msgs::msg::MarkerArray>("optimal_trajectory", 1);
+
+    pcl_pub_       = node->create_publisher<sensor_msgs::msg::PointCloud2>("pcl_trajectories", 1);
+    pcl_opt_pub_   = node->create_publisher<sensor_msgs::msg::PointCloud2>("pcl_optimal_trajectory", 1);
 }
 
 void Visualizer::publish()

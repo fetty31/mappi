@@ -72,7 +72,7 @@ class MPPIcROS : public nav2_core::Controller {
 
         objects::Odometry2d current_odom_;
 
-        bool initialized_{false};
+        bool active_{false};
 
         rclcpp::Duration transform_tolerance_ {0, 0};
 
@@ -95,7 +95,7 @@ class MPPIcROS : public nav2_core::Controller {
          * @brief Destroy the MPPIcROS object
          * 
          */
-        ~MPPIcROS() override;
+        ~MPPIcROS() = default;
         
         /**
          * @brief Configure MPPIcROS object
@@ -161,18 +161,19 @@ class MPPIcROS : public nav2_core::Controller {
         // bool isGoalReached();
         
         /**
-         * @brief Check if MPPIcROS is initialized
+         * @brief Check if MPPIcROS is active
          * 
          * @return true 
          * @return false 
          */
-        bool is_initialized();
+        bool is_active();
 
     protected:
 
         void setUpParameters(config::MPPIc& config);
             
-        nav_msgs::msg::Path transformGlobalPlan(const geometry_msgs::msg::PoseStamped & pose);
+        int transformGlobalPlan(const geometry_msgs::msg::PoseStamped & pose,
+                            nav_msgs::msg::Path & path);
 
         bool transformPose(const std::shared_ptr<tf2_ros::Buffer> tf,
                            const std::string frame,

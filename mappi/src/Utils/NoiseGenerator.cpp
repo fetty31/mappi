@@ -30,6 +30,7 @@ void NoiseGenerator::shutdown()
     active_ = false;
     ready_ = true;
     noise_cond_.notify_all();
+
     if (noise_thread_.joinable())
         noise_thread_.join();
 }

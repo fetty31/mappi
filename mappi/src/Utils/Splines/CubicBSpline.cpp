@@ -20,7 +20,7 @@ template<typename T>
 CubicBSpline<T>::CubicBSpline(const std::vector<std::vector<T>>& control_points)
                                                 : BaseSpline<T>(control_points) 
 { 
-    // initialize();
+    initialize();
 }
 
 template<typename T>
@@ -135,5 +135,9 @@ const std::vector<std::vector<T>> CubicBSpline<T>::evaluate(const std::vector<T>
 
     return result;
 }
+
+// Explicit instantiation 
+template class CubicBSpline<double>;
+template class CubicBSpline<float>;
 
 } // namespace mappi::spline
