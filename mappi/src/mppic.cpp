@@ -171,7 +171,8 @@ objects::Trajectory MPPIc::getOptimalTrajectory()
 }
 
 objects::Control MPPIc::getControl(const objects::Odometry2d& odom, 
-                                        const objects::Path& plan)
+                                    const objects::Path& plan,
+                                    bool &has_failed)
 {
     loop_mtx.lock(); // lock main control loop
 
@@ -210,14 +211,22 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
     // Reset costs
     costs_.fill(0.0);
 
-    static bool has_failed;
-    has_failed = false;
+    static bool failed;
+    failed = false;
 
     // Predict trajectories
     do {
-        predict(has_failed);
+        predict(failed);
 
-    } while (fallback(has_failed));
+    } while (fallback(failed));
+
+    has_failed = failed;
+
+    if(failed){
+        std::cout << "mappi::MPPIc ERROR: failed to compute any path\n";
+        loop_mtx.unlock();
+        return objects::Control();
+    }
 
     // Filter control sequence (smooth out)
     filters::savitskyGolayFilter(ctrl_seq_, ctrl_history_);
@@ -281,7 +290,7 @@ bool MPPIc::fallback(bool &failed)
 
     if(++count > cfg_.settings.num_retry){
         count = 0;
-        throw std::runtime_error("mappi::MPPIc ERROR: failed to compute any path");
+        // throw std::runtime_error("mappi::MPPIc ERROR: failed to compute any path");
         return false;
     }
 

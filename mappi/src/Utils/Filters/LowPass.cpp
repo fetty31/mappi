@@ -74,4 +74,15 @@ void lowPassFilter(T input_0, T input_1, T input_2,
   output_2 = cum_out_2;
 }
 
+// Explicit instantiation 
+template double lowPassFilter<double>(double);
+template void lowPassFilter<double>(
+    double, double, double, double&, double&, double&
+);
+
+template float lowPassFilter<float>(float);
+template void lowPassFilter<float>(
+    float, float, float, float&, float&, float&
+);
+
 } // namespace mappi::filters

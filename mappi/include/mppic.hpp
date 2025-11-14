@@ -146,7 +146,8 @@ class MPPIc {
          * @return objects::Control 
          */
         objects::Control getControl(const objects::Odometry2d& odom, 
-                                    const objects::Path& plan);
+                                    const objects::Path& plan,
+                                    bool &has_failed);
         
         /**
          * @brief Whether the MPPIc motion model is holonomic or not

@@ -171,9 +171,15 @@ geometry_msgs::msg::TwistStamped MPPIcROS::computeVelocityCommands(const geometr
     );
 
     objects::Path plan;
+    bool has_failed;
     ros_utils::ros2mppic(global_plan_, plan); // transform global plan to mappi type
-    objects::Control cmd = mappi_.getControl(current_odom_, plan);
+    objects::Control cmd = mappi_.getControl(current_odom_, plan, has_failed);
     // NOTE: if no control is found, cmd variable will be returned filled with 0s
+
+    if(has_failed){
+        RCLCPP_INFO(logger_, "%s: Failed to compute a safe path", plugin_name_.c_str());
+        return cmd_vel;
+    } 
     
     cmd_vel.header.frame_id = pose.header.frame_id;
     cmd_vel.header.stamp = clock_->now();
