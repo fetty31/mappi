@@ -45,8 +45,8 @@ class Visualizer {
 
         rclcpp::Clock::SharedPtr clock_;
 
-        rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr marker_pub_, marker_opt_pub_;
-        rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pcl_pub_, pcl_opt_pub_;
+        std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<visualization_msgs::msg::MarkerArray>> marker_pub_, marker_opt_pub_;
+        std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::PointCloud2>> pcl_pub_, pcl_opt_pub_;
 
         config::Visualization cfg_;
 
@@ -60,26 +60,39 @@ class Visualizer {
         /**
          * @brief Construct a new Visualizer object
          * 
+         */
+        Visualizer() = default;
+
+        /**
+         * @brief Configure a new Visualizer object
+         * 
          * @param mppic Pointer to MPPI controller
          * @param config Configuration 
          */
-        Visualizer(rclcpp_lifecycle::LifecycleNode::WeakPtr parent, 
+        void on_configure(rclcpp_lifecycle::LifecycleNode::WeakPtr parent, 
                     const std::string &name,
                     MPPIc* mppic,
                     config::Visualization& config,
                     ParametersHandler* parameters_handler);
 
         /**
-         * @brief Destroy the Visualizer object
+         * @brief Clean up the Visualizer object
          * 
          */
-        ~Visualizer();
-        
-        /**
-         * @brief Initialize the Visualizer object
-         */
-        void initialize();
+        void on_cleanup();
 
+        /**
+         * @brief Activate the Visualizer object
+         * 
+         */
+        void on_activate();
+
+        /**
+         * @brief Deactivate the Visualizer object
+         * 
+         */
+        void on_deactivate();
+        
         /**
          * @brief Publish visualization topics
          * 
@@ -158,28 +171,21 @@ class Visualizer {
 
 };
 
-Visualizer::Visualizer(rclcpp_lifecycle::LifecycleNode::WeakPtr parent, 
-                       const std::string &name,
-                       MPPIc* mppic,
-                       config::Visualization& config,
-                       ParametersHandler* parameters_handler)
-: mppic_(mppic), parameters_handler_(parameters_handler), parent_(parent), name_(name), cfg_(config)
+void Visualizer::on_configure(rclcpp_lifecycle::LifecycleNode::WeakPtr parent, 
+                                const std::string &name,
+                                MPPIc* mppic,
+                                config::Visualization& config,
+                                ParametersHandler* parameters_handler)
 {
-    // DO NOT call parent_.lock() here
-    // DO NOT create publishers here
-    // DO NOT get parameters here
-}
+    mppic_ = mppic;
+    parameters_handler_ = parameters_handler;
+    parent_ = parent;
+    name_ = name;
+    cfg_ = config;
 
-Visualizer::~Visualizer()
-{
-    delete mppic_;
-}
-
-void Visualizer::initialize()
-{
     auto node = parent_.lock();
     if (!node) {
-        RCLCPP_ERROR(rclcpp::get_logger("Visualizer"), "Node not available during initialize!");
+        RCLCPP_ERROR(rclcpp::get_logger("Visualizer"), "Node not available during on_activate!");
         return;
     }
 
@@ -195,6 +201,30 @@ void Visualizer::initialize()
 
     pcl_pub_       = node->create_publisher<sensor_msgs::msg::PointCloud2>("pcl_trajectories", 1);
     pcl_opt_pub_   = node->create_publisher<sensor_msgs::msg::PointCloud2>("pcl_optimal_trajectory", 1);
+}
+
+void Visualizer::on_cleanup()
+{
+    marker_pub_.reset();   
+    marker_opt_pub_.reset();   
+    pcl_pub_.reset();   
+    pcl_opt_pub_.reset();
+}
+
+void Visualizer::on_activate()
+{
+    marker_pub_->on_activate();   
+    marker_opt_pub_->on_activate();   
+    pcl_pub_->on_activate();   
+    pcl_opt_pub_->on_activate();   
+}
+
+void Visualizer::on_deactivate()
+{
+    marker_pub_->on_deactivate();   
+    marker_opt_pub_->on_deactivate();   
+    pcl_pub_->on_deactivate();   
+    pcl_opt_pub_->on_deactivate();   
 }
 
 void Visualizer::publish()

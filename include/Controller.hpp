@@ -76,8 +76,8 @@ class MPPIcROS : public nav2_core::Controller {
 
         rclcpp::Duration transform_tolerance_ {0, 0};
 
-        rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr global_pub_;
-        rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr local_pub_;
+        std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>> global_pub_;
+        std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>> local_pub_;
 
         // ros::ServiceClient costmap_client_;
 

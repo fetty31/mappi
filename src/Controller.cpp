@@ -38,8 +38,6 @@ void MPPIcROS::configure( const rclcpp_lifecycle::LifecycleNode::WeakPtr & paren
                             std::string name, const std::shared_ptr<tf2_ros::Buffer> tf,
                             const std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros)
 {
-    std::cout << "CONFIGURING MPPIcROS\n";
-
     node_ = parent;
 
     auto node = node_.lock();
@@ -47,8 +45,6 @@ void MPPIcROS::configure( const rclcpp_lifecycle::LifecycleNode::WeakPtr & paren
         RCLCPP_ERROR(rclcpp::get_logger("MPPIcROS"), "Parent node not yet available!");
         return;
     }
-
-    std::cout << "node lock\n";
 
     tf_ = tf;
     costmap_ros_ptr_ = costmap_ros;
@@ -63,8 +59,6 @@ void MPPIcROS::configure( const rclcpp_lifecycle::LifecycleNode::WeakPtr & paren
     global_pub_ = node->create_publisher<nav_msgs::msg::Path>("global_plan", 1);
     local_pub_ = node->create_publisher<nav_msgs::msg::Path>("interpolated_plan", 1);
 
-    std::cout << "publishers declared\n";
-
     // Srv client
     // costmap_client_ = nh_upper.serviceClient<std_srvs::Empty>("clear_costmaps");
 
@@ -73,52 +67,73 @@ void MPPIcROS::configure( const rclcpp_lifecycle::LifecycleNode::WeakPtr & paren
     config_.print_out(); // print out config (debug)
 
     // Set up Visualizer instance
-    visualizer_ptr_ = std::make_unique<Visualizer>(parent, name, &mappi_, config_.visual, parameters_handler_.get());
+    visualizer_ptr_ = std::make_unique<Visualizer>();
+    visualizer_ptr_->on_configure(parent, name, &mappi_, config_.visual, parameters_handler_.get());
 
     // Set up Odometry Helper instance
     // odom_helper_ptr_ = std::make_unique<OdomHelper>(name);
 
-    RCLCPP_INFO(logger_, "mappi:: Configured!");
+    RCLCPP_INFO(
+        logger_,
+        "CONFIGURED controller: %s of type mappi::MPPIcROS",
+        plugin_name_.c_str()
+    );
 }
 
 void MPPIcROS::cleanup()
 {
-    RCLCPP_INFO(
-        logger_,
-        "Cleaning up controller: %s of type mappi::MPPIcROS",
-        plugin_name_.c_str()
-    );
     global_pub_.reset();
     local_pub_.reset();
+
     parameters_handler_.reset();
-    mappi_.shutdown();
+
+    visualizer_ptr_->on_cleanup();
     visualizer_ptr_.reset();
+
+    mappi_.shutdown();
+
+    RCLCPP_INFO(
+        logger_,
+        "CLEANED UP controller %s of type mappi::MPPIcROS",
+        plugin_name_.c_str()
+    );
 }
 
 void MPPIcROS::activate()
 {
-    RCLCPP_INFO(
-        logger_,
-        "Activating controller: %s of type mappi::MPPIcROS",
-        plugin_name_.c_str()
-    );
     parameters_handler_->start();
-    visualizer_ptr_->initialize();
+
+    global_pub_->on_activate();
+    local_pub_->on_activate();
+
+    visualizer_ptr_->on_activate();
 
     costmap_mappi_ = mappi::make_shared<mappi::ROS2CostmapAdapter>(costmap_ros_ptr_);
     mappi_.configure(config_, costmap_mappi_); // Initialize MPPI controller
     active_ = true;
+
+    RCLCPP_INFO(
+        logger_,
+        "ACTIVATED controller: %s of type mappi::MPPIcROS",
+        plugin_name_.c_str()
+    );
 }
 
 void MPPIcROS::deactivate()
 {
-    RCLCPP_INFO(
-        logger_,
-        "Dectivating controller: %s of type mappi::MPPIcROS",
-        plugin_name_.c_str()
-    );
+    global_pub_->on_activate();
+    local_pub_->on_activate();
+
+    visualizer_ptr_->on_deactivate();
+
     mappi_.reset();
     active_ = false;
+
+    RCLCPP_INFO(
+        logger_,
+        "DEACTIVATED controller: %s of type mappi::MPPIcROS",
+        plugin_name_.c_str()
+    );
 }
 
 void MPPIcROS::setSpeedLimit(const double& speed_limit, const bool& percentage)
