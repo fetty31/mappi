@@ -5,7 +5,7 @@
  * 
  * Description :
  *   MPPIcROS is the default class adhering to the pluginlib C++ standard.
- *   It handles all the interaction between MaPPI controller and ROS move_base pipeline.
+ *   It handles all the interaction between MaPPI controller and ROS nav2 workflow.
  *
  * -----------------------------------------------------------------------------
  */
@@ -23,7 +23,6 @@
 
 #include "ROSutils.hpp"
 #include "Visualizer.hpp"
-// #include "OdomHelper.hpp"
 #include "ParametersHandler.hpp"
 #include "CostmapAdapter.hpp"
 
@@ -66,7 +65,6 @@ class MPPIcROS : public nav2_core::Controller {
         config::MPPIc config_;
         std::unique_ptr<Visualizer> visualizer_ptr_;
         std::unique_ptr<ParametersHandler> parameters_handler_;
-        // std::unique_ptr<OdomHelper> odom_helper_ptr_;
 
         nav_msgs::msg::Path global_plan_;
 

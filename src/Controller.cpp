@@ -70,9 +70,6 @@ void MPPIcROS::configure( const rclcpp_lifecycle::LifecycleNode::WeakPtr & paren
     visualizer_ptr_ = std::make_unique<Visualizer>();
     visualizer_ptr_->on_configure(parent, name, &mappi_, config_.visual, parameters_handler_.get());
 
-    // Set up Odometry Helper instance
-    // odom_helper_ptr_ = std::make_unique<OdomHelper>(name);
-
     RCLCPP_INFO(
         logger_,
         "CONFIGURED controller: %s of type mappi::MPPIcROS",
@@ -121,8 +118,8 @@ void MPPIcROS::activate()
 
 void MPPIcROS::deactivate()
 {
-    global_pub_->on_activate();
-    local_pub_->on_activate();
+    global_pub_->on_deactivate();
+    local_pub_->on_deactivate();
 
     visualizer_ptr_->on_deactivate();
 
@@ -175,7 +172,6 @@ geometry_msgs::msg::TwistStamped MPPIcROS::computeVelocityCommands(const geometr
     /*To-Do:
             - fill current_odom_ with current steering angle
     */
-    // odom_helper_ptr_->fillSteering(current_odom_); // get current steering
 
     auto start_time = std::chrono::system_clock::now();
 

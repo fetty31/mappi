@@ -185,7 +185,7 @@ void Visualizer::on_configure(rclcpp_lifecycle::LifecycleNode::WeakPtr parent,
 
     auto node = parent_.lock();
     if (!node) {
-        RCLCPP_ERROR(rclcpp::get_logger("Visualizer"), "Node not available during on_activate!");
+        RCLCPP_ERROR(rclcpp::get_logger("Visualizer"), "Node not available during on_configure!");
         return;
     }
 
