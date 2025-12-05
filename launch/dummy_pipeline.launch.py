@@ -21,7 +21,8 @@ def generate_launch_description():
                     {'min_height': 0.1,
                     'max_height': 15.0,
                     'angle_increment': 0.01,
-                    'range_min': 0.1,
+                    'range_min': 1.0,
+                    'range_max': 15.0,
                     'target_frame': 'ona2/base_footprint'}
                 ],
                 remappings=[('cloud_in', 'ona2/sensors/pandar_front/cloud_raw'),
