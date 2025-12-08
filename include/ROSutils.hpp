@@ -154,7 +154,7 @@ void mppic2ros(const mappi::objects::Path& in_path,
 void mppic2ros(const mappi::objects::Path& in_path, 
                 nav_msgs::msg::Path& out_path,
                 std::string frame_id,
-                const rclcpp::Clock::SharedPtr& clock)
+                const rclcpp::Time& now)
 {
     out_path.poses.clear();
     out_path.poses.reserve(in_path.x.size());
@@ -168,14 +168,14 @@ void mppic2ros(const mappi::objects::Path& in_path,
         q.setRPY( 0, 0, in_path.yaw(i) ); 
         pose_msg.pose.orientation = tf2::toMsg(q);
 
-        pose_msg.header.stamp = clock->now();
+        pose_msg.header.stamp = now;
         pose_msg.header.frame_id = frame_id;
 
         out_path.poses.push_back(pose_msg);
     }
 
     out_path.header.frame_id = frame_id;
-    out_path.header.stamp = clock->now();
+    out_path.header.stamp = now;
 }
 
 /**
@@ -276,13 +276,13 @@ inline std_msgs::msg::ColorRGBA createColor(double r, double g, double b, double
  */
 inline visualization_msgs::msg::Marker createMarker( 
     int id, const geometry_msgs::msg::Pose & pose, const geometry_msgs::msg::Vector3 & scale,
-    const std_msgs::msg::ColorRGBA & color, const rclcpp::Clock::SharedPtr& clock, 
+    const std_msgs::msg::ColorRGBA & color, const rclcpp::Time& now, 
     const std::string & frame_id, const std::string ns="mappi_traj")
 {
     using visualization_msgs::msg::Marker;
     Marker marker;
     marker.header.frame_id = frame_id;
-    marker.header.stamp = clock->now();
+    marker.header.stamp = now;
     marker.ns = ns;
     marker.id = id;
     marker.type = Marker::SPHERE;
@@ -307,13 +307,13 @@ inline visualization_msgs::msg::Marker createMarker(
  */
 inline visualization_msgs::msg::Marker createArrowMarker( 
     int id, const geometry_msgs::msg::Pose & pose, const geometry_msgs::msg::Vector3 & scale,
-    const std_msgs::msg::ColorRGBA & color, const rclcpp::Clock::SharedPtr& clock,
+    const std_msgs::msg::ColorRGBA & color, const rclcpp::Time& now,
     const std::string & frame_id, const std::string ns="mappi_traj")
 {
     using visualization_msgs::msg::Marker;
     Marker marker;
     marker.header.frame_id = frame_id;
-    marker.header.stamp = clock->now();
+    marker.header.stamp = now;
     marker.ns = ns;
     marker.id = id;
     marker.type = Marker::ARROW;

@@ -215,8 +215,6 @@ controller_server:
     FollowPath:
       plugin: "mappi::MPPIcROS"
       GeneralSettings:
-        global_frame: "odom"
-        local_frame: "base_footprint"
         transform_tolerance: 0.5
         num_iterations: 1
         batch_size: 1000
@@ -236,11 +234,17 @@ controller_server:
         min_vy: -0.5
         max_wz: 0.5
         min_wz: -0.5
+        max_ax: 1.0
+        min_ax: -1.0
+        max_ay: 1.0
+        min_ay: -1.0
+        max_az: 2.5
       MotionModel: "BicycleKin"
       Ackermann:
         min_radius: 1.0
       BicycleKin:
-        length: 0.5
+        length: 1.5
+        length_rear: 0.75
         max_steer: 0.3
       NoiseGeneration:
         std_vx: 0.3

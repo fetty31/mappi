@@ -16,6 +16,8 @@ void MPPIc::configure(config::MPPIc& cfg,
         motion_mdl_ptr_ = std::make_unique<models::Ackermann>(cfg.ackermann, cfg.model_dt);
     else if(cfg.settings.motion_model == "BicycleKin")
         motion_mdl_ptr_ = std::make_unique<models::BicycleKin>(cfg.bicycleKin, cfg.model_dt);
+    else if(cfg.settings.motion_model == "BicycleKinRear")
+        motion_mdl_ptr_ = std::make_unique<models::BicycleKinRear>(cfg.bicycleKin, cfg.model_dt);
     else
         motion_mdl_ptr_ = std::make_unique<models::Holonomic>(cfg.model_dt);
 
@@ -76,35 +78,26 @@ void MPPIc::setConfig(config::MPPIc& cfg)
 {
     loop_mtx.lock(); // lock control loop
 
-    std::cout << "mappi::MPPIc updating parameters...\n";
-
     if(cfg.settings.motion_model == "Ackermann")
         motion_mdl_ptr_ = std::make_unique<models::Ackermann>(cfg.ackermann, cfg.model_dt);
     else if(cfg.settings.motion_model == "BicycleKin")
         motion_mdl_ptr_ = std::make_unique<models::BicycleKin>(cfg.bicycleKin, cfg.model_dt);
+    else if(cfg.settings.motion_model == "BicycleKinRear")
+        motion_mdl_ptr_ = std::make_unique<models::BicycleKinRear>(cfg.bicycleKin, cfg.model_dt);
     else
         motion_mdl_ptr_ = std::make_unique<models::Holonomic>(cfg.model_dt);
-
-    std::cout << "mappi::MPPIc finished with MotionModel update\n";
 
     if( (cfg.noise.batch_size != cfg_.noise.batch_size) || 
         (cfg.noise.time_steps != cfg_.noise.time_steps) )
     {
-
-        std::cout << "mappi::MPPIc resetting all mppi controller\n";
-
         cfg_ = cfg;
         reset(); // reset full MPPIc
     }
     else
     {
-        std::cout << "mappi::MPPIc resetting only noise generator\n";
-
         cfg_ = cfg;
         noise_gen_.reset(cfg.noise, isHolonomic()); // reset noise generator
     }
-
-    std::cout << "mappi::MPPIc updating Critics...\n";
 
     // Re-configure Critics
     obs_critic_.setConfig(cfg.obs_crtc);
@@ -117,8 +110,6 @@ void MPPIc::setConfig(config::MPPIc& cfg)
     forward_critic_.setConfig(cfg.forward_crtc);
 
     loop_mtx.unlock(); // unlock control loop
-
-    std::cout << "mappi::MPPIc finished param update\n";
 }
 
 objects::Trajectory MPPIc::getCandidateTrajectories()
@@ -175,8 +166,6 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
                                     bool &has_failed)
 {
     loop_mtx.lock(); // lock main control loop
-
-    std::cout << "mappi::MPPIc getControl()\n";
 
     static objects::Control output;
 
@@ -240,10 +229,13 @@ objects::Control MPPIc::getControl(const objects::Odometry2d& odom,
     // (optional) Low pass filter 
     // wz = filters::lowPassFilter<double>(wz);
 
-    filters::lowPassFilter<double>(vx, vy, wz, 
-                                output.vx, 
-                                output.vy, 
-                                output.wz );
+    // filters::lowPassFilter<double>(vx, vy, wz, 
+    //                             output.vx, 
+    //                             output.vy, 
+    //                             output.wz );
+    output.vx = vx;
+    output.vy = vy;
+    output.wz = wz;
 
     // Shift control 
     shiftControlSeq();
@@ -279,12 +271,9 @@ bool MPPIc::fallback(bool &failed)
     static int count = 0;
 
     if(not failed){
-        std::cout << "mappi::MPPIc prediction done\n";
         count = 0;
         return false;
     }
-
-    std::cout << "mappi::MPPIc prediction failed\n";
 
     reset();
 
@@ -384,12 +373,51 @@ void MPPIc::updateState(objects::State& st,
 
 void MPPIc::applyControlConstraints()
 {
-    if (isHolonomic()) {
-        ctrl_seq_.vy = xt::clip(ctrl_seq_.vy, cfg_.bounds.min_vy, cfg_.bounds.max_vy);
-    }
+    // if (isHolonomic()) {
+    //     ctrl_seq_.vy = xt::clip(ctrl_seq_.vy, cfg_.bounds.min_vy, cfg_.bounds.max_vy);
+    // }
 
-    ctrl_seq_.vx = xt::clip(ctrl_seq_.vx, cfg_.bounds.min_vx, cfg_.bounds.max_vx);
-    ctrl_seq_.wz = xt::clip(ctrl_seq_.wz, cfg_.bounds.min_wz, cfg_.bounds.max_wz);
+    // ctrl_seq_.vx = xt::clip(ctrl_seq_.vx, cfg_.bounds.min_vx, cfg_.bounds.max_vx);
+    // ctrl_seq_.wz = xt::clip(ctrl_seq_.wz, cfg_.bounds.min_wz, cfg_.bounds.max_wz);
+
+    double max_delta_vx = cfg_.model_dt * cfg_.bounds.max_ax;
+    double min_delta_vx = cfg_.model_dt * cfg_.bounds.min_ax;
+    double max_delta_vy = cfg_.model_dt * cfg_.bounds.max_ay;
+    double min_delta_vy = cfg_.model_dt * cfg_.bounds.min_ay;
+    double max_delta_wz = cfg_.model_dt * cfg_.bounds.max_az;
+
+    double vx_last = std::max(std::min(ctrl_seq_.vx(0), cfg_.bounds.max_vx), cfg_.bounds.min_vx);
+    double wz_last = std::max(std::min(ctrl_seq_.wz(0), cfg_.bounds.max_wz), cfg_.bounds.min_wz);
+    double vy_last = 0.0;
+    if(isHolonomic()) 
+        vy_last = std::max(std::min(ctrl_seq_.vy(0), cfg_.bounds.max_vy), cfg_.bounds.min_vy);
+
+    for (unsigned int i = 1; i != ctrl_seq_.vx.size(); i++) {
+        double vx_curr = std::max(std::min(ctrl_seq_.vx(i), cfg_.bounds.max_vx), cfg_.bounds.min_vx);
+        if (vx_last > 0.0) {
+            vx_curr = std::max(std::min(vx_curr, vx_last + max_delta_vx), vx_last + min_delta_vx);
+        } else {
+            vx_curr = std::max(std::min(vx_curr, vx_last - min_delta_vx), vx_last - max_delta_vx);
+        }
+        vx_last = vx_curr;
+        ctrl_seq_.vx(i) = vx_curr;
+
+        double wz_curr = std::max(std::min(ctrl_seq_.wz(i), cfg_.bounds.max_wz), cfg_.bounds.min_wz);
+        wz_curr = std::max(std::min(wz_curr, wz_last + max_delta_wz), wz_last - max_delta_wz);
+        wz_last = wz_curr;
+        ctrl_seq_.wz(i) = wz_curr;
+
+        if (isHolonomic()) {
+            double vy_curr = std::max(std::min(ctrl_seq_.vy(i), cfg_.bounds.max_vy), cfg_.bounds.min_vy);
+            if (vy_last > 0.0) {
+                vy_curr = std::max(std::min(vy_curr, vy_last + max_delta_vy), vy_last + min_delta_vy);
+            } else {
+                vy_curr = std::max(std::min(vy_curr, vy_last - min_delta_vy), vy_last - max_delta_vy);
+            }
+            vy_last = vy_curr;
+            ctrl_seq_.vy(i) = vy_curr;
+        }
+    }
 
     motion_mdl_ptr_->constrainMotion(ctrl_seq_);
 }

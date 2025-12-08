@@ -4,32 +4,30 @@
  * Created     : 2025-01-02
  * 
  * Description :
- *   Bicycle Kinematic Motion Model. Control variables:
+ *   Rear CoG Bicycle Kinematic Motion Model. Control variables:
  *          - vx: longitudinal velocity
  *          - wz: steering rate (steering velocity)
  *   Equations:
- *      dx   = vx * cos(yaw + beta)
- *      dy   = vx * sin(yaw + beta)
- *      dyaw = vx * tan(steering) * cos(beta)/length
+ *      dx   = vx * cos(yaw)
+ *      dy   = vx * sin(yaw)
+ *      dyaw = vx * tan(steering)/length
  *      dsteering = wz
- *      (beta = atan(length_rear * tan(steering)/length))
  * where: 
- *      - length == robot length (wheelbase)
- *      - length_rear == distance from CoG to rear axle
+ *      - length == robot length
  *      - steering == robot steering angle (at wheel reference)
  *
  * -----------------------------------------------------------------------------
  */
 
-#ifndef __MAPPI_BICYCLEKIN_MODEL_HPP__
-#define __MAPPI_BICYCLEKIN_MODEL_HPP__
+#ifndef __MAPPI_BICYCLEKINREAR_MODEL_HPP__
+#define __MAPPI_BICYCLEKINREAR_MODEL_HPP__
 
 #include "Models/MotionModel.hpp"
 #include "Objects/Config.hpp"
 
 namespace mappi::models {
 
-class BicycleKin : public MotionModel {
+class BicycleKinRear : public MotionModel {
 
     // VARIABLES
 
@@ -45,8 +43,8 @@ class BicycleKin : public MotionModel {
          * @param config 
          * @param dt 
          */
-        explicit BicycleKin(mappi::config::BicycleKinModel& config, 
-                            double dt) : MotionModel(dt) 
+        explicit BicycleKinRear(mappi::config::BicycleKinModel& config, 
+                                    double dt) : MotionModel(dt) 
         {
             cfg_ = config;
         }
@@ -91,30 +89,26 @@ class BicycleKin : public MotionModel {
             auto mask = xt::fabs(steer) > cfg_.max_steer;
             steer = xt::where(mask, steer_limit, steer);
 
-            // Compute slip angle (beta)
-            auto beta = xt::atan2(cfg_.length_rear * xt::tan(steer), cfg_.length);
-
             /* Kinematic Bicycle model:
             inputs: [steer, vx]
             outputs: [x, y, yaw]
             sys:
-                dx   = vx * cos(yaw + beta)
-                dy   = vx * sin(yaw + beta)
-                dyaw = vx * tan(steering) * cos(beta)/length
+                dx = vx * cos(yaw)
+                dy = vx * sin(yaw)
+                dyaw = vx * tan(steer) / L
             */
 
             xt::noalias(traj.yaw) =
-                aux::normalize_angles(xt::cumsum( st.vx * xt::tan(steer) * xt::cos(beta) / cfg_.length * model_dt, 1) + initial_yaw);
+                aux::normalize_angles(xt::cumsum( st.vx * tan(steer) / cfg_.length * model_dt, 1) + initial_yaw);
 
             const auto yaw_accum = xt::view(traj.yaw, xt::all(), xt::range(0, -1));
-            const auto beta_accum = xt::view(beta, xt::all(), xt::range(0, -1));
 
             auto && yaw_cos = xt::xtensor<double, 2>::from_shape(traj.yaw.shape());
             auto && yaw_sin = xt::xtensor<double, 2>::from_shape(traj.yaw.shape());
             xt::noalias(xt::view(yaw_cos, xt::all(), 0)) = std::cos(initial_yaw);
             xt::noalias(xt::view(yaw_sin, xt::all(), 0)) = std::sin(initial_yaw);
-            xt::noalias(xt::view(yaw_cos, xt::all(), xt::range(1, xt::placeholders::_))) = xt::cos(yaw_accum + beta_accum);
-            xt::noalias(xt::view(yaw_sin, xt::all(), xt::range(1, xt::placeholders::_))) = xt::sin(yaw_accum + beta_accum);
+            xt::noalias(xt::view(yaw_cos, xt::all(), xt::range(1, xt::placeholders::_))) = xt::cos(yaw_accum);
+            xt::noalias(xt::view(yaw_sin, xt::all(), xt::range(1, xt::placeholders::_))) = xt::sin(yaw_accum);
 
             auto && dx = xt::eval(st.vx * yaw_cos);
             auto && dy = xt::eval(st.vx * yaw_sin);

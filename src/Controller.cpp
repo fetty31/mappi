@@ -4,10 +4,8 @@
 // #include "nav2_core/planner_exceptions.hpp"
 #include "nav2_util/geometry_utils.hpp"
 
-using std::hypot;
 using std::min;
 using std::max;
-using std::abs;
 using nav2_util::geometry_utils::euclidean_distance;
 
 namespace mappi 
@@ -50,7 +48,6 @@ void MPPIcROS::configure( const rclcpp_lifecycle::LifecycleNode::WeakPtr & paren
     costmap_ros_ptr_ = costmap_ros;
     plugin_name_ = name;
     logger_ = node->get_logger();
-    clock_ = node->get_clock();
 
     RCLCPP_INFO(logger_, "mappi:: Configuring with plugin name %s", plugin_name_.c_str());
 
@@ -68,7 +65,7 @@ void MPPIcROS::configure( const rclcpp_lifecycle::LifecycleNode::WeakPtr & paren
 
     // Set up Visualizer instance
     visualizer_ptr_ = std::make_unique<Visualizer>();
-    visualizer_ptr_->on_configure(parent, name, &mappi_, config_.visual, parameters_handler_.get());
+    visualizer_ptr_->on_configure(parent, name, costmap_ros_ptr_->getGlobalFrameID(), &mappi_, config_.visual, parameters_handler_.get());
 
     RCLCPP_INFO(
         logger_,
@@ -143,9 +140,12 @@ geometry_msgs::msg::TwistStamped MPPIcROS::computeVelocityCommands(const geometr
                                                                     const geometry_msgs::msg::Twist & velocity,
                                                                     nav2_core::GoalChecker * /*goal_checker*/)
 {
+
+    rclcpp::Time now(pose.header.stamp);
+
     geometry_msgs::msg::TwistStamped cmd_vel;
     cmd_vel.header.frame_id = pose.header.frame_id;
-    cmd_vel.header.stamp = clock_->now();
+    cmd_vel.header.stamp = pose.header.stamp;
     cmd_vel.twist.linear.x  = 0.0;
     cmd_vel.twist.linear.y  = 0.0;
     cmd_vel.twist.angular.z = 0.0;
@@ -169,6 +169,13 @@ geometry_msgs::msg::TwistStamped MPPIcROS::computeVelocityCommands(const geometr
     ros_utils::ros2mppic(pose, current_odom_); 
     ros_utils::ros2mppic(velocity, current_odom_); 
 
+    RCLCPP_INFO(
+        logger_,
+        "%s: current velocity: %f",
+        plugin_name_.c_str(),
+        current_odom_.vx
+    );
+
     /*To-Do:
             - fill current_odom_ with current steering angle
     */
@@ -182,8 +189,12 @@ geometry_msgs::msg::TwistStamped MPPIcROS::computeVelocityCommands(const geometr
     );
 
     objects::Path plan;
+    ros_utils::ros2mppic(global_plan_, plan); // transform plan to mappi type
+
+    // (optional) Shift local plan to avoid planning inside the robot's footprint 
+    aux::shiftPlan(plan, config_.settings.dist_shift);
+
     bool has_failed;
-    ros_utils::ros2mppic(global_plan_, plan); // transform global plan to mappi type
     objects::Control cmd = mappi_.getControl(current_odom_, plan, has_failed);
     // NOTE: if no control is found, cmd variable will be returned filled with 0s
 
@@ -191,9 +202,8 @@ geometry_msgs::msg::TwistStamped MPPIcROS::computeVelocityCommands(const geometr
         RCLCPP_INFO(logger_, "%s: Failed to compute a safe path", plugin_name_.c_str());
         return cmd_vel;
     } 
-    
-    cmd_vel.header.frame_id = pose.header.frame_id;
-    cmd_vel.header.stamp = clock_->now();
+
+    // cmd_vel.twist.linear.x  = rate_limited_velocity(cmd.vx, config_.bounds.max_ax);
     cmd_vel.twist.linear.x  = cmd.vx;
     cmd_vel.twist.linear.y  = cmd.vy;
     cmd_vel.twist.angular.z = cmd.wz;
@@ -205,13 +215,13 @@ geometry_msgs::msg::TwistStamped MPPIcROS::computeVelocityCommands(const geometr
     RCLCPP_INFO(logger_, "%s: Elapsed time: %f ms", plugin_name_.c_str(), elapsed_time.count()*1000.0);
 
     // Publish generated trajectories
-    visualizer_ptr_->publish();
+    visualizer_ptr_->publish(now);
 
     RCLCPP_INFO(logger_, "%s: published trajectories", plugin_name_.c_str());
 
     // Publish interpolated plan
     static nav_msgs::msg::Path path_msg;
-    ros_utils::mppic2ros(mappi_.getCurrentPlan(), path_msg, local_frame_, clock_);
+    ros_utils::mppic2ros(mappi_.getCurrentPlan(), path_msg, costmap_ros_ptr_->getGlobalFrameID(), now);
     local_pub_->publish(path_msg);
 
     RCLCPP_INFO(logger_, "%s: published local plan", plugin_name_.c_str());
@@ -229,41 +239,7 @@ void MPPIcROS::setPlan(const nav_msgs::msg::Path & path)
     RCLCPP_INFO(logger_, "%s: Setting new global plan", plugin_name_.c_str());
 
     global_plan_ = path;
-
-    // (optional) Clear costmaps
-    // static std_srvs::Empty srv;
-    // if (costmap_client_.call(srv))
-    // {
-    //     ROS_INFO("NANO_MPPIC:: Resetting costmaps");
-    //     ros::Duration(0.05).sleep(); // wait until costmap is reset (avoid checking costmap pointer when is empty)
-    // }
-    // else
-    // {
-    //     ROS_ERROR("NANO_MPPIC:: Failed to call service ~clear_costmaps");
-    // }
-
-    // Publish received global plan
-    global_pub_->publish(path);
-
 }
-
-// bool MPPIcROS::isGoalReached()
-// {
-//     ROS_INFO("mappi:: is goal reached?");
-
-//     if (not is_active()) {
-//         ROS_ERROR("mappi: This planner/controller has not been initialized, please call initialize() before using this planner");
-//         return false;
-//     }
-
-//     if(aux::robotNearGoal(this->goal_tolerance_, current_odom_, global_plan_))
-//     {
-//         ROS_WARN("mappi: Goal reached!");
-//         return true;
-//     }
-//     else
-//         return false;
-// }
 
 bool MPPIcROS::is_active()
 {
@@ -403,6 +379,10 @@ bool MPPIcROS::transformPose(const std::shared_ptr<tf2_ros::Buffer> tf,
 
 void MPPIcROS::setUpParameters(config::MPPIc& config)
 {
+    // Controller server
+    auto getParamNav2 = parameters_handler_->getParamGetter("controller_server");
+    getParamNav2(controller_frequency_, "controller_frequency", 20.0, ParameterType::Static);
+
     // Visualization
     auto getParamVis = parameters_handler_->getParamGetter(plugin_name_ + ".Visualization");
     getParamVis(config.visual.active, "active", false, ParameterType::Static);
@@ -413,12 +393,9 @@ void MPPIcROS::setUpParameters(config::MPPIc& config)
 
     // General
     auto getParamGen = parameters_handler_->getParamGetter(plugin_name_ + ".GeneralSettings");
-    getParamGen(config.settings.global_frame, "global_frame", std::string(""), ParameterType::Static);
-    getParamGen(config.settings.local_frame, "local_frame", std::string(""), ParameterType::Static);
     getParamGen(config.settings.num_iters, "num_iterations", 1);
     getParamGen(config.settings.num_retry, "num_retry", 4);
     getParamGen(config.settings.offset, "control_offset", 1);
-    getParamGen(config.settings.goal_tolerance, "goal_tolerance", 0.5);
     getParamGen(config.settings.dist_shift, "plan_shift", 1.0);
     getParamGen(config.settings.use_splines, "use_splines", false);
 
@@ -441,6 +418,11 @@ void MPPIcROS::setUpParameters(config::MPPIc& config)
     getParamCnstr(config.bounds.min_vy, "min_vy", -0.5);
     getParamCnstr(config.bounds.max_wz, "max_wz", 0.5);
     getParamCnstr(config.bounds.min_wz, "min_wz", -0.5);
+    getParamCnstr(config.bounds.max_ax, "max_ax", 3.0);
+    getParamCnstr(config.bounds.min_ax, "min_ax", -3.0);
+    getParamCnstr(config.bounds.max_ay, "max_ay", 3.0);
+    getParamCnstr(config.bounds.min_ay, "min_ay", -3.0);
+    getParamCnstr(config.bounds.max_az, "max_az", 3.5);
 
     // Motion Model
     auto getParamModel = parameters_handler_->getParamGetter(plugin_name_);
@@ -452,10 +434,11 @@ void MPPIcROS::setUpParameters(config::MPPIc& config)
 
     // BicycleKin model
     auto getParamBicycle = parameters_handler_->getParamGetter(plugin_name_ + ".BicycleKin");
-    getParamBicycle(config.bicycleKin.length, "length", 0.5);
+    getParamBicycle(config.bicycleKin.length, "length", 1.5);
+    getParamBicycle(config.bicycleKin.length_rear, "length_rear", 0.75);
     getParamBicycle(config.bicycleKin.max_steer, "max_steer", 0.3);
 
-    // BicycleKin model
+    // Noise Generator
     auto getParamNoise = parameters_handler_->getParamGetter(plugin_name_ + ".NoiseGeneration");
     getParamNoise(config.noise.std_vx, "std_vx", 0.5);
     getParamNoise(config.noise.std_vy, "std_vy", 0.3);
@@ -519,6 +502,29 @@ void MPPIcROS::setUpParameters(config::MPPIc& config)
     //                         config.obs_crtc.inflation_scale_factor, 
     //                         0.0f);
     
+}
+
+double MPPIcROS::rate_limited_velocity(double v_target, double r) {
+    static auto start_time = std::chrono::system_clock::now();
+    auto end_time = std::chrono::system_clock::now();
+
+    static std::chrono::duration<double> elapsed_time;
+    elapsed_time = end_time - start_time;
+
+    start_time = end_time; // keep counting
+
+    double dt;
+    if( elapsed_time.count() < 1.0/controller_frequency_ )
+        dt = 1.0/controller_frequency_;
+    else
+        dt = elapsed_time.count();
+
+    double delta = r * dt;
+    double v_min = current_odom_.vx - delta;
+    double v_max = current_odom_.vx + delta;
+    if (v_target < v_min) return v_min;
+    if (v_target > v_max) return v_max;
+    return v_target;
 }
 
 } // namespace mappi

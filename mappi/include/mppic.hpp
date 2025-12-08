@@ -25,6 +25,7 @@
 #include "Models/Ackermann.hpp"
 #include "Models/Holonomic.hpp"
 #include "Models/BicycleKin.hpp"
+#include "Models/BicycleKinRear.hpp"
 
 #include "Critics/Obstacles.hpp"
 #include "Critics/Goal.hpp"

@@ -34,6 +34,7 @@ struct AckermannModel
 struct BicycleKinModel 
 {
     double length;
+    double length_rear;
     double max_steer;
 };
 
@@ -42,6 +43,9 @@ struct Constraints
     double max_vx, min_vx;
     double max_vy, min_vy;
     double max_wz, min_wz;
+    double max_ax, min_ax;
+    double max_ay, min_ay;
+    double max_az;
 };
 
 struct CommonCost
@@ -100,12 +104,9 @@ struct MPPIc
         int num_iters;
         int num_retry;
         int offset;
-        double goal_tolerance;
         double dist_shift;
         bool use_splines;
         std::string motion_model;
-        std::string global_frame;
-        std::string local_frame;
     } settings;
 
     AckermannModel ackermann;
@@ -145,15 +146,13 @@ struct MPPIc
         std::cout << "  - gamma: " << gamma << std::endl;
         std::cout << "  - use_splines: " << settings.use_splines << std::endl;
         std::cout << "  - dist_shift: " << settings.dist_shift << std::endl;
-        std::cout << "  - goal_tolerance: " << settings.goal_tolerance << std::endl;
-        std::cout << "  - global_frame: " << settings.global_frame << std::endl;
-        std::cout << "  - local_frame: " << settings.local_frame << std::endl;
 
         std::cout << "MotionModel: " << settings.motion_model << std::endl;
         if (settings.motion_model=="Ackermann")
             std::cout << "  - min_radius: " << ackermann.min_r << std::endl;
         else if (settings.motion_model=="BicycleKin"){
             std::cout << "  - length: " << bicycleKin.length << std::endl;
+            std::cout << "  - length_rear: " << bicycleKin.length_rear << std::endl;
             std::cout << "  - max steering: " << bicycleKin.max_steer << std::endl;
         }
 
@@ -173,6 +172,9 @@ struct MPPIc
         std::cout << "  - bounds.max_vx: " << bounds.max_vx << "   bounds.min_vx: " << bounds.min_vx << std::endl;
         std::cout << "  - bounds.max_vy: " << bounds.max_vy << "   bounds.min_vy: " << bounds.min_vy << std::endl;
         std::cout << "  - bounds.max_wz: " << bounds.max_wz << "   bounds.min_wz: " << bounds.min_wz << std::endl;
+        std::cout << "  - bounds.max_ax: " << bounds.max_ax << "   bounds.min_ax: " << bounds.min_ax << std::endl;
+        std::cout << "  - bounds.max_ay: " << bounds.max_ay << "   bounds.min_ay: " << bounds.min_ay << std::endl;
+        std::cout << "  - bounds.max_az: " << bounds.max_az << std::endl;
 
         std::cout << "Goal Critic Settings: " << std::endl;
         std::cout << "  - active: "     << goal_crtc.common.active       << std::endl;
@@ -191,6 +193,16 @@ struct MPPIc
         std::cout << "  - active: "     << twir_crtc.common.active       << std::endl;
         std::cout << "  - power: "      << twir_crtc.common.power       << std::endl;
         std::cout << "  - weight: "     << twir_crtc.common.weight      << std::endl;
+
+        std::cout << "Forward Settings: " << std::endl;
+        std::cout << "  - active: "     << forward_crtc.common.active       << std::endl;
+        std::cout << "  - power: "      << forward_crtc.common.power       << std::endl;
+        std::cout << "  - weight: "     << forward_crtc.common.weight      << std::endl;
+
+        std::cout << "Goal Angle Settings: " << std::endl;
+        std::cout << "  - active: "     << goalangle_crtc.common.active       << std::endl;
+        std::cout << "  - power: "      << goalangle_crtc.common.power       << std::endl;
+        std::cout << "  - weight: "     << goalangle_crtc.common.weight      << std::endl;
 
         std::cout << "Path Follow Critic Settings: " << std::endl;
         std::cout << "  - active: "     << pathfollow_crtc.common.active       << std::endl;

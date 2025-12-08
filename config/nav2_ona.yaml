@@ -184,43 +184,47 @@ controller_server:
     general_goal_checker:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.25
-      yaw_goal_tolerance: 0.25
+      xy_goal_tolerance: 1.25
+      yaw_goal_tolerance: 1.25
     # FollowPath parameters
     FollowPath:
       plugin: "mappi::MPPIcROS"
       GeneralSettings:
-        global_frame: "ona2/odom"
-        local_frame: "ona2/base_footprint"
         transform_tolerance: 0.5
-        num_iterations: 1
+        num_iterations: 2
         batch_size: 1000
-        time_steps: 100
+        time_steps: 60
         num_retry: 4
         control_offset: 1
-        goal_tolerance: 0.5
+        goal_tolerance: 1.5
         plan_shift: 1.0
         use_splines: false
         model_dt: 0.05
         temperature: 0.3
         gamma: 0.05
       Constraints:
-        max_vx: 0.75
-        min_vx: -0.75
+        max_vx: 1.0
+        min_vx: -1.0
         max_vy: 0.5
         min_vy: -0.5
-        max_wz: 0.5
-        min_wz: -0.5
+        max_wz: 0.4
+        min_wz: -0.4
+        max_ax: 2.0
+        min_ax: -2.0
+        max_ay: 1.0
+        min_ay: -1.0
+        max_az: 2.5
       MotionModel: "BicycleKin"
       Ackermann:
         min_radius: 1.0
       BicycleKin:
-        length: 0.5
+        length: 0.75
+        length_rear: 0.25
         max_steer: 0.3
       NoiseGeneration:
-        std_vx: 0.5
-        std_vy: 0.3
-        std_wz: 0.75
+        std_vx: 0.2
+        std_vy: 0.2
+        std_wz: 0.3
       Critics:
         Goal:
           active: true
@@ -244,14 +248,14 @@ controller_server:
           weight: 10.0
         Forward:
           active: false
-          power: 1
-          weight: 10.0
+          power: 3
+          weight: 5.0
         PathFollow:
           active: true
           power: 1
           weight: 10.0
           threshold: 1.0
-          offset_from_furthest: 3
+          offset_from_furthest: 10
         PathAngle:
           active: false
           power: 1
@@ -286,12 +290,12 @@ local_costmap:
       width: 15
       height: 15
       resolution: 0.05
-      robot_radius: 0.22
+      footprint: "[ [1.15,0.65],[1.15,-0.65],[-1.15,-0.65],[-1.15,0.65] ]"
       plugins: ["voxel_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0
-        inflation_radius: 0.55
+        inflation_radius: 1.0
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"
         enabled: True
@@ -326,7 +330,7 @@ global_costmap:
       rolling_window: true
       global_frame: ona2/map
       robot_base_frame: ona2/base_footprint
-      robot_radius: 0.22
+      footprint: "[ [1.15,0.65],[1.15,-0.65],[-1.15,-0.65],[-1.15,0.65] ]"
       width: 150
       height: 150
       resolution: 0.05
@@ -352,7 +356,7 @@ global_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0
-        inflation_radius: 0.55
+        inflation_radius: 1.0
       always_send_full_costmap: True
 
 map_server:
@@ -390,11 +394,11 @@ planner_server:
       analytic_expansion_max_length: 3.0  # For Hybrid/Lattice nodes: The maximum length of the analytic expansion to be considered valid to prevent unsafe shortcutting
       analytic_expansion_max_cost: 200.0  # The maximum single cost for any part of an analytic expansion to contain and be valid, except when necessary on approach to goal
       analytic_expansion_max_cost_override: false  #  Whether or not to override the maximum cost setting if within critical distance to goal (ie probably required)
-      minimum_turning_radius: 0.80        # minimum turning radius in m of path / vehicle
+      minimum_turning_radius: 1.50        # minimum turning radius in m of path / vehicle
       reverse_penalty: 1.0                # Penalty to apply if motion is reversing, must be => 1
       change_penalty: 0.0                 # Penalty to apply if motion is changing directions (L to R), must be >= 0
       non_straight_penalty: 1.2           # Penalty to apply if motion is non-straight, must be => 1
-      cost_penalty: 2.0                   # Penalty to apply to higher cost areas when adding into the obstacle map dynamic programming distance expansion heuristic. This drives the robot more towards the center of passages. A value between 1.3 - 3.5 is reasonable.
+      cost_penalty: 4.0                   # Penalty to apply to higher cost areas when adding into the obstacle map dynamic programming distance expansion heuristic. This drives the robot more towards the center of passages. A value between 1.3 - 3.5 is reasonable.
       retrospective_penalty: 0.015
       lookup_table_size: 20.0             # Size of the dubin/reeds-sheep distance window to cache, in meters.
       cache_obstacle_heuristic: false     # Cache the obstacle map dynamic programming distance expansion heuristic between subsequent replannings of the same goal location. Dramatically speeds up replanning performance (40x) if costmap is largely static.
@@ -403,9 +407,8 @@ planner_server:
       downsample_obstacle_heuristic: True
       allow_primitive_interpolation: False
       coarse_search_resolution: 4         # Number of bins to skip when doing a coarse search for the path. Only used for all_direction goal heading mode.
-      goal_heading_mode: "DEFAULT"        # DEFAULT, BIDIRECTIONAL, ALL_DIRECTION
-      smooth_path: True  
-
+      goal_heading_mode: "ALL_DIRECTION"        # DEFAULT, BIDIRECTIONAL, ALL_DIRECTION
+      smooth_path: False  
       smoother:
         max_iterations: 1000
         w_smooth: 0.3
@@ -437,8 +440,8 @@ velocity_smoother:
     feedback: "OPEN_LOOP"
     max_velocity: [1.0, 0.0, 0.6]
     min_velocity: [-1.0, 0.0, -0.6]
-    max_accel: [2.5, 0.0, 2.2]
-    max_decel: [-2.5, 0.0, -2.2]
+    max_accel: [20.5, 0.0, 20.2]
+    max_decel: [-20.5, 0.0, -20.2]
     odom_topic: "ona2/odometry"
     odom_duration: 0.1
     deadband_velocity: [0.0, 0.0, 0.0]

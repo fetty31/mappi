@@ -30,6 +30,7 @@
 #include "nav2_core/goal_checker.hpp"
 
 #include "rclcpp/rclcpp.hpp"
+#include "rclcpp/time_source.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 
 #include "pluginlib/class_loader.hpp"
@@ -49,11 +50,8 @@ class MPPIcROS : public nav2_core::Controller {
 
         rclcpp_lifecycle::LifecycleNode::WeakPtr node_;
 
-        rclcpp::Clock::SharedPtr clock_;
-
         std::shared_ptr<tf2_ros::Buffer> tf_;
 
-        std::string local_frame_, global_frame_;
         std::string plugin_name_;
 
         mappi::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros_ptr_;
@@ -71,6 +69,8 @@ class MPPIcROS : public nav2_core::Controller {
         objects::Odometry2d current_odom_;
 
         bool active_{false};
+
+        double controller_frequency_;
 
         rclcpp::Duration transform_tolerance_ {0, 0};
 
@@ -178,6 +178,8 @@ class MPPIcROS : public nav2_core::Controller {
                            const geometry_msgs::msg::PoseStamped & in_pose,
                            geometry_msgs::msg::PoseStamped & out_pose,
                            const rclcpp::Duration & transform_tolerance) const;
+
+        double rate_limited_velocity(double v_des, double r);
 };
 
 } // namespace mappi
