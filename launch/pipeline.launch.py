@@ -13,6 +13,12 @@ from launch.substitutions import PathJoinSubstitution
 
 def generate_launch_description():
 
+    pkg_share = os.path.join(get_package_share_directory('scan_fusion'), 'launch')
+
+    scan_fusion = IncludeLaunchDescription(
+                    PythonLaunchDescriptionSource(os.path.join(pkg_share, 'ona.launch.py'))
+                )
+
     pc_to_scan = Node(
                 package='pointcloud_to_laserscan',
                 executable='pointcloud_to_laserscan_node',
@@ -25,10 +31,11 @@ def generate_launch_description():
                     'range_max': 15.0,
                     'target_frame': 'ona2/base_footprint'}
                 ],
-                remappings=[('cloud_in', 'ona2/sensors/pandar_front/cloud_raw'),
+                remappings=[('cloud_in', '/ona2/sensors/fused_cloud'),
                             ('scan', 'ona2/scan')]
             )
     
     return LaunchDescription([
+        scan_fusion,
         pc_to_scan
     ])

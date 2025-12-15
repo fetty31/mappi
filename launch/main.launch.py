@@ -14,9 +14,9 @@ def generate_launch_description():
                 )
     
 
-    # Pipeline
+    # Ona pipeline
     pipeline = IncludeLaunchDescription(
-                    PythonLaunchDescriptionSource(os.path.join(pkg_share, 'dummy_pipeline.launch.py'))
+                    PythonLaunchDescriptionSource(os.path.join(pkg_share, 'pipeline.launch.py'))
                 )
     
 
