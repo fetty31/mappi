@@ -53,8 +53,8 @@ void MPPIcROS::configure( const rclcpp_lifecycle::LifecycleNode::WeakPtr & paren
 
     parameters_handler_ = std::make_unique<ParametersHandler>(parent);
 
-    global_pub_ = node->create_publisher<nav_msgs::msg::Path>("global_plan", 1);
-    local_pub_ = node->create_publisher<nav_msgs::msg::Path>("interpolated_plan", 1);
+    global_pub_ = node->create_publisher<nav_msgs::msg::Path>("/mappi/global_plan", 1);
+    local_pub_ = node->create_publisher<nav_msgs::msg::Path>("/mappi/interpolated_plan", 1);
 
     // Srv client
     // costmap_client_ = nh_upper.serviceClient<std_srvs::Empty>("clear_costmaps");

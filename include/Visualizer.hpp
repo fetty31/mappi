@@ -202,11 +202,11 @@ void Visualizer::on_configure(rclcpp_lifecycle::LifecycleNode::WeakPtr parent,
 
     reset();
 
-    marker_pub_     = node->create_publisher<visualization_msgs::msg::MarkerArray>("trajectories", 1);
-    marker_opt_pub_ = node->create_publisher<visualization_msgs::msg::MarkerArray>("optimal_trajectory", 1);
+    marker_pub_     = node->create_publisher<visualization_msgs::msg::MarkerArray>("/mappi/trajectories", 1);
+    marker_opt_pub_ = node->create_publisher<visualization_msgs::msg::MarkerArray>("/mappi/optimal_trajectory", 1);
 
-    pcl_pub_       = node->create_publisher<sensor_msgs::msg::PointCloud2>("pcl_trajectories", 1);
-    pcl_opt_pub_   = node->create_publisher<sensor_msgs::msg::PointCloud2>("pcl_optimal_trajectory", 1);
+    pcl_pub_       = node->create_publisher<sensor_msgs::msg::PointCloud2>("/mappi/pcl_trajectories", 1);
+    pcl_opt_pub_   = node->create_publisher<sensor_msgs::msg::PointCloud2>("/mappi/pcl_optimal_trajectory", 1);
 }
 
 void Visualizer::on_cleanup()
