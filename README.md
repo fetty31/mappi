@@ -9,10 +9,10 @@
         <li><a href="#installation">Installation</a>
         </li>
         <li>
-        <a href="#quick-start">Quick Start</a>
+        <a href="#quick-start-ros1">Quick Start ROS1</a>
         </li>
         <li>
-        <a href="#approach">Approach</a>
+        <a href="#quick-start-ros2">Quick Start ROS2</a>
         </li>
         <li>
         <a href="#package-structure">Package Structure</a>
@@ -66,9 +66,6 @@ _`MaPPI` has been developed with the sole purpose of being able to use MPPI with
         <li>
         <a href="https://github.com/xtensor-stack/xtl.git">xtl</a>
         </li>
-        <li>
-        <a href="http://wiki.ros.org/costmap_2d">costmap_2d</a><i> (To-Do: erase this dependency, make it a templated library)</i>
-        </li>
     </ol>
 </details>
 
@@ -110,8 +107,49 @@ _`MaPPI` has been developed with the sole purpose of being able to use MPPI with
     </ol>
 </details>
 
+<details>
+    <summary>ROS2 (Humble) wrapper:</summary>
+    <ol>
+        <li>
+        <a href="./mappi/">mappi</a>
+        <li>
+        <a href="https://index.ros.org/p/sensor_msgs/">sensor_msgs</a>
+        </li>
+        <li>
+        <a href="https://index.ros.org/p/geometry_msgs/">geometry_msgs</a>
+        </li>
+        </li>
+        <li><a href="https://index.ros.org/p/nav_msgs/">nav_msgs</a>
+        </li>
+        <li>
+        <a href="https://index.ros.org/p/std_msgs/">std_msgs</a>
+        </li>
+        <li>
+        <a href="https://index.ros.org/p/tf2/">tf2</a>
+        </li>
+        <li>
+        <a href="https://index.ros.org/p/visualization_msgs/">visualization_msgs</a>
+        </li>
+        <li>
+        <a href="https://index.ros.org/p/nav2_core/">nav2_core</a>
+        </li>
+        <li>
+        <a href="https://index.ros.org/p/nav2_common/">nav2_common</a>
+        </li>
+        <li>
+        <a href="https://index.ros.org/p/nav2_util/">nav2_util</a>
+        </li>
+        <li>
+        <a href="https://index.ros.org/p/nav2_costmap_2d/">nav2_costmap_2d</a>
+        </li>
+    </ol>
+</details>
+
 ### **Build Instructions**  
-Build dependencies
+Install dependencies
+
+Check the [official installation page](https://xtensor.readthedocs.io/en/latest/installation.html) or build from sources:
+
 ```sh
 git clone https://github.com/xtensor-stack/xtl.git # install x template library (xtl)
 cd xtl
@@ -128,21 +166,21 @@ sudo make install
 
 Clone the repository and build the package:  
 ```bash
-cd ~/catkin_ws/src
+cd ~/your_workspace/src
 git clone https://github.com/fetty31/mappi.git
 cd ..
 rosdep install --from-paths src --ignore-src -r -y
-catkin_make 
+catkin_make # or colcon build for ROS2
 ```
 
 ---
 
-## **Quick Start**  
+## **Quick Start ROS1**  
 
 ### 1. MaPPI as Local Planner
 Make sure your `move_base` configuration includes:
 ```xml
-<param name="base_global_planner" value="mappi/MPPIPlannerROS"/>
+<param name="base_local_planner" value="mappi/MPPIPlannerROS"/>
 ```
 This allows `move_base` to call the _MPPIPlannerROS_ plugin, which wraps around the stand-alone `MaPPI` library.
 
@@ -153,18 +191,35 @@ Modify [`config/mappi_local_planner.yaml`](config/mappi_local_planner.yaml) to a
 ```
 ---
 
-## Approach
-To-Do
+## **Quick Start ROS2**  
+
+### MaPPI as Nav2 Controller
+Make sure to add the plugin `mappi::MPPIcROS` in the nav2 config file (see `nav2_custom.yaml`):
+```
+controller_plugins: ["FollowPath"]
+FollowPath:
+      plugin: "mappi::MPPIcROS"
+      MotionModel: "BicycleKin"
+      GeneralSettings:
+        num_iterations: 1
+        batch_size: 1000
+        time_steps: 100
+        num_retry: 4
+      ...
+```
+
+---
 
 ## **Package Structure**  
 ```
 mappi/
-│── cfg/                    # Dynamic Reconfigure definition
+│── cfg/                    # Dynamic Reconfigure definition (ROS1 only)
+│── config/                 # Tuning config files
 │── include/                # Header files for ROS functionality
 │── mappi/                  # MaPPI stand-alone C++ library
 │── src/                    # nav_core::BaseLocalPlanner definition
 │── CMakeLists.txt          # Build system configuration
-│── mappi_plugin.xml        # nav_core pluginlib definition
+│── mappi_plugin.xml        # nav/nav2 pluginlib definition
 │── package.xml             # ROS package metadata
 └── README.md               # This file
 ```
