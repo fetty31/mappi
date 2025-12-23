@@ -84,6 +84,7 @@ target_link_libraries(${PROJECT_NAME} xtensor) # xtensor::optimize xtensor::use_
 add_library(${PROJECT_NAME}_nav2_controller SHARED
               src/Controller.cpp
               src/ParametersHandler.cpp
+              src/CostmapAdapter.cpp
               )
 # prevent pluginlib from using boost
 target_compile_definitions(${PROJECT_NAME}_nav2_controller PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")

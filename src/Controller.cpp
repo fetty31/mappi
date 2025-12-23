@@ -203,10 +203,16 @@ geometry_msgs::msg::TwistStamped MPPIcROS::computeVelocityCommands(const geometr
         return cmd_vel;
     } 
 
-    // cmd_vel.twist.linear.x  = rate_limited_velocity(cmd.vx, config_.bounds.max_ax);
-    cmd_vel.twist.linear.x  = cmd.vx;
+    cmd_vel.twist.linear.x  = cmd.vx; // rate_limited_velocity(cmd.vx, config_.bounds.max_ax);
     cmd_vel.twist.linear.y  = cmd.vy;
     cmd_vel.twist.angular.z = cmd.wz;
+
+    // If the optimal trajectory has no collision (exhaustive check)
+    if(checkForCollison(mappi_.getOptimalTrajectory())){
+        cmd_vel.twist.linear.x  = 0.0;
+        cmd_vel.twist.linear.y  = 0.0;
+        RCLCPP_WARN(logger_, "%s: Collision detected in optimal path!", plugin_name_.c_str());
+    }
 
     auto end_time = std::chrono::system_clock::now();
     static std::chrono::duration<double> elapsed_time;
@@ -525,6 +531,19 @@ double MPPIcROS::rate_limited_velocity(double v_target, double r) {
     if (v_target < v_min) return v_min;
     if (v_target > v_max) return v_max;
     return v_target;
+}
+
+bool MPPIcROS::checkForCollison(const mappi::objects::Trajectory& plan)
+{
+    auto & shape = plan.x.shape();
+    for(unsigned long i=0; i < shape[1]; i++){
+        unsigned char cost_c = costmap_mappi_->costAt(plan.x(1,i), plan.y(1,i), plan.yaw(1,i));
+        RCLCPP_INFO(logger_, "%s: cost %i, x: %f y: %f", plugin_name_.c_str(), cost_c, plan.x(1,i), plan.y(1,i));
+        if(costmap_mappi_->isInLethalCollision(cost_c))
+            return true;
+    }
+
+    return false;
 }
 
 } // namespace mappi

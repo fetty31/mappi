@@ -180,6 +180,8 @@ class MPPIcROS : public nav2_core::Controller {
                            const rclcpp::Duration & transform_tolerance) const;
 
         double rate_limited_velocity(double v_des, double r);
+
+        bool checkForCollison(const mappi::objects::Trajectory& plan);
 };
 
 } // namespace mappi
