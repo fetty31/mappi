@@ -77,8 +77,6 @@ class MPPIcROS : public nav2_core::Controller {
         std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>> global_pub_;
         std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>> local_pub_;
 
-        // ros::ServiceClient costmap_client_;
-
     // FUNCTIONS
 
     public:

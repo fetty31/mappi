@@ -56,9 +56,6 @@ void MPPIcROS::configure( const rclcpp_lifecycle::LifecycleNode::WeakPtr & paren
     global_pub_ = node->create_publisher<nav_msgs::msg::Path>("/mappi/global_plan", 1);
     local_pub_ = node->create_publisher<nav_msgs::msg::Path>("/mappi/interpolated_plan", 1);
 
-    // Srv client
-    // costmap_client_ = nh_upper.serviceClient<std_srvs::Empty>("clear_costmaps");
-
     // Set up MPPI config
     this->setUpParameters(config_);
     config_.print_out(); // print out config (debug)
@@ -148,6 +145,7 @@ geometry_msgs::msg::TwistStamped MPPIcROS::computeVelocityCommands(const geometr
     cmd_vel.header.stamp = pose.header.stamp;
     cmd_vel.twist.linear.x  = 0.0;
     cmd_vel.twist.linear.y  = 0.0;
+    cmd_vel.twist.linear.z  = 1.0; // custom logic for Ona2
     cmd_vel.twist.angular.z = 0.0;
 
     if(not is_active()) return cmd_vel;
@@ -537,7 +535,8 @@ bool MPPIcROS::checkForCollison(const mappi::objects::Trajectory& plan)
 {
     auto & shape = plan.x.shape();
     for(unsigned long i=0; i < shape[1]; i++){
-        unsigned char cost_c = costmap_mappi_->costAt(plan.x(1,i), plan.y(1,i), plan.yaw(1,i));
+        unsigned char cost_c = costmap_mappi_->costAt(plan.x(1,i), plan.y(1,i));
+        // unsigned char cost_c = costmap_mappi_->costAt(plan.x(1,i), plan.y(1,i), plan.yaw(1,i));
         RCLCPP_INFO(logger_, "%s: cost %i, x: %f y: %f", plugin_name_.c_str(), cost_c, plan.x(1,i), plan.y(1,i));
         if(costmap_mappi_->isInLethalCollision(cost_c))
             return true;
