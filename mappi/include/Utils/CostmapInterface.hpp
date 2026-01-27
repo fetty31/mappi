@@ -28,6 +28,7 @@ public:
 
     virtual unsigned char costAt(double x, double y) const = 0;
     virtual unsigned char costAt(double x, double y, double theta) = 0;
+    virtual unsigned char costAtCircle(double x, double y, double radius) = 0;
 
     virtual std::vector<Point2D> getFootprint() const = 0;
     virtual bool isInCollision(unsigned char cost) const = 0;

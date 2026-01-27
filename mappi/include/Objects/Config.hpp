@@ -128,6 +128,7 @@ struct MPPIc
     double model_dt;
     double temperature;
     double gamma;
+    double collision_radius;
 
     /**
      * @brief Aux. function to print out all set parameters
@@ -144,6 +145,7 @@ struct MPPIc
         std::cout << "  - model_dt: " << model_dt << std::endl;
         std::cout << "  - temperature: " << temperature  << std::endl;
         std::cout << "  - gamma: " << gamma << std::endl;
+        std::cout << "  - collision_radius: " << collision_radius << std::endl;
         std::cout << "  - use_splines: " << settings.use_splines << std::endl;
         std::cout << "  - dist_shift: " << settings.dist_shift << std::endl;
 

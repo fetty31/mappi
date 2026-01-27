@@ -29,6 +29,7 @@ public:
 
     unsigned char costAt(double x, double y) const override;
     unsigned char costAt(double x, double y, double theta) override;
+    unsigned char costAtCircle(double x, double y, double radius) override;
 
     std::vector<mappi::utils::Point2D> getFootprint() const override;
     double getInscribedRadius() const override;

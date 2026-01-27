@@ -227,6 +227,7 @@ controller_server:
         model_dt: 0.05
         temperature: 0.3
         gamma: 0.05
+        collision_radius: 1.2
       Constraints:
         max_vx: 0.75
         min_vx: -0.75
