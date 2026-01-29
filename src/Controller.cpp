@@ -206,7 +206,7 @@ geometry_msgs::msg::TwistStamped MPPIcROS::computeVelocityCommands(const geometr
     cmd_vel.twist.angular.z = cmd.wz;
 
     // If the optimal trajectory has no collision (exhaustive check)
-    if(checkForCollison(mappi_.getOptimalTrajectory())){
+    if(checkForCollison(mappi_.getOptimalTrajectory(), current_odom_)){
         cmd_vel.twist.linear.x  = 0.0;
         cmd_vel.twist.linear.y  = 0.0;
         RCLCPP_WARN(logger_, "%s: Collision detected in optimal path!", plugin_name_.c_str());
@@ -532,13 +532,14 @@ double MPPIcROS::rate_limited_velocity(double v_target, double r) {
     return v_target;
 }
 
-bool MPPIcROS::checkForCollison(const mappi::objects::Trajectory& plan)
+bool MPPIcROS::checkForCollison(const mappi::objects::Trajectory& plan, const mappi::objects::Odometry2d& /*pose*/)
 {
     auto & shape = plan.x.shape();
     for(unsigned long i=0; i < shape[1]; i++){
-        unsigned char cost_c = costmap_mappi_->costAt(plan.x(1,i), plan.y(1,i));
+        // unsigned char cost_c = costmap_mappi_->costAt(plan.x(1,i), plan.y(1,i));
         // unsigned char cost_c = costmap_mappi_->costAt(plan.x(1,i), plan.y(1,i), plan.yaw(1,i));
-        // unsigned char cost_c = costmap_mappi_->costAtCircle(plan.x(1,i), plan.y(1,i), config_.collision_radius);
+        // unsigned char cost_c = costmap_mappi_->costAt(plan.x(1,i), plan.y(1,i), pose.yaw);
+        unsigned char cost_c = costmap_mappi_->costAtCircle(plan.x(1,i), plan.y(1,i), config_.collision_radius);
         RCLCPP_INFO(logger_, "%s: cost %i, x: %f y: %f", plugin_name_.c_str(), cost_c, plan.x(1,i), plan.y(1,i));
         if(costmap_mappi_->isInLethalCollision(cost_c))
             return true;

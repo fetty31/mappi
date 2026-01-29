@@ -117,6 +117,22 @@ class BicycleKinRear : public MotionModel {
             xt::noalias(traj.y) = st.odom.y + xt::cumsum(dy * model_dt, 1);
         }
 
+        /**
+         * @brief Apply motion constraints to the control sequence
+         * 
+         * @param ctrl_seq Control sequence to constraint
+         */
+        void constrainMotion(mappi::objects::ControlSequence& ctrl_seq) override {
+            
+            // Limit steering angle (here "wz")
+            auto & wz = ctrl_seq.wz;
+            auto wz_max = xt::sign(wz) * cfg_.max_steer;
+            auto mask = xt::fabs(wz) > cfg_.max_steer;
+
+            // Apply the result only where the mask is true
+            wz = xt::where(mask, wz_max, wz);
+        }
+
 };
 
 } // namespace mappi::models

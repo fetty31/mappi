@@ -179,7 +179,7 @@ class MPPIcROS : public nav2_core::Controller {
 
         double rate_limited_velocity(double v_des, double r);
 
-        bool checkForCollison(const mappi::objects::Trajectory& plan);
+        bool checkForCollison(const mappi::objects::Trajectory& plan, const mappi::objects::Odometry2d& pose);
 };
 
 } // namespace mappi
