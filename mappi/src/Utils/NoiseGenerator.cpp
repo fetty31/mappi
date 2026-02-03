@@ -15,7 +15,7 @@ namespace mappi::utils {
 
 NoiseGenerator::NoiseGenerator() : active_(false), 
                                     ready_(false),
-                                    is_holonomic_(false) { };
+                                    is_holonomic_(false) { }
 
 void NoiseGenerator::configure(mappi::config::Noise& cfg, bool is_holonomic)
 {
