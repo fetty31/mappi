@@ -540,7 +540,7 @@ bool MPPIcROS::checkForCollison(const mappi::objects::Trajectory& plan, const ma
         // unsigned char cost_c = costmap_mappi_->costAt(plan.x(1,i), plan.y(1,i), plan.yaw(1,i));
         // unsigned char cost_c = costmap_mappi_->costAt(plan.x(1,i), plan.y(1,i), pose.yaw);
         unsigned char cost_c = costmap_mappi_->costAtCircle(plan.x(1,i), plan.y(1,i), config_.collision_radius);
-        RCLCPP_INFO(logger_, "%s: cost %i, x: %f y: %f", plugin_name_.c_str(), cost_c, plan.x(1,i), plan.y(1,i));
+        RCLCPP_DEBUG(logger_, "%s: cost %i, x: %f y: %f", plugin_name_.c_str(), cost_c, plan.x(1,i), plan.y(1,i));
         if(costmap_mappi_->isInLethalCollision(cost_c))
             return true;
     }
