@@ -210,6 +210,7 @@ geometry_msgs::msg::TwistStamped MPPIcROS::computeVelocityCommands(const geometr
         cmd_vel.twist.linear.x  = 0.0;
         cmd_vel.twist.linear.y  = 0.0;
         RCLCPP_WARN(logger_, "%s: Collision detected in optimal path!", plugin_name_.c_str());
+        // throw nav2_core::PlannerException("MaPPI: Collision detected in optimal path!");
     }
 
     auto end_time = std::chrono::system_clock::now();

@@ -28,6 +28,7 @@
 
 #include "nav2_core/controller.hpp"
 #include "nav2_core/goal_checker.hpp"
+#include "nav2_core/exceptions.hpp"
 
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp/time_source.hpp"

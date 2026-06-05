@@ -279,6 +279,7 @@ bool MPPIc::fallback(bool &failed)
 
     if(++count > cfg_.settings.num_retry){
         count = 0;
+        failed = true;
         // throw std::runtime_error("mappi::MPPIc ERROR: failed to compute any path");
         return false;
     }
