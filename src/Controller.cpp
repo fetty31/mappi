@@ -64,6 +64,9 @@ void MPPIcROS::configure( const rclcpp_lifecycle::LifecycleNode::WeakPtr & paren
     visualizer_ptr_ = std::make_unique<Visualizer>();
     visualizer_ptr_->on_configure(parent, name, costmap_ros_ptr_->getGlobalFrameID(), &mappi_, config_.visual, parameters_handler_.get());
 
+    straight_active_ = false;
+    straight_start_time_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
+
     RCLCPP_INFO(
         logger_,
         "CONFIGURED controller: %s of type mappi::MPPIcROS",
@@ -103,6 +106,8 @@ void MPPIcROS::activate()
     mappi_.configure(config_, costmap_mappi_); // Initialize MPPI controller
     active_ = true;
 
+    straight_active_ = false;
+
     RCLCPP_INFO(
         logger_,
         "ACTIVATED controller: %s of type mappi::MPPIcROS",
@@ -119,6 +124,8 @@ void MPPIcROS::deactivate()
 
     mappi_.reset();
     active_ = false;
+
+    straight_active_ = false;
 
     RCLCPP_INFO(
         logger_,
@@ -162,6 +169,10 @@ geometry_msgs::msg::TwistStamped MPPIcROS::computeVelocityCommands(const geometr
     nav_msgs::msg::Path transformed_plan;
     if(transformGlobalPlan(pose, transformed_plan)) // could not transform global plan
         return cmd_vel;
+
+    // Check if we need to maneuver (if not, forcing exception)
+    if(checkStraightAndTriggerSwitch(pose, transformed_plan))
+        throw nav2_core::PlannerException("MaPPI: straight motion detected, yielding control to PurePursuit");
     
     // Get current pose (transform to mappi type)
     ros_utils::ros2mppic(pose, current_odom_); 
@@ -250,7 +261,6 @@ bool MPPIcROS::is_active()
 {
     return active_;
 }
-
 
 int MPPIcROS::transformGlobalPlan(const geometry_msgs::msg::PoseStamped & pose,
                                     nav_msgs::msg::Path & path)
@@ -404,6 +414,14 @@ void MPPIcROS::setUpParameters(config::MPPIc& config)
     getParamGen(config.settings.dist_shift, "plan_shift", 1.0);
     getParamGen(config.settings.use_splines, "use_splines", false);
 
+    // Yield Control (custom for ona2)
+    auto getParamYield = parameters_handler_->getParamGetter(plugin_name_ + ".YieldWhenStraight");
+    getParamVis(yield_active_, "active", false, ParameterType::Static);
+    getParamVis(time_before_yielding_, "time_before_yielding", 5.0, ParameterType::Static);
+    double angle_range_deg;
+    getParamVis(angle_range_deg, "max_angle", 5.0, ParameterType::Static);
+    angle_range_ = angle_range_deg * M_PI/180.0;
+
     double transform_tolerance;
     getParamGen(transform_tolerance, "transform_tolerance", 0.5, ParameterType::Static);
     transform_tolerance_ = rclcpp::Duration::from_seconds(transform_tolerance);
@@ -544,6 +562,77 @@ bool MPPIcROS::checkForCollison(const mappi::objects::Trajectory& plan, const ma
         RCLCPP_DEBUG(logger_, "%s: cost %i, x: %f y: %f", plugin_name_.c_str(), cost_c, plan.x(1,i), plan.y(1,i));
         if(costmap_mappi_->isInLethalCollision(cost_c))
             return true;
+    }
+
+    return false;
+}
+
+bool MPPIcROS::checkStraightAndTriggerSwitch(
+  const geometry_msgs::msg::PoseStamped & pose,
+  const nav_msgs::msg::Path & transformed_plan )
+{
+    if(!yield_active_)
+        return false;
+
+    if (transformed_plan.poses.size() < 1) {
+        straight_active_ = false;
+        return false;
+    }
+
+    rclcpp::Time now = pose.header.stamp;
+
+    // Compute path direction
+    const int N = std::min<int>(5, transformed_plan.poses.size() - 1);
+
+    double dx = 0.0;
+    double dy = 0.0;
+
+    for (int i = 0; i < N; i++) {
+        dx += transformed_plan.poses[i+1].pose.position.x -
+                transformed_plan.poses[i].pose.position.x;
+
+        dy += transformed_plan.poses[i+1].pose.position.y -
+                transformed_plan.poses[i].pose.position.y;
+    }
+
+    double yaw = std::atan2(dy, dx);
+
+    RCLCPP_INFO(logger_, "%s: Path yaw %f deg", plugin_name_.c_str(), yaw * 180.0/M_PI);
+
+    double yaw_abs = std::abs(yaw);
+
+    bool is_straight = yaw_abs < angle_range_;
+    if(yaw_abs > M_PI/2.0)
+        is_straight = (M_PI - yaw_abs) < angle_range_;
+
+    RCLCPP_INFO(logger_, "%s: STRAIGHT FLAG == %i", plugin_name_.c_str(), is_straight);
+
+    // Temporal filtering
+    if (is_straight)
+    {
+        if (!straight_active_) {
+            straight_active_ = true;
+            straight_start_time_ = now;
+        }
+    }
+    else
+    {
+        straight_active_ = false;
+    }
+
+    // Duration condition
+    double duration = (now - straight_start_time_).seconds();
+
+    RCLCPP_INFO(logger_, "%s: Going straight for %f seconds", plugin_name_.c_str(), duration);
+
+    if (straight_active_ && duration > time_before_yielding_)
+    {
+        RCLCPP_WARN(
+            logger_,
+            "%s: Straight & smooth trajectory detected → switching controller",
+            plugin_name_.c_str());
+
+        return true;
     }
 
     return false;

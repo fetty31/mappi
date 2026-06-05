@@ -40,6 +40,11 @@ controller_server:
         temperature: 0.3
         gamma: 0.05
         collision_radius: 1.2
+      
+      YieldWhenStraight:
+        active: true        
+        max_angle: 5.0              # [deg] Angle range to consider that the robot is going straight (w.r.t trajectory)
+        time_before_yielding: 10.0  # [s] Time that the robot must be going straight before yielding
 
       Constraints:
         max_vx: 0.75

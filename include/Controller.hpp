@@ -47,6 +47,14 @@ class MPPIcROS : public nav2_core::Controller {
 
      // VARIABLES
 
+    private:
+        bool straight_active_{false};
+
+        rclcpp::Time straight_start_time_;
+        bool yield_active_{false};
+        double time_before_yielding_;
+        double angle_range_;
+        
     protected:
 
         rclcpp_lifecycle::LifecycleNode::WeakPtr node_;
@@ -181,6 +189,9 @@ class MPPIcROS : public nav2_core::Controller {
         double rate_limited_velocity(double v_des, double r);
 
         bool checkForCollison(const mappi::objects::Trajectory& plan, const mappi::objects::Odometry2d& pose);
+
+        bool checkStraightAndTriggerSwitch(const geometry_msgs::msg::PoseStamped & pose,
+                                            const nav_msgs::msg::Path & transformed_plan );
 };
 
 } // namespace mappi
