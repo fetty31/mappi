@@ -150,7 +150,7 @@ geometry_msgs::msg::TwistStamped MPPIcROS::computeVelocityCommands(const geometr
 
     if(not is_active()) return cmd_vel;
 
-    RCLCPP_INFO(
+    RCLCPP_DEBUG(
         logger_,
         "%s: computing velocity commands...",
         plugin_name_.c_str()
@@ -167,7 +167,7 @@ geometry_msgs::msg::TwistStamped MPPIcROS::computeVelocityCommands(const geometr
     ros_utils::ros2mppic(pose, current_odom_); 
     ros_utils::ros2mppic(velocity, current_odom_); 
 
-    RCLCPP_INFO(
+    RCLCPP_DEBUG(
         logger_,
         "%s: current velocity: %f",
         plugin_name_.c_str(),
@@ -180,7 +180,7 @@ geometry_msgs::msg::TwistStamped MPPIcROS::computeVelocityCommands(const geometr
 
     auto start_time = std::chrono::system_clock::now();
 
-    RCLCPP_INFO(
+    RCLCPP_DEBUG(
         logger_,
         "%s: calling MPPI controller...",
         plugin_name_.c_str()
@@ -221,14 +221,14 @@ geometry_msgs::msg::TwistStamped MPPIcROS::computeVelocityCommands(const geometr
     // Publish generated trajectories
     visualizer_ptr_->publish(now);
 
-    RCLCPP_INFO(logger_, "%s: published trajectories", plugin_name_.c_str());
+    RCLCPP_DEBUG(logger_, "%s: published trajectories", plugin_name_.c_str());
 
     // Publish interpolated plan
     static nav_msgs::msg::Path path_msg;
     ros_utils::mppic2ros(mappi_.getCurrentPlan(), path_msg, costmap_ros_ptr_->getGlobalFrameID(), now);
     local_pub_->publish(path_msg);
 
-    RCLCPP_INFO(logger_, "%s: published local plan", plugin_name_.c_str());
+    RCLCPP_DEBUG(logger_, "%s: published local plan", plugin_name_.c_str());
 
     return cmd_vel;
 }
