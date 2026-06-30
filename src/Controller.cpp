@@ -416,10 +416,10 @@ void MPPIcROS::setUpParameters(config::MPPIc& config)
 
     // Yield Control (custom for ona2)
     auto getParamYield = parameters_handler_->getParamGetter(plugin_name_ + ".YieldWhenStraight");
-    getParamVis(yield_active_, "active", false, ParameterType::Static);
-    getParamVis(time_before_yielding_, "time_before_yielding", 5.0, ParameterType::Static);
+    getParamYield(yield_active_, "active", false, ParameterType::Static);
+    getParamYield(time_before_yielding_, "time_before_yielding", 5.0, ParameterType::Static);
     double angle_range_deg;
-    getParamVis(angle_range_deg, "max_angle", 5.0, ParameterType::Static);
+    getParamYield(angle_range_deg, "max_angle", 5.0, ParameterType::Static);
     angle_range_ = angle_range_deg * M_PI/180.0;
 
     double transform_tolerance;
