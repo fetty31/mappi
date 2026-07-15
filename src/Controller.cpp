@@ -623,17 +623,20 @@ bool MPPIcROS::checkStraightAndTriggerSwitch(
     // Duration condition
     double duration = (now - straight_start_time_).seconds();
 
-    RCLCPP_INFO(logger_, "%s: Going straight for %f seconds", plugin_name_.c_str(), duration);
+    if(straight_active_){
+        RCLCPP_INFO(logger_, "%s: Going straight for %f seconds", plugin_name_.c_str(), duration);
+        if (duration > time_before_yielding_)
+        {
+            RCLCPP_WARN(
+                logger_,
+                "%s: Straight & smooth trajectory detected → switching controller",
+                plugin_name_.c_str());
 
-    if (straight_active_ && duration > time_before_yielding_)
-    {
-        RCLCPP_WARN(
-            logger_,
-            "%s: Straight & smooth trajectory detected → switching controller",
-            plugin_name_.c_str());
-
-        return true;
+            return true;
+        }
     }
+
+    
 
     return false;
 }
